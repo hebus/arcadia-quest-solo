@@ -7,9 +7,10 @@ import type { ScenarioDefinition } from '@/engine/scenario/definition';
  * Repère (x → droite, y → bas) : les héros partent du bâtiment en bas à gauche (tuile 6A), la grande salle (tuile 1B) est en haut à
  * droite, l'atelier (tuile 2B) en bas à droite, la cave (tuile 7B) au milieu en bas, la forge (tuile 9A décalée) à l'extrême droite.
  *
- * Population (niveau de cartes « 1 », boîtes respectées, la plus fournie de la campagne) : le Minotaur Maître-Fer (chef) en garde
+ * Population (niveau de cartes « 2-3 » : les monstres ont les statistiques du niveau 2-3 ; boîtes respectées, la plus fournie de la campagne) : le Minotaur Maître-Fer (chef) en garde
  * dans la forge, le Troll en garde dans la grande salle, deux Orc Captain, deux Spear Beastman (dont un collé à un Orc), deux
- * Hammer Beastman et trois Orc Marauder ; 3 renforts d'Orc Marauder : les 8 Orcs de la boîte, pas un de plus.
+ * Hammer Beastman et trois Orc Marauder ; 3 renforts d'Orc Marauder : les 8 Orcs de la boîte, pas un de plus. S'y ajoutent trois
+ * Goblin Archer (2 dés d'arc), qui n'ont de statistiques qu'à ce niveau 2-3 (6 dans la boîte).
  */
 export const FORGE_DU_MAITRE_FER: ScenarioDefinition = {
   id: 'forge-du-maitre-fer',
@@ -78,6 +79,10 @@ spawn S4 1,1 bow+crit
     { id: 'HB2', definitionId: 'HB', at: { x: 7, y: 7 } },
     { id: 'OM2', definitionId: 'OM', at: { x: 1, y: 4 } },
     { id: 'OM3', definitionId: 'OM', at: { x: 4, y: 5 } },
+    // Trois Goblin Archer (le niveau 2-3 est le premier où ils ont leurs statistiques) : des tireurs qui prennent la rue en enfilade.
+    { id: 'GA1', definitionId: 'GA', at: { x: 3, y: 3 } },
+    { id: 'GA2', definitionId: 'GA', at: { x: 1, y: 2 } },
+    { id: 'GA3', definitionId: 'GA', at: { x: 5, y: 6 } },
   ],
   quests: [
     { id: 'brasero-nord', icon: 'flame', title: 'Éteindre le brasero de la grande salle', completion: 'Le brasero siffle et s’éteint ; les soufflets de la forge toussent.', at: { x: 8, y: 0 } },
@@ -130,7 +135,7 @@ spawn S4 1,1 bow+crit
       then: [{ type: 'complete-quest', questId: 'maitre', text: 'Le minotaure s’écroule sur son enclume : plus un marteau ne frappera.' }],
     },
   ],
-  monsterCardSet: '1',
+  monsterCardSet: '2-3',
   // Une carte par type de monstre présent (au départ ou en renfort).
-  deck: { listedMonsterIds: ['M', 'T', 'OC', 'SB', 'HB', 'OM'] },
+  deck: { listedMonsterIds: ['M', 'T', 'OC', 'SB', 'HB', 'OM', 'GA'] },
 };

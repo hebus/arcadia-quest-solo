@@ -1,7 +1,7 @@
 /**
  * Petite campagne de 3 chapitres : « La Chute des Braises ». Les chapitres se jouent dans l'ordre avec la même guilde de 3 héros ;
- * le suivant se déverrouille quand le précédent est gagné. Les trois sont au niveau de cartes Monster « 1 » : ce sont les seules
- * statistiques de monstres saisies pour l'instant (voir `monsters.json`).
+ * le suivant se déverrouille quand le précédent est gagné. Les chapitres 1 et 2 sont au niveau de cartes Monster « 1 », le chapitre 3
+ * au niveau « 2-3 » (statistiques dans `monsters.json`).
  */
 export interface CampaignChapter {
   /** Identifiant du scénario (dans `ORIGINAL_SCENARIOS`). */

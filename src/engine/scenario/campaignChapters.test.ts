@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { statsOfMonster } from '../monsters';
 import { boxProblems } from '../figurines';
 import { CELL_CAPACITY, key, samePos } from '../movement/board';
 import { heroStartsEnclosed } from '../startArea';
@@ -51,7 +52,8 @@ describe('la petite campagne « La Chute des Braises »', () => {
     const g = createScenarioGame(def, start, ORIGINAL_CONTENT);
     expect(g.heroes).toHaveLength(3);
     expect(g.monsters).toHaveLength(def.monsters.length);
-    expect(g.monsterCardSet).toBe('1'); // seules les stats de niveau 1 sont saisies : les trois chapitres sont à ce niveau
+    // Chapitres 1 et 2 : niveau de cartes « 1 » ; chapitre 3 : niveau « 2-3 » (la campagne monte en puissance).
+    expect(g.monsterCardSet).toBe(def.id === 'forge-du-maitre-fer' ? '2-3' : '1');
   });
 
   it.each(CHAPTERS.map((c) => [c.id, c] as const))('%s : boîtes respectées, renforts du script compris', (_id, def) => {
@@ -61,7 +63,8 @@ describe('la petite campagne « La Chute des Braises »', () => {
       counts.set(d.group ?? d.id, (counts.get(d.group ?? d.id) ?? 0) + 1);
     }
     expect(boxProblems(counts, ORIGINAL_CONTENT.monsters)).toEqual([]);
-    expect(counts.get('GA') ?? 0).toBe(0); // pas de Goblin Archer : aucune stat de niveau 1
+    // Le Goblin Archer n'a de stats qu'au niveau 2-3 : il ne peut figurer que dans le chapitre 3 (et n'y figure pas pour l'instant).
+    if (def.monsterCardSet === '1') expect(counts.get('GA') ?? 0).toBe(0);
   });
 
   it.each(CHAPTERS.map((c) => [c.id, c] as const))('%s : tout est atteignable depuis le départ (monstres, objectifs, renforts, jetons Spawn)', (_id, def) => {
@@ -138,7 +141,7 @@ describe('la petite campagne « La Chute des Braises »', () => {
     expect(layoutExtent(CH3.tiles!)).toEqual({ width: 10, height: 9 });
     const { board } = scenarioBoard(CH3, ORIGINAL_CONTENT);
     for (const y of [3, 4, 5]) expect(has(board.holes, { x: 6, y }), `écart (6,${y})`).toBe(true); // la colonne vide entre la forge et la rue
-    expect({ M: count(CH3, 'M'), T: count(CH3, 'T'), OC: count(CH3, 'OC'), SB: count(CH3, 'SB'), HB: count(CH3, 'HB'), OM: count(CH3, 'OM') }).toEqual({ M: 1, T: 1, OC: 2, SB: 2, HB: 2, OM: 3 });
+    expect({ M: count(CH3, 'M'), T: count(CH3, 'T'), OC: count(CH3, 'OC'), SB: count(CH3, 'SB'), HB: count(CH3, 'HB'), OM: count(CH3, 'OM'), GA: count(CH3, 'GA') }).toEqual({ M: 1, T: 1, OC: 2, SB: 2, HB: 2, OM: 3, GA: 3 });
     expect(count(CH3, 'OC') + count(CH3, 'OM') + reinforcements(CH3).length).toBe(8); // toute la boîte d'Orcs
     const chief = CH3.monsters.find((m) => m.definitionId === 'M')!;
     expect(chief.guard).toBe(true);
@@ -165,5 +168,45 @@ describe('la petite campagne « La Chute des Braises »', () => {
     expect(CH2.story.intro.join(' ')).toMatch(/Seigneur Cendre/); // reprend la fin du chapitre 1
     expect(CH3.story.intro.join(' ')).toMatch(/Gorge-Sombre/); // reprend la fin du chapitre 2
     expect(CH2.story.win.join(' ')).toMatch(/Maître-Fer/); // annonce le chapitre 3
+  });
+});
+
+const ids = (deck: { draw: { id: string }[]; discard: { id: string }[] }) => [...deck.draw, ...deck.discard].map((c) => c.id);
+
+describe('chapitre 3 au niveau 2-3', () => {
+  it('les monstres du chapitre 3 ont leurs statistiques de niveau 2-3', () => {
+    const g = createScenarioGame(CHAPTERS[2]!, start, ORIGINAL_CONTENT);
+    expect(g.monsterCardSet).toBe('2-3');
+    const stats = (id: string) => statsOfMonster(ORIGINAL_CONTENT, g, g.monsters.find((m) => m.id === id)!)!;
+    const chef = g.monsters.find((m) => m.definitionId === 'M')!;
+    expect(stats(chef.id)).toMatchObject({ life: 6, overkill: 7, defense: 1 }); // Minotaur niveau 2-3 (5 de vie au niveau 1)
+    const troll = g.monsters.find((m) => m.definitionId === 'T')!;
+    expect(stats(troll.id)).toMatchObject({ life: 5, overkill: 7, defense: 2 });
+    const hammer = g.monsters.find((m) => m.definitionId === 'HB')!;
+    expect(stats(hammer.id)).toMatchObject({ life: 4, overkill: 6 });
+  });
+
+  it('le deck d’activation du chapitre 3 compte les cartes des autres niveaux : 1, 4-5 et 6', () => {
+    const g = createScenarioGame(CHAPTERS[2]!, start, ORIGINAL_CONTENT);
+    const ids = [...g.deck.draw, ...g.deck.discard].filter((c) => c.monsterDefId === 'M').map((c) => c.id).sort();
+    expect(ids).toEqual(['M:1', 'M:4-5', 'M:6']);
+  });
+
+  it('trois Goblin Archer au chapitre 3 : leurs statistiques de niveau 2-3, dans la limite de leur boîte (6)', () => {
+    const g = createScenarioGame(CHAPTERS[2]!, start, ORIGINAL_CONTENT);
+    const archers = g.monsters.filter((m) => m.definitionId === 'GA');
+    expect(archers).toHaveLength(3);
+    for (const a of archers) expect(statsOfMonster(ORIGINAL_CONTENT, g, a)).toEqual({ life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 });
+    expect(ORIGINAL_CONTENT.monsters.GA!.copies).toBe(6);
+    expect(ids(g.deck)).toContain('GA:1'); // une carte du Goblin Archer par autre niveau
+    expect(ids(g.deck).filter((c) => c.startsWith('GA:')).sort()).toEqual(['GA:1', 'GA:4-5', 'GA:6']);
+  });
+
+  it('les Goblin Archer n’apparaissent qu’au chapitre 3 : les chapitres 1 et 2 sont au niveau 1, où ils n’ont pas de fiche', () => {
+    for (const def of [CHAPTERS[0]!, CHAPTERS[1]!]) expect(def.monsters.some((m) => m.definitionId === 'GA')).toBe(false);
+  });
+
+  it('les chapitres 1 et 2 restent au niveau 1', () => {
+    for (const def of [CHAPTERS[0]!, CHAPTERS[1]!]) expect(createScenarioGame(def, start, ORIGINAL_CONTENT).monsterCardSet).toBe('1');
   });
 });

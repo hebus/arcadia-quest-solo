@@ -111,7 +111,7 @@
           "attackType": "melee",
           "attackDice": 3,
           "defense": null,
-          "rerolls": null,
+          "rerolls": 1,
           "skills": []
         }
       }
