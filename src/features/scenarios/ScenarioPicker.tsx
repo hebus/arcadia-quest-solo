@@ -1,17 +1,22 @@
 import { TilesButton } from '@/features/scenario/TilesButton';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MiniPawn } from '@/components/MiniPawn';
 import { ObjectiveIcon } from '@/components/ObjectiveIcon';
 import { Button, ErrorBanner, Panel } from '@/components/ui';
 import { parseBoardDsl } from '@/engine/boardDsl';
 import type { Difficulty } from '@/engine/domain/schemas';
 import { scenarioBoard, scenarioToSetup, type HeroTemplate, type ScenarioDefinition } from '@/engine/scenario/definition';
-import { ORIGINAL_CONTENT, ORIGINAL_HEROES, ORIGINAL_SCENARIOS } from '@/game-data/original';
+import { MAX_GENERATED_TILES, MIN_GENERATED_TILES, generateScenario } from '@/engine/scenario/generate';
+import { ORIGINAL_CONTENT, ORIGINAL_SCENARIOS } from '@/game-data/original';
 import { BoardView, type BoardToken } from '@/rendering/board/BoardView';
+import { GUILD_SIZE, MAX_HERO_LIFE, MIN_HERO_LIFE, guildProblems, guildToTemplates } from '@/engine/guild';
+import { Stepper } from '@/components/Tally';
+import { CampaignCard } from './CampaignCard';
+import { CHAPTER_IDS } from '@/stores/campaignRunStore';
 import { useGameStore } from '@/stores/gameStore';
+import { useGuildStore } from '@/stores/guildStore';
 
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: 'Facile', medium: 'Moyenne', hard: 'Difficile', legendary: 'Légendaire' };
-const HEROES_PER_GAME = 3;
 
 /** Plateau d'un scénario : depuis ses tuiles ; si l'une n'est pas définie, la description textuelle sert d'aperçu. */
 function boardOf(def: ScenarioDefinition) {
@@ -39,15 +44,38 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   const setDefs = useGameStore((s) => s.setMonsterDefinitions);
   const newGame = useGameStore((s) => s.newGame);
   const [def, setDef] = useState<ScenarioDefinition | null>(null);
-  const [picked, setPicked] = useState<string[]>(ORIGINAL_HEROES.slice(0, HEROES_PER_GAME).map((h) => h.id));
+  // La guilde : 3 héros, nom et points de vie, gardés d'une partie à l'autre.
+  const guild = useGuildStore((s) => s.heroes);
+  const setHeroName = useGuildStore((s) => s.setName);
+  const setHeroLife = useGuildStore((s) => s.setLife);
+  const loadGuild = useGuildStore((s) => s.load);
+  const guildLoaded = useGuildStore((s) => s.loaded);
+  useEffect(() => {
+    if (!guildLoaded) void loadGuild();
+  }, [guildLoaded, loadGuild]);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tileCount, setTileCount] = useState(4);
+
+  /** Mode aléatoire : on donne le nombre de tuiles du terrain, un scénario est généré au hasard. */
+  const generate = (count: number) => {
+    try {
+      const next = generateScenario({ tileCount: count, seed: Math.floor(Math.random() * 2 ** 31) }, ORIGINAL_CONTENT);
+      setError(null);
+      setDef(next);
+      setDifficulty(next.recommended);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   if (!def) {
     return (
       <Panel title="Choisir un scénario">
+        <ErrorBanner message={error} onClose={() => setError(null)} />
+        <CampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
         <ul className="grid gap-3 md:grid-cols-2">
-          {ORIGINAL_SCENARIOS.map((s) => (
+          {ORIGINAL_SCENARIOS.filter((s) => !CHAPTER_IDS.slice(1).includes(s.id)).map((s) => (
             <li key={s.id} className="rounded-xl border border-stone-700 bg-stone-800 p-4">
               <h3 className="text-xl font-semibold text-amber-300">
                 {s.sandbox && <span aria-hidden="true">🧪 </span>}
@@ -60,14 +88,35 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
               </Button>
             </li>
           ))}
+          <li className="rounded-xl border border-amber-700 bg-stone-800 p-4" data-testid="random-mode">
+            <h3 className="text-xl font-semibold text-amber-300">
+              <span aria-hidden="true">🎲 </span>Scénario aléatoire
+            </h3>
+            <p className="mt-1 text-stone-300">Choisissez le nombre de tuiles du terrain : un scénario est généré au hasard (tuiles, portes, monstres, quêtes).</p>
+            <label className="mt-3 flex items-center gap-3">
+              Nombre de tuiles
+              <input
+                type="number"
+                aria-label="Nombre de tuiles"
+                min={MIN_GENERATED_TILES}
+                max={MAX_GENERATED_TILES}
+                value={tileCount}
+                onChange={(e) => setTileCount(Math.max(MIN_GENERATED_TILES, Math.min(MAX_GENERATED_TILES, Math.round(Number(e.target.value)) || MIN_GENERATED_TILES)))}
+                className="min-h-11 w-20 rounded-lg border border-stone-600 bg-stone-900 px-3 text-center text-lg"
+              />
+              <span className="text-sm text-stone-400">de {MIN_GENERATED_TILES} à {MAX_GENERATED_TILES}</span>
+            </label>
+            <Button className="mt-3" variant="primary" onClick={() => generate(tileCount)}>
+              Générer un scénario
+            </Button>
+          </li>
         </ul>
       </Panel>
     );
   }
 
-  const heroes = picked.map((id) => ORIGINAL_HEROES.find((h) => h.id === id)!).filter(Boolean);
-  const toggle = (id: string) =>
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < HEROES_PER_GAME ? [...p, id] : p));
+  const heroes = guildToTemplates(guild);
+  const guildIssues = guildProblems(guild);
 
   const start = () => {
     try {
@@ -99,6 +148,11 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {def.tiles && <TilesButton board={boardOf(def).board} layout={def.tiles} />}
+          {def.generated && (
+            <Button variant="secondary" onClick={() => generate(def.tiles?.placements.length ?? tileCount)}>
+              ↻ Autre tirage
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => setDef(null)}>
             ← Autres scénarios
           </Button>
@@ -126,34 +180,31 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
             </ul>
           </section>
 
-          <section aria-label={`Votre guilde (${picked.length}/${HEROES_PER_GAME})`}>
-            <h3 className="mb-1 text-sm font-semibold text-amber-300">
-              Votre guilde ({picked.length}/{HEROES_PER_GAME})
-            </h3>
-            <ul className="flex flex-wrap gap-2">
-              {ORIGINAL_HEROES.map((h) => {
-                const on = picked.includes(h.id);
-                return (
-                  <li key={h.id}>
-                    <button
-                      type="button"
-                      aria-pressed={on}
-                      title={h.epithet}
-                      onClick={() => toggle(h.id)}
-                      className={`flex items-center gap-2 rounded-xl border-2 py-1.5 pl-2 pr-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900 opacity-70'}`}
-                    >
-                      <MiniPawn kind="hero" label={h.name.slice(0, 2).toUpperCase()} size={34} />
-                      <span className="min-w-0 leading-tight">
-                        <strong className="block">{h.name}</strong>
-                        <span className="block truncate text-xs text-stone-400">
-                          {'❤'.repeat(h.life)}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
+          <section aria-label="Votre guilde">
+            <h3 className="mb-1 text-sm font-semibold text-amber-300">Votre guilde ({GUILD_SIZE} héros)</h3>
+            <ul className="grid gap-2 sm:grid-cols-3">
+              {guild.map((h, i) => (
+                <li key={i} className="space-y-2 rounded-xl border-2 border-stone-700 bg-stone-800 p-2" data-testid={`guild-hero-${i + 1}`}>
+                  <label className="flex items-center gap-2">
+                    <MiniPawn kind="hero" label={(h.name.trim() || '?').slice(0, 2).toUpperCase()} size={34} />
+                    <input
+                      aria-label={`Nom du héros ${i + 1}`}
+                      value={h.name}
+                      maxLength={24}
+                      onChange={(e) => setHeroName(i, e.target.value)}
+                      className="min-h-11 w-full min-w-0 rounded-lg border border-stone-600 bg-stone-900 px-2 text-base font-semibold"
+                    />
+                  </label>
+                  <Stepper label={`Points de vie du héros ${i + 1}`} value={h.life} min={MIN_HERO_LIFE} max={MAX_HERO_LIFE} onChange={(n) => setHeroLife(i, n)} />
+                  <p className="text-sm" aria-hidden="true">{'❤'.repeat(Math.max(0, h.life))}</p>
+                </li>
+              ))}
             </ul>
+            {guildIssues.length > 0 ? (
+              <p role="alert" className="mt-1 text-sm text-red-300">{guildIssues[0]}</p>
+            ) : (
+              <p className="mt-1 text-xs text-stone-400">Nom et points de vie seulement : cartes, dés de défense et armes se gèrent en physique avec vos figurines.</p>
+            )}
           </section>
 
           <footer className="mt-auto flex flex-wrap items-center gap-3">
@@ -167,7 +218,7 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
                 ))}
               </select>
             </label>
-            <Button variant="primary" className="flex-1" disabled={picked.length !== HEROES_PER_GAME} onClick={start}>
+            <Button variant="primary" className="flex-1" disabled={guildIssues.length > 0} onClick={start}>
               Commencer l’aventure
             </Button>
           </footer>

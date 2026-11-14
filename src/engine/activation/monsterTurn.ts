@@ -1,6 +1,5 @@
 import type { Content, DecisionTrace, GameState } from '../domain/schemas';
-import { monsterStats } from '../monsters';
-import { damageHero, damagePet } from '../combat/damage';
+import { monsterStrike, stunInstruction } from '../combat/monsterAttack';
 import { selectionDistance } from '../movement/board';
 import { planMonsterAction, type ActionPlan } from '../movement/plan';
 import { createOracle, NeedInput, type InputAnswer, type InputRequest, type Oracle } from '../oracle';
@@ -207,40 +206,29 @@ function activateOne(
   }
 
   if (plan.canAttack && plan.targetId) {
-    const stats = monsterStats(def, s.monsterCardSet, s.monsters.find((x) => x.id === chosenId)?.rank)!;
-    const targetHero = s.heroes.find((h) => h.id === plan.targetId);
-    const targetPet = s.pets.find((p) => p.id === plan.targetId);
-    const defenseDice = targetHero ? targetHero.defense : (targetPet?.defense ?? 0);
-    const outcome = oracle.attack({
-      attackDice: stats.attackDice,
-      attackType: stats.attackType,
-      attackerRerolls: stats.rerolls ?? 0,
-      defenseDice,
-      defenderRerolls: targetHero?.rerolls ?? 0,
-      purpose: `${def.name} ${chosenId} attaque ${plan.targetId}`,
-      defenderIsHero: !!targetHero,
-      targetName: targetHero?.name ?? targetPet?.name,
-      attackerId: chosenId,
-      targetId: plan.targetId,
-      attackerAt: monster.position,
-      targetAt: targetHero?.position ?? targetPet?.position ?? null,
-    });
-    out.instructions.push({
-      id: `${tag}-attack`,
-      kind: 'attack',
-      group,
-      label: `${def.name} attaque`,
-      text:
-        `${def.name} ${chosenId} attaque ${plan.targetId} : ${outcome.hits} coup(s), ${outcome.saves} sauvegarde(s) → ` +
-        `${outcome.wounds} blessure(s).`,
-      visual: { type: 'attack', attackerId: chosenId, targetId: plan.targetId, wounds: outcome.wounds },
-    });
-    if (targetHero) damageHero(s, targetHero.id, outcome.wounds, `attaque de ${chosenId}`);
-    else if (targetPet) damagePet(s, targetPet.id, outcome.wounds, `attaque de ${chosenId}`);
-    log(s, 'monster-attack', `${chosenId} → ${plan.targetId} : ${outcome.hits}/${outcome.saves} → ${outcome.wounds}`, {
-      attackFaces: outcome.attackFaces,
-      defenseFaces: outcome.defenseFaces,
-    });
+    // Point d'entrée unique de l'attaque d'un monstre : applique ses compétences (relances, critiques, Troll, Spear, étourdi).
+    const results = monsterStrike(s, content, oracle, chosenId, plan.targetId, { purpose: `${def.name} ${chosenId} attaque ${plan.targetId}`, cause: `attaque de ${chosenId}` });
+    // Une cible : id et texte habituels ; plusieurs (Troll) : une étape par héros ciblé, suffixée de son identifiant.
+    const multi = results.length > 1;
+    for (const r of results) {
+      const outcome = r.outcome;
+      const extra = outcome.extraWounds ? ` (dont ${outcome.extraWounds} de critique)` : '';
+      out.instructions.push({
+        id: multi ? `${tag}-attack-${r.targetId}` : `${tag}-attack`,
+        kind: 'attack',
+        group,
+        label: `${def.name} attaque`,
+        text:
+          `${def.name} ${chosenId} attaque ${r.targetId} : ${outcome.hits} coup(s), ${outcome.saves} sauvegarde(s) → ` +
+          `${outcome.wounds} blessure(s)${extra}.`,
+        visual: { type: 'attack', attackerId: chosenId, targetId: r.targetId, wounds: outcome.wounds },
+      });
+      if (r.stunned) out.instructions.push({ ...stunInstruction(`${tag}-stun-${r.targetId}`, r), group });
+      log(s, 'monster-attack', `${chosenId} → ${r.targetId} : ${outcome.hits}/${outcome.saves} → ${outcome.wounds}`, {
+        attackFaces: outcome.attackFaces,
+        defenseFaces: outcome.defenseFaces,
+      });
+    }
   } else if (plan.targetId) {
     explanation.push(`${chosenId} ne peut pas atteindre ${plan.targetId} ce tour-ci.`);
   }

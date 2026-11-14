@@ -1,4 +1,5 @@
 import { doorTokenProblems } from '../doorTokens';
+import { boxProblems } from '../figurines';
 import { HERO_START_ENCLOSED, heroStartsEnclosed } from '../startArea';
 import { tilePlacementProblems } from '../tileCatalog';
 import { boardFromLayout, doorsWithoutWall, layoutExtent, layoutProblems } from '../tiles';
@@ -72,6 +73,8 @@ export const ScenarioDefinitionSchema = type({
   quests: ScenarioQuestSchema.array(),
   /** Terrain d'essai : outils de placement et de réglage des dés, pas une aventure. */
   'sandbox?': 'boolean | undefined',
+  /** Scénario généré aléatoirement : la partie en garde la définition (il n'est pas dans les données livrées). */
+  'generated?': 'boolean | undefined',
   'questsRequired?': 'number.integer > 0 | undefined',
   /** Script du maître de jeu : règles « quand… alors… » (récit, quêtes, renforts, portes). */
   'script?': RuleSchema.array().or('undefined'),
@@ -139,14 +142,13 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
   }
   const perType = new Map<string, number>();
   for (const m of def.monsters) perType.set(m.definitionId, (perType.get(m.definitionId) ?? 0) + 1);
-  for (const [id, n] of perType) {
-    const copies = content.monsters[id]?.copies;
-    if (copies !== undefined && n > copies) problems.push(`Trop de figurines ${content.monsters[id]!.name} : ${n} pour ${copies} dans la boîte`);
-  }
+  // Les types qui partagent une boîte (Orc Marauder et Orc Captain : 8 Orcs) se comptent ensemble.
+  problems.push(...boxProblems(perType, content.monsters));
   for (const [k, n] of used) if (n > CELL_CAPACITY) problems.push(`Plus de ${CELL_CAPACITY} figurines sur la case ${k}`);
   for (const q of def.quests) if (q.at && !playable(q.at)) problems.push(`Objectif « ${q.title} » hors du plateau ${where(q.at)}`);
   if (def.heroStarts.length < 1) problems.push('Aucune case de départ pour les héros');
-  if (spawnPoints.length === 0) problems.push('Aucun jeton Spawn');
+  // Un scénario pose de 1 à 5 jetons Spawn (pas forcément les 5, mais au moins un : sans jeton, les monstres n'agiraient jamais).
+  if (spawnPoints.length === 0) problems.push('Aucun jeton Spawn : un scénario en pose au moins un (de 1 à 5).');
   problems.push(...doorTokenProblems(board.doors));
   if (def.heroStarts.every(playable) && heroStartsEnclosed(board, def.heroStarts)) problems.push(HERO_START_ENCLOSED);
   if (def.tiles) {
@@ -198,6 +200,7 @@ export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, con
   return {
     sessionId: opts.sessionId,
     scenarioId: def.id,
+    ...(def.generated ? { generatedScenario: JSON.stringify(def) } : {}),
     difficulty: opts.difficulty,
     monsterCardSet: def.monsterCardSet,
     board,

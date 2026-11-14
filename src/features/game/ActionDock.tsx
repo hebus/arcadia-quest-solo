@@ -31,7 +31,14 @@ export function HeroRoster() {
             >
               <MiniPawn kind="hero" label={actorInfo(g, h.id).label} size={40} dead={h.dead} />
               <span className="flex-1 leading-tight">
-                <span className="block font-medium">{h.name}</span>
+                <span className="block font-medium">
+                  {h.name}
+                  {h.stunned && !h.dead && (
+                    <span className="ml-2 rounded-full bg-violet-800 px-2 py-0.5 text-xs font-semibold text-violet-100" title="Jeton Étourdi posé sur la figurine">
+                      💫 étourdi
+                    </span>
+                  )}
+                </span>
                 <span className="block text-sm" title="Points de vie">
                   {'❤'.repeat(Math.max(0, h.life - h.wounds))}
                   {'🖤'.repeat(Math.min(h.life, h.wounds))}

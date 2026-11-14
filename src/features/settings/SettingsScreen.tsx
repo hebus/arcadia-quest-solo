@@ -1,30 +1,8 @@
 import { Badge, Button, Panel, inputClass } from '@/components/ui';
-import type { DieFaceDef } from '@/engine/domain/schemas';
+import { Die } from '@/components/Die';
 import { EXPANSIONS, UNSUPPORTED_RULES } from '@/engine/rules/expansions/registry';
 import { DEFAULT_ATTACK_DIE, DEFAULT_DEFENSE_DIE, DICE_STATUS } from '@/game-data/dice';
 import { useGameStore } from '@/stores/gameStore';
-
-function DiceEditor({ title, faces, onChange, defense }: { title: string; faces: DieFaceDef[]; onChange: (f: DieFaceDef[]) => void; defense?: boolean }) {
-  const set = (i: number, patch: Partial<DieFaceDef>) => onChange(faces.map((f, j) => (j === i ? { ...f, ...patch } : f)));
-  return (
-    <div>
-      <h3 className="mb-1 font-medium">{title}</h3>
-      {faces.map((f, i) => (
-        <div key={i} className="mb-1 flex flex-wrap items-center gap-2">
-          <input aria-label={`${title} face ${i + 1}`} className={`${inputClass} w-28`} value={f.symbol} onChange={(e) => set(i, { symbol: e.target.value })} />
-          {!defense && (
-            <>
-              <label className="flex items-center gap-1"><input type="checkbox" checked={f.melee} onChange={(e) => set(i, { melee: e.target.checked })} />mêlée</label>
-              <label className="flex items-center gap-1"><input type="checkbox" checked={f.ranged} onChange={(e) => set(i, { ranged: e.target.checked })} />distance</label>
-            </>
-          )}
-          {defense && <label className="flex items-center gap-1"><input type="checkbox" checked={f.save} onChange={(e) => set(i, { save: e.target.checked })} />sauvegarde</label>}
-          <label className="flex items-center gap-1"><input type="checkbox" checked={f.crit} onChange={(e) => set(i, { crit: e.target.checked })} />CRIT</label>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export function SettingsScreen() {
   const g = useGameStore((s) => s.game);
@@ -86,13 +64,10 @@ export function SettingsScreen() {
         </Panel>
       )}
       <Panel title="Faces des dés" actions={<Badge tone={DICE_STATUS === 'verified' ? 'good' : 'warn'}>{DICE_STATUS === 'verified' ? 'vérifié' : 'à vérifier'}</Badge>}>
-        <p className="mb-2 text-amber-300">
-          Dé de combat noir : 3 épées, 2 arcs, 1 critique. Dé de défense blanc : 2 boucliers, 1 critique, 3 faces vides. Les symboles du dé noir servent aussi aux jetons Spawn.
-
-        </p>
-        <div className="grid gap-4 md:grid-cols-2">
-          <DiceEditor title="⬛ Dé de combat (noir)" faces={content.attackDie} onChange={(f) => setDice(f, content.defenseDie)} />
-          <DiceEditor title="⬜ Dé de défense (blanc)" faces={content.defenseDie} onChange={(f) => setDice(content.attackDie, f)} defense />
+        <p className="mb-3 text-stone-300">Les deux dés du jeu, face par face. Touchez une face pour la changer. Les symboles du dé noir servent aussi à désigner les jetons Spawn.</p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Die title="Dé de combat (noir)" color="black" faces={content.attackDie} onChange={(f) => setDice(f, content.defenseDie)} rule="Mêlée : une épée ou un critique touche. Distance : un arc ou un critique touche. Sinon, c’est un échec. Un critique ajoute un dé." />
+          <Die title="Dé de défense (blanc)" color="white" faces={content.defenseDie} onChange={(f) => setDice(content.attackDie, f)} rule="Un bouclier ou un critique annule une touche. Un critique ajoute un dé." />
         </div>
         <div className="mt-2">
           <Button onClick={() => setDice(DEFAULT_ATTACK_DIE, DEFAULT_DEFENSE_DIE)}>Valeurs par défaut</Button>

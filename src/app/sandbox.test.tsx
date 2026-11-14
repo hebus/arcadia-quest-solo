@@ -5,6 +5,7 @@ import { DICE_PRESETS } from '@/engine/sandbox';
 import { useCampaignStore } from '@/stores/campaignStore';
 import { defaultContent, useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
+import { resetTestGuild } from '@/tests/fixtures/guild';
 import { App } from './App';
 
 const game = () => useGameStore.getState().game!;
@@ -14,6 +15,7 @@ beforeEach(() => {
   useGameStore.setState({ game: null, startConfig: null, history: [], instructions: [], traces: [], answers: [], error: null, agent: { status: 'ready' }, content: defaultContent(), selectedId: null, placing: null, correctionMode: false, beats: [], script: [] });
   useCampaignStore.setState({ campaign: null, error: null });
   useTileStore.setState({ tiles: [], loaded: true });
+  resetTestGuild();
 });
 
 async function startSandbox(user: User) {
@@ -65,17 +67,17 @@ describe('terrain d’essai : outils', () => {
   it('ajouter un monstre : choix du type, le menu se ferme, une case libre le pose, une case pleine est refusée', async () => {
     const user = userEvent.setup();
     await startSandbox(user);
-    // (0,7) : un héros y est déjà ; un monstre de plus la remplit (deux figurines au maximum).
-    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, monsters: st.game!.monsters.map((m) => (m.id === 'OM3' ? { ...m, position: { x: 0, y: 7 } } : m)) } })));
+    // (0,5) : un héros y est déjà ; un monstre de plus la remplit (deux figurines au maximum).
+    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, monsters: st.game!.monsters.map((m) => (m.id === 'OM3' ? { ...m, position: { x: 0, y: 5 } } : m)) } })));
     const menu = await openSandboxMenu(user);
     await user.click(within(menu).getByRole('button', { name: '+ Orc Marauder' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByTestId('placing-banner')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('cell-0-7')); // pleine
+    fireEvent.click(screen.getByTestId('cell-0-5')); // pleine
     expect(screen.getByTestId('placing-banner')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('cell-5-8')); // libre
-    expect(game().monsters.find((m) => m.id === 'OM6')).toMatchObject({ definitionId: 'OM', position: { x: 5, y: 8 }, status: 'board' });
-    expect(screen.getByTestId('token-OM6')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('cell-3-1')); // libre
+    expect(game().monsters.find((m) => m.id === 'OM4')).toMatchObject({ definitionId: 'OM', position: { x: 3, y: 1 }, status: 'board' });
+    expect(screen.getByTestId('token-OM4')).toBeInTheDocument();
   });
 
   it('régler les blessures d’un monstre, le passer en garde, le retirer', async () => {
@@ -96,7 +98,7 @@ describe('terrain d’essai : outils', () => {
     const user = userEvent.setup();
     await startSandbox(user);
     const menu = await openSandboxMenu(user);
-    await user.click(within(menu).getByRole('button', { name: 'Blessures de Mira : plus' }));
+    await user.click(within(menu).getByRole('button', { name: 'Blessures de Grom : plus' }));
     expect(game().heroes[0]!.wounds).toBe(1);
   });
 

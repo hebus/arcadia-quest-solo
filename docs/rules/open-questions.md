@@ -41,7 +41,7 @@ Résolues par la v1.3 : ~~B1 murs et distance~~ (ignorés), ~~B3 Payback multi-c
 | B14 | Règles de chaque dragon (Partie 2) : livrets de dragon non fournis | Extension Dragons | Hors périmètre |
 | B15 | « Removed 3 Guard icons » pour Alchemist's District (p.9) : que signifie cette phrase ? | Scénario | À vérifier avec le Campaign Book |
 | B16 | Cartes Brimstone, Tombstone, Dragonstone, Ivan, Korillas : cartes solo à imprimer, non fournies | Extensions | Données à saisir depuis le matériel |
-| B17 | Faces des dés d'attaque et de défense | Spawn, attaques des monstres | **Réglée par l'utilisateur** : dé noir 3 épées / 2 arcs / 1 critique, dé blanc 2 boucliers / 1 critique / 3 vides (`src/game-data/dice.ts`) |
+| B17 | Faces des dés d'attaque et de défense | Spawn, attaques des monstres | **Réglée par l'utilisateur** : dé noir 3 épées / 2 arcs / 1 critique, dé blanc 1 bouclier / 1 critique / 4 vides (`src/game-data/dice.ts`) |
 | B18 | Correspondance rang de scénario → jeu de cartes Monster : le livret de base ne cite que le rang 1 (« 1 ») et le rang 3 (« 2-3 ») | Campagne | Les autres rangs sont à saisir ; l'application refuse de deviner |
 | B19 | Plusieurs monstres Payback ou Guard simultanés : ordre de résolution (joueur de droite en jeu normal) | Réactions | Ordre par identifiant ; sans effet sur le résultat sauf mort du héros entre deux attaques |
 | B20 | Un monstre ciblant « le héros le plus proche » alors qu'un héros plus lointain serait atteignable avec moins de blessures | Ciblage | Le plus proche en coût de PM, puis le plus de blessures (B2) |

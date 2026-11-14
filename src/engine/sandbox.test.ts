@@ -23,36 +23,37 @@ describe('terrain d’essai : le scénario', () => {
     expect(validateScenario(TERRAIN_ESSAI, ORIGINAL_CONTENT)).toEqual([]);
     expect(TERRAIN_ESSAI.sandbox).toBe(true);
     expect(ORIGINAL_SCENARIOS.filter((s) => s.sandbox).map((s) => s.id)).toEqual(['terrain-essai']);
-    const types = new Set(TERRAIN_ESSAI.monsters.map((m) => m.definitionId));
-    expect([...types]).toEqual(['OM']); // niveau 1 : seul l'Orc Marauder a ses statistiques
+    const types = TERRAIN_ESSAI.monsters.map((m) => m.definitionId);
+    expect([...new Set(types)].sort()).toEqual(['HB', 'M', 'OC', 'OM', 'SB', 'T']); // un monstre de chaque type du niveau 1 (3 Marauder)
   });
 
   it('le deck d’activation contient les cartes des monstres jouables au niveau du scénario', () => {
     const g = sandbox();
     const inDeck = new Set([...g.deck.draw, ...g.deck.discard].flatMap((c) => (c.monsterDefId ? [c.monsterDefId] : [])));
-    expect([...inDeck]).toEqual(['OM']);
+    expect([...inDeck].sort()).toEqual(['HB', 'M', 'OC', 'OM', 'SB', 'T']); // tous les monstres du niveau 1, même ceux ajoutés ensuite
   });
 });
 
 describe('terrain d’essai : ajouter un monstre', () => {
   it('pose un monstre du type choisi, avec un identifiant unique, sans toucher à l’état d’origine', () => {
     const g = sandbox();
-    const a = addMonster(g, ORIGINAL_CONTENT, 'OM', at(5, 8));
-    const b = addMonster(a, ORIGINAL_CONTENT, 'OM', at(6, 8));
-    expect(a.monsters.find((m) => m.id === 'OM6')).toMatchObject({ definitionId: 'OM', position: at(5, 8), status: 'board', wounds: 0, isGuard: false });
-    expect(b.monsters.map((m) => m.id)).toContain('OM7');
-    expect(g.monsters.some((m) => m.id === 'OM6')).toBe(false);
+    const a = addMonster(g, ORIGINAL_CONTENT, 'OM', at(3, 1));
+    const b = addMonster(a, ORIGINAL_CONTENT, 'OM', at(2, 1));
+    expect(a.monsters.find((m) => m.id === 'OM4')).toMatchObject({ definitionId: 'OM', position: at(3, 1), status: 'board', wounds: 0, isGuard: false });
+    expect(b.monsters.map((m) => m.id)).toContain('OM5');
+    expect(g.monsters.some((m) => m.id === 'OM4')).toBe(false);
     expect(a.events.at(-1)!.type).toBe('sandbox-add');
   });
 
   it('refuse une case occupée, hors du plateau, ou un type inconnu', () => {
     const g = sandbox();
     // Deux figurines au maximum par case : un héros seul laisse une place, pas héros + monstre.
-    const shared = addMonster(g, ORIGINAL_CONTENT, 'OM', at(0, 7));
-    expect(() => addMonster(shared, ORIGINAL_CONTENT, 'OM', at(0, 7))).toThrow(/pleine/);
-    const twoMonsters = addMonster(g, ORIGINAL_CONTENT, 'OM', at(4, 6)); // un monstre s'y tenait déjà
-    expect(() => addMonster(twoMonsters, ORIGINAL_CONTENT, 'OM', at(4, 6))).toThrow(/pleine/);
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(4, 4))).toThrow(/pas sur le plateau/); // le puits
+    const shared = addMonster(g, ORIGINAL_CONTENT, 'OM', at(0, 5)); // Grom seul sur sa case de départ
+    expect(() => addMonster(shared, ORIGINAL_CONTENT, 'OM', at(0, 5))).toThrow(/pleine/);
+    const twoMonsters = addMonster(g, ORIGINAL_CONTENT, 'OM', at(3, 0)); // OM1 s'y tenait déjà
+    expect(() => addMonster(twoMonsters, ORIGINAL_CONTENT, 'OM', at(3, 0))).toThrow(/pleine/);
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(4, 1))).toThrow(/pas sur le plateau/); // le puits : case bloquée de la tuile 4A
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(6, 4))).toThrow(/pas sur le plateau/); // l'espace vide laissé par le décalage de la tuile 3B
     expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(40, 4))).toThrow(/pas sur le plateau/);
     expect(() => addMonster(g, ORIGINAL_CONTENT, 'dragon', at(5, 8))).toThrow(/inconnu/);
   });

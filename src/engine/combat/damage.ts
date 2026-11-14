@@ -10,6 +10,7 @@ export function damageHero(s: GameState, heroId: string, wounds: number, cause: 
   log(s, 'wound', `${h.name} subit ${wounds} blessure(s) (${h.wounds}/${h.life}) — ${cause}`, { heroId, wounds });
   if (h.wounds < h.life) return false;
   h.dead = true;
+  delete h.stunned; // l'étourdissement ne survit pas à la mort
   h.position = null;
   h.deaths += 1;
   s.deaths += 1;

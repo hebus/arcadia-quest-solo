@@ -5,6 +5,9 @@ import { App } from '@/app/App';
 import { useCampaignStore } from '@/stores/campaignStore';
 import { defaultContent, useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
+import { HERO_NAMES } from '@/engine/guild';
+import { useGuildStore } from '@/stores/guildStore';
+import { TEST_GUILD, resetTestGuild } from '@/tests/fixtures/guild';
 import { scenarioToSetup } from '@/engine/scenario/definition';
 import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
 import { CAVE_AUX_CENDRES_LEGACY } from '@/tests/fixtures/legacyScenario';
@@ -13,6 +16,7 @@ beforeEach(() => {
   useGameStore.setState({ game: null, history: [], instructions: [], traces: [], answers: [], error: null, agent: { status: 'ready' }, content: defaultContent(), selectedId: null, placing: null, correctionMode: false });
   useCampaignStore.setState({ campaign: null, error: null });
   useTileStore.setState({ tiles: [], loaded: true });
+  resetTestGuild();
 });
 
 /** Ces tests portent sur le combat : ils jouent sur l'ancienne géométrie du scénario 1 (plateau écrit à la main, rue dégagée). */
@@ -32,18 +36,23 @@ describe('scénario de l’univers original', () => {
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     expect(screen.getByText(/Port-Cendre brûle depuis trois nuits/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Aperçu du scénario' })).toBeInTheDocument();
-    // Trois héros préselectionnés ; en retirer un empêche de commencer.
+    // La guilde : trois héros, nom et points de vie. Sans nom, impossible de commencer.
     const start = screen.getByRole('button', { name: /Commencer l’aventure/ });
     expect(start).toBeEnabled();
-    await user.click(screen.getByRole('button', { name: /Pip/ }));
+    const second = screen.getByLabelText('Nom du héros 2');
+    await user.clear(second);
     expect(start).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: /Sora/ }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Donnez un nom au héros 2');
+    await user.type(second, 'Brogan');
     expect(start).toBeEnabled();
+    await user.clear(screen.getByLabelText('Nom du héros 1'));
+    await user.type(screen.getByLabelText('Nom du héros 1'), 'Mira');
+    await user.click(screen.getByRole('button', { name: 'Points de vie du héros 1 : plus' }));
     await user.click(start);
 
     const g = useGameStore.getState().game!;
     expect(g.scenarioId).toBe('cave-aux-cendres');
-    expect(g.heroes.map((h) => h.name)).toEqual(['Mira', 'Brogan', 'Sora']);
+    expect(g.heroes.map((h) => [h.name, h.life])).toEqual([['Mira', 4], ['Brogan', 3], ['Zazu', 3]]);
     expect(await screen.findByRole('img', { name: 'Plateau de jeu' })).toBeInTheDocument();
     // Les objectifs sont signalés sur le plateau par des drapeaux.
     for (const id of ['cle', 'brasero', 'seigneur']) expect(screen.getByTestId(`objective-${id}`)).toBeInTheDocument();
@@ -68,7 +77,7 @@ describe('scénario de l’univers original', () => {
 
     // Le seigneur tombe après les autres quêtes : victoire, et le texte de fin du scénario s'affiche.
     useGameStore.setState((s) => ({ game: { ...s.game!, quests: s.game!.quests.map((q) => (q.id === 'seigneur' ? q : { ...q, done: true })) } }));
-    useGameStore.getState().correct({ kind: 'monster-status', monsterId: 'OM6', status: 'spawn-tile' });
+    useGameStore.getState().correct({ kind: 'monster-status', monsterId: 'M1', status: 'spawn-tile' });
     expect(useGameStore.getState().game!.phase).toBe('SCENARIO_WON');
     await user.click(await screen.findByRole('button', { name: /Voir le résultat/ }));
     expect(screen.getByTestId('outro')).toHaveTextContent('la guilde a tenu');
@@ -162,17 +171,38 @@ describe('scénario de l’univers original', () => {
     expect(page.querySelectorAll('section[aria-label^="Votre guilde"]')).toHaveLength(1);
   });
 
-  it('les héros sont des cartes compactes, à la largeur de leur contenu : nom et cœurs sur une ligne', async () => {
+  it('la guilde compte trois héros ; chacun n’a qu’un nom et des points de vie (le reste se gère en physique)', async () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
-    const mira = screen.getByRole('button', { name: /Mira/ });
-    expect(mira).toHaveTextContent('❤❤❤❤');
-    expect(mira).not.toHaveTextContent('🛡');
-    expect(mira).not.toHaveTextContent('⚔');
-    expect(mira).not.toHaveTextContent('🏹');
-    expect(mira).toHaveAttribute('title', expect.stringContaining('Lame-de-cendre'));
+    const guild = screen.getByRole('region', { name: 'Votre guilde' });
+    for (const i of [1, 2, 3]) {
+      const card = within(guild).getByTestId(`guild-hero-${i}`);
+      expect(within(card).getByLabelText(`Nom du héros ${i}`)).toHaveValue(TEST_GUILD[i - 1]!.name);
+      expect(within(card).getByRole('group', { name: `Points de vie du héros ${i}` })).toBeInTheDocument();
+      expect(card).toHaveTextContent('❤❤❤'); // 3 points de vie par défaut
+      expect(card).not.toHaveTextContent(/🛡|⚔|🏹/); // ni dés de défense, ni armes
+    }
+    expect(within(guild).getAllByRole('textbox')).toHaveLength(3);
+    expect(guild).toHaveTextContent('cartes, dés de défense et armes se gèrent en physique');
+    // Pas de héros prédéfinis à choisir : ceux du jeu sont une cinquantaine, le joueur saisit les siens.
+    expect(screen.queryByRole('button', { name: /Mira|Brogan|Pip|Sora/ })).not.toBeInTheDocument();
+  });
+
+  it('sans guilde enregistrée, les trois noms proposés sont tirés au hasard, jamais « Héros N »', async () => {
+    useGuildStore.setState({ heroes: useGuildStore.getInitialState().heroes, loaded: true });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
+    const names = [1, 2, 3].map((i) => (screen.getByLabelText(`Nom du héros ${i}`) as HTMLInputElement).value);
+    expect(new Set(names).size).toBe(3);
+    for (const n of names) {
+      expect(HERO_NAMES).toContain(n);
+      expect(n).not.toMatch(/^Héros \d/);
+    }
+    expect(screen.getByRole('button', { name: /Commencer l’aventure/ })).toBeEnabled();
   });
 });
 

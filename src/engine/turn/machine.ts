@@ -123,6 +123,7 @@ export function restGuild(state: GameState, resurrectAt: Record<string, Position
     const o = occupancy(s, at, h.id);
     if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case choisie pour ${h.name} est déjà pleine : deux figurines au maximum par case`);
     h.dead = false;
+    delete h.stunned;
     h.wounds = 0;
     h.position = { ...at };
     log(s, 'hero-resurrected', `${h.name} est ressuscité en (${at.x},${at.y}).`, { heroId: h.id });

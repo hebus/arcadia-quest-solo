@@ -4,13 +4,13 @@ import { Stepper } from '@/components/Tally';
 import { Button, Panel } from '@/components/ui';
 import { DEFAULT_ATTACK_DIE } from '@/game-data/dice';
 import { DICE_PRESETS, presetOf } from '@/engine/sandbox';
-import { scenarioById } from '@/game-data/original';
+import { scenarioOfGame } from '@/game-data/original';
 import { actorInfo } from '@/rendering/instructions/overlay';
 import { useGameStore } from '@/stores/gameStore';
 
 /** La partie en cours est-elle un terrain d'essai ? */
 export function useIsSandbox(): boolean {
-  return useGameStore((s) => !!s.game && !!scenarioById(s.game.scenarioId)?.sandbox);
+  return useGameStore((s) => !!s.game && !!scenarioOfGame(s.game)?.sandbox);
 }
 
 /** Bande de raccourcis sous le plateau : placement libre et saut direct au tour des monstres. */

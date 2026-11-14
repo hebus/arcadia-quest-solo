@@ -11,6 +11,7 @@ export function InputPrompt({ request }: { request: InputRequest }) {
   const [hits, setHits] = useState(0);
   const [saves, setSaves] = useState(0);
   const [parried, setParried] = useState(0);
+  const [crits, setCrits] = useState(0);
   return (
     <div role="group" aria-label="Saisie requise" className="rounded-lg border border-amber-500 bg-amber-950 p-3">
       <p className="mb-2 font-medium">{request.purpose}</p>
@@ -45,8 +46,13 @@ export function InputPrompt({ request }: { request: InputRequest }) {
       {request.kind === 'defense-result' && (
         <div className="space-y-3">
           <p className="text-lg">
-            Le monstre touche <strong>{request.targetName}</strong> {request.hits} fois. Lancez vos {request.defenseDice} dé{request.defenseDice > 1 ? 's' : ''} de défense blanc{request.defenseDice > 1 ? 's' : ''} : chaque bouclier ou critique obtenu annule une touche.
+            Le monstre touche <strong>{request.targetName}</strong> {request.hits} fois. Lancez {request.defenseDice > 0 ? `vos ${request.defenseDice} dé${request.defenseDice > 1 ? 's' : ''} de défense blanc${request.defenseDice > 1 ? 's' : ''}` : 'vos dés de défense blancs'} : chaque bouclier ou critique obtenu annule une touche.
           </p>
+          {!!request.extraWounds && (
+            <p className="rounded-lg bg-red-950 p-2 text-red-200" data-testid="extra-wounds">
+              Critiques du monstre : {request.extraWounds} blessure{request.extraWounds > 1 ? 's' : ''} supplémentaire{request.extraWounds > 1 ? 's' : ''}, que la défense ne peut pas annuler.
+            </p>
+          )}
           <p className="text-sm text-stone-400">Un critique compte comme un bouclier et ajoute un dé, une relance peut aussi en donner : vous pouvez avoir plus de boucliers que de dés. Touchez-en autant que vous en avez obtenu, au plus une par touche.</p>
           <div aria-label="Touches du monstre" role="img" className="flex flex-wrap gap-1 text-3xl">
             {Array.from({ length: request.hits }, (_, i) => (
@@ -58,7 +64,7 @@ export function InputPrompt({ request }: { request: InputRequest }) {
           <DiceTally label="Boucliers" dice={request.hits} value={parried} onChange={setParried} glyph="🛡" />
           <div className="flex items-center justify-between gap-4">
             <span className="text-lg" aria-live="polite">
-              {Math.max(0, request.hits - parried) === 0 ? '✔ Aucune blessure' : `${'🩸'.repeat(Math.min(8, request.hits - parried))} ${request.hits - parried} blessure${request.hits - parried > 1 ? 's' : ''}`}
+              {Math.max(0, request.hits - parried) + (request.extraWounds ?? 0) === 0 ? '✔ Aucune blessure' : `${'🩸'.repeat(Math.min(8, Math.max(0, request.hits - parried) + (request.extraWounds ?? 0)))} ${Math.max(0, request.hits - parried) + (request.extraWounds ?? 0)} blessure${Math.max(0, request.hits - parried) + (request.extraWounds ?? 0) > 1 ? 's' : ''}`}
             </span>
             <Button variant="primary" onClick={() => provide({ kind: 'defense-result', saves: parried })}>
               Valider
@@ -69,8 +75,14 @@ export function InputPrompt({ request }: { request: InputRequest }) {
       {request.kind === 'attack-result' && (
         <div className="space-y-3">
           <DiceTally label="Coups" dice={request.attackDice} value={hits} onChange={setHits} glyph="⚔" />
+          {request.critWounds && (
+            <>
+              <DiceTally label="Critiques" dice={Math.max(hits, 0)} value={Math.min(crits, hits)} onChange={setCrits} glyph="✸" />
+              <p className="text-sm text-stone-400">Chaque critique de ce monstre donne une blessure supplémentaire, que la défense ne peut pas annuler.</p>
+            </>
+          )}
           <DiceTally label="Sauvegardes" dice={Math.max(hits, 0)} value={Math.min(saves, hits)} onChange={setSaves} glyph="🛡" />
-          <Button variant="primary" onClick={() => provide({ kind: 'attack-result', hits, saves: Math.min(saves, hits) })}>
+          <Button variant="primary" onClick={() => provide({ kind: 'attack-result', hits, saves: Math.min(saves, hits), ...(request.critWounds ? { crits: Math.min(crits, hits) } : {}) })}>
             Valider
           </Button>
         </div>

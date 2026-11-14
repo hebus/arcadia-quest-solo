@@ -1,5 +1,6 @@
 import type { Content, DieFaceDef, GameState, Position } from './domain/schemas';
 import { CELL_CAPACITY, inBoard, occupancy } from './movement/board';
+import { boxNames, boxRemaining } from './figurines';
 import { monsterStats } from './monsters';
 import { cloneState, log } from './state';
 
@@ -13,8 +14,10 @@ export function addMonster(state: GameState, content: Pick<Content, 'monsters'>,
   const def = content.monsters[definitionId];
   if (!def) throw new Error(`Monstre inconnu : ${definitionId}`);
   if (!monsterStats(def, state.monsterCardSet)) throw new Error(`${def.name} n'a pas de statistiques pour le niveau ${state.monsterCardSet}`);
-  const inPlay = state.monsters.filter((m) => m.definitionId === definitionId && m.status !== 'box' && m.status !== 'removed').length;
-  if (def.copies !== undefined && inPlay >= def.copies) throw new Error(`Plus de figurine ${def.name} disponible (${def.copies} dans la boîte)`);
+  // La boîte est partagée entre les types qui utilisent les mêmes figurines (Orc Marauder et Orc Captain).
+  const inPlay = new Map<string, number>();
+  for (const m of state.monsters) if (m.status !== 'box' && m.status !== 'removed') inPlay.set(m.definitionId, (inPlay.get(m.definitionId) ?? 0) + 1);
+  if (boxRemaining(def, content.monsters, inPlay) <= 0) throw new Error(`Plus de figurine ${boxNames(def, content.monsters).join(' ou ')} disponible (${def.copies} dans la boîte)`);
   if (!inBoard(state.board, at)) throw new Error(`La case (${at.x},${at.y}) n'est pas sur le plateau`);
   const o = occupancy(state, at);
   if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case (${at.x},${at.y}) est déjà pleine : deux figurines au maximum par case`);

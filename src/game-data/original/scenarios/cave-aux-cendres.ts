@@ -3,6 +3,11 @@ import type { ScenarioDefinition } from '@/engine/scenario/definition';
 /**
  * Scénario 1 : la rue, une remise fermée à l'ouest, une chapelle ruinée au nord-est, sur un plateau de 9 tuiles du jeu.
  * Repère (x → droite, y → bas) : les héros partent du coin sud-ouest, le Seigneur Cendre tient la chapelle.
+ *
+ * Population (niveau 1, boîtes respectées) : le Seigneur Cendre est un Minotaur (1 en boîte), vilain en garde dans la chapelle ;
+ * un Troll (1 en boîte) garde la grande salle ; des Orc Captain gardent la chapelle et la remise ; deux Spear Beastman (tireurs, dont
+ * un collé à un Orc) et un Hammer Beastman patrouillent la rue ; le reste est en Orc Marauder. 6 Orcs au départ, 2 renforts du
+ * script : les 8 Orcs de la boîte, pas un de plus.
  */
 export const CAVE_AUX_CENDRES: ScenarioDefinition = {
   id: 'cave-aux-cendres',
@@ -12,7 +17,7 @@ export const CAVE_AUX_CENDRES: ScenarioDefinition = {
   story: {
     intro: [
       'Port-Cendre brûle depuis trois nuits. Des flammes sans fumée lèchent les toits, et les cloches de la chapelle sonnent toutes seules.',
-      'Le Seigneur Cendre, un chef maraudeur, s’est retranché dans la chapelle ruinée avec la Clé de Braise, qui garde ses braseros allumés. Votre guilde est la dernière à tenir la rue.',
+      'Le Seigneur Cendre, un minotaure cuirassé, s’est retranché dans la chapelle ruinée avec la Clé de Braise, qui garde ses braseros allumés. Votre guilde est la dernière à tenir la rue.',
       'Reprenez la clé dans la remise, éteignez le brasero maudit, puis abattez le seigneur avant que la ville ne tombe.',
     ],
     win: ['Le brasero s’éteint dans un sifflement. Au matin, Port-Cendre n’est plus que de la pluie noire sur des pavés froids : la guilde a tenu.'],
@@ -57,18 +62,28 @@ spawn S5 4,6 bow+crit
     { x: 2, y: 8 },
   ],
   monsters: [
-    // Seuls les Orc Marauder (niveau 1) ont leurs statistiques : le scénario n'en utilise pas d'autre. La boîte en contient 8.
-    { id: 'OM1', definitionId: 'OM', at: { x: 3, y: 1 } },
-    { id: 'OM2', definitionId: 'OM', at: { x: 7, y: 7 } },
-    { id: 'OM3', definitionId: 'OM', at: { x: 5, y: 4 } },
-    { id: 'OM4', definitionId: 'OM', at: { x: 0, y: 4 }, guard: true },
-    { id: 'OM5', definitionId: 'OM', at: { x: 7, y: 2 }, guard: true },
-    { id: 'OM6', definitionId: 'OM', at: { x: 8, y: 1 }, guard: true },
+    // Le chef, vilain : le Minotaur (5 de vie, 4 dés, un critique donne une blessure en plus) tient le fond de la chapelle, en garde.
+    { id: 'M1', definitionId: 'M', at: { x: 8, y: 1 }, guard: true },
+    // Le Troll (son attaque touche tous les héros adjacents) garde la grande salle : on peut l'éviter, pas le surprendre.
+    { id: 'T1', definitionId: 'T', at: { x: 7, y: 7 }, guard: true },
+    // Orc Captain (1 relance, 2 PO) : un garde derrière la porte de la chapelle, un autre dans la remise.
+    { id: 'OC1', definitionId: 'OC', at: { x: 7, y: 2 }, guard: true },
+    { id: 'OC2', definitionId: 'OC', at: { x: 0, y: 4 }, guard: true },
+    // Spear Beastman (3 dés d'arc, +1 dé près d'un autre monstre) : un au centre de la rue, un collé à un Orc Marauder.
+    { id: 'SB1', definitionId: 'SB', at: { x: 5, y: 4 } },
+    { id: 'SB2', definitionId: 'SB', at: { x: 3, y: 1 } },
+    // Hammer Beastman (4 dés d'épée, étourdit) : il patrouille devant la remise.
+    { id: 'HB1', definitionId: 'HB', at: { x: 3, y: 5 } },
+    // Orc Marauder : la rue. 4 au départ, 2 renforts : avec les 2 Orc Captain, les 8 Orcs de la boîte.
+    { id: 'OM1', definitionId: 'OM', at: { x: 2, y: 1 } },
+    { id: 'OM2', definitionId: 'OM', at: { x: 7, y: 5 } },
+    { id: 'OM3', definitionId: 'OM', at: { x: 7, y: 0 } },
+    { id: 'OM4', definitionId: 'OM', at: { x: 4, y: 2 } },
   ],
   quests: [
     { id: 'cle', icon: 'key', title: 'Reprendre la Clé de Braise', completion: 'La clé est encore tiède. Elle ouvre le brasero de la chapelle.', at: { x: 0, y: 3 } },
     { id: 'brasero', icon: 'flame', title: 'Éteindre le brasero maudit', completion: 'Le brasero crache une dernière étincelle puis s’éteint.', at: { x: 8, y: 0 } },
-    { id: 'seigneur', icon: 'skull', title: 'Abattre le Seigneur Cendre', completion: 'Le seigneur s’effondre en poussière grise.', at: { x: 8, y: 1 } },
+    { id: 'seigneur', icon: 'skull', title: 'Abattre le Seigneur Cendre', completion: 'Le minotaure s’effondre en poussière grise : le seigneur ne tient plus la ville.', at: { x: 8, y: 1 } },
   ],
   script: [
     {
@@ -85,8 +100,8 @@ spawn S5 4,6 bow+crit
       id: 'chapelle-ouverte',
       when: [{ type: 'door-open', doorId: 'porte-chapelle' }],
       then: [
-        { type: 'narrate', title: 'La chapelle', tone: 'danger', text: 'Les cloches s’arrêtent net. Dans la nef, un garde relève la tête, et un maraudeur surgit dans votre dos.' },
-        { type: 'spawn', monsterId: 'OM7', definitionId: 'OM', at: { x: 7, y: 1 } },
+        { type: 'narrate', title: 'La chapelle', tone: 'danger', text: 'Les cloches s’arrêtent net. Dans la nef, le minotaure relève sa tête cornue, un capitaine orc aboie un ordre, et un maraudeur surgit dans votre dos.' },
+        { type: 'spawn', monsterId: 'OM5', definitionId: 'OM', at: { x: 7, y: 1 } },
       ],
     },
     {
@@ -94,7 +109,7 @@ spawn S5 4,6 bow+crit
       when: [{ type: 'hero-on', at: { x: 8, y: 0 } }, { type: 'quest-done', questId: 'cle' }],
       then: [
         { type: 'complete-quest', questId: 'brasero', text: 'Le brasero crache une dernière étincelle puis s’éteint. La forge enchantée se réveille.' },
-        { type: 'spawn', monsterId: 'OM8', definitionId: 'OM', at: { x: 6, y: 2 } },
+        { type: 'spawn', monsterId: 'OM6', definitionId: 'OM', at: { x: 6, y: 2 } },
       ],
     },
     {
@@ -106,9 +121,11 @@ spawn S5 4,6 bow+crit
     },
     {
       id: 'seigneur-tombe',
-      when: [{ type: 'monster-down', monsterId: 'OM6' }],
-      then: [{ type: 'complete-quest', questId: 'seigneur', text: 'Le seigneur s’effondre en poussière grise.' }],
+      when: [{ type: 'monster-down', monsterId: 'M1' }],
+      then: [{ type: 'complete-quest', questId: 'seigneur', text: 'Le minotaure s’effondre en poussière grise : le seigneur ne tient plus la ville.' }],
     },
   ],
   monsterCardSet: '1',
+  // Une carte par type de monstre présent (au départ ou en renfort) : les cartes d'activation des autres niveaux.
+  deck: { listedMonsterIds: ['M', 'T', 'OC', 'SB', 'HB', 'OM'] },
 };

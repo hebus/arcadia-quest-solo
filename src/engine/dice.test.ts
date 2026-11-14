@@ -25,11 +25,11 @@ describe('dés de combat (noirs) et de défense (blancs)', () => {
     expect(count(DEFAULT_ATTACK_DIE, 'blank')).toBe(0);
   });
 
-  it('dé blanc : 2 boucliers, 1 critique, 3 faces vides', () => {
+  it('dé blanc : une seule face bouclier, une seule face critique, toutes les autres vides', () => {
     expect(DEFAULT_DEFENSE_DIE).toHaveLength(6);
-    expect(count(DEFAULT_DEFENSE_DIE, 'shield')).toBe(2);
+    expect(count(DEFAULT_DEFENSE_DIE, 'shield')).toBe(1);
     expect(count(DEFAULT_DEFENSE_DIE, 'crit')).toBe(1);
-    expect(count(DEFAULT_DEFENSE_DIE, 'blank')).toBe(3);
+    expect(count(DEFAULT_DEFENSE_DIE, 'blank')).toBe(4);
   });
 
   it('mêlée : épées et critique touchent, les arcs échouent', () => {

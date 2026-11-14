@@ -1,6 +1,7 @@
 import type { Content, GameState, Position, WeaponCard } from '../domain/schemas';
 import { statsOfMonster } from '../monsters';
-import { applyMonsterWounds, damageHero, finalizeMonsterKill } from './damage';
+import { applyMonsterWounds, finalizeMonsterKill } from './damage';
+import { monsterStrike, stunInstruction } from './monsterAttack';
 import { isClose } from '../movement/board';
 import { planMonsterAction } from '../movement/plan';
 import { createOracle, type InputAnswer, type Oracle } from '../oracle';
@@ -35,30 +36,21 @@ export function monsterAttacksHero(
   const m = s.monsters.find((x) => x.id === monsterId)!;
   const hero = s.heroes.find((h) => h.id === heroId)!;
   const def = content.monsters[m.definitionId]!;
-  const stats = statsOfMonster(content, s, m)!;
-  const r = oracle.attack({
-    attackDice: stats.attackDice,
-    attackType: stats.attackType,
-    attackerRerolls: stats.rerolls ?? 0,
-    defenseDice: hero.defense,
-    defenderRerolls: hero.rerolls,
-    purpose: `${label} : ${def.name} ${monsterId} attaque ${hero.name}`,
-    defenderIsHero: true,
-    targetName: hero.name,
-    attackerId: monsterId,
-    targetId: heroId,
-    attackerAt: m.position,
-    targetAt: hero.position,
-  });
-  out.push({
-    id: `${label}-${monsterId}`,
-    kind: 'attack',
-    text: `${label} — ${def.name} ${monsterId} attaque ${hero.name} : ${r.hits} coup(s), ${r.saves} sauvegarde(s) → ${r.wounds} blessure(s).`,
-    visual: { type: 'attack', attackerId: monsterId, targetId: heroId, wounds: r.wounds },
-  });
-  const heroPos = hero.position ? { ...hero.position } : undefined;
-  damageHero(s, heroId, r.wounds, label);
-  if (hero.dead) out.push({ id: `${label}-${heroId}-down`, kind: 'info', text: `${hero.name} est mis hors combat.`, actorId: heroId, visual: { type: 'remove', actorId: heroId, at: heroPos } });
+  const results = monsterStrike(s, content, oracle, monsterId, heroId, { purpose: `${label} : ${def.name} ${monsterId} attaque ${hero.name}`, cause: label });
+  // Une cible : ids et textes habituels. Plusieurs (Troll) : une étape par héros ciblé, suffixée de son identifiant.
+  const multi = results.length > 1;
+  for (const r of results) {
+    const o = r.outcome;
+    const extra = o.extraWounds ? ` (dont ${o.extraWounds} de critique)` : '';
+    out.push({
+      id: multi ? `${label}-${monsterId}-${r.targetId}` : `${label}-${monsterId}`,
+      kind: 'attack',
+      text: `${label} — ${def.name} ${monsterId} attaque ${r.targetName} : ${o.hits} coup(s), ${o.saves} sauvegarde(s) → ${o.wounds} blessure(s)${extra}.`,
+      visual: { type: 'attack', attackerId: monsterId, targetId: r.targetId, wounds: o.wounds },
+    });
+    if (r.died) out.push({ id: `${label}-${r.targetId}-down`, kind: 'info', text: `${r.targetName} est mis hors combat.`, actorId: r.targetId, visual: { type: 'remove', actorId: r.targetId, ...(r.at ? { at: r.at } : {}) } });
+    if (r.stunned) out.push(stunInstruction(`${label}-${r.targetId}-stun`, r));
+  }
 }
 
 /**

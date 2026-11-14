@@ -7,6 +7,7 @@ export type Correction =
   | { kind: 'hero-position'; heroId: string; to: Position | null }
   | { kind: 'hero-wounds'; heroId: string; wounds: number }
   | { kind: 'hero-dead'; heroId: string; dead: boolean; at?: Position }
+  | { kind: 'hero-stunned'; heroId: string; stunned: boolean }
   | { kind: 'monster-position'; monsterId: string; to: Position }
   | { kind: 'monster-status'; monsterId: string; status: 'board' | 'spawn-tile' | 'box' | 'removed'; at?: Position }
   | { kind: 'monster-guard'; monsterId: string; isGuard: boolean }
@@ -50,14 +51,23 @@ export function applyCorrection(state: GameState, c: Correction, reason = 'corre
       const h = hero(c.heroId);
       if (c.dead && !h.dead) {
         h.dead = true;
+        delete h.stunned;
         h.position = null;
       } else if (!c.dead && h.dead) {
         if (!c.at) throw new Error('Position requise pour ressusciter un héros');
         free(c.at, h.id);
         h.dead = false;
+        delete h.stunned;
         h.wounds = 0;
         h.position = c.at;
       }
+      break;
+    }
+    case 'hero-stunned': {
+      const h = hero(c.heroId);
+      if (c.stunned && h.dead) throw new Error(`${h.name} est mort : il ne peut pas être étourdi`);
+      if (c.stunned) h.stunned = true;
+      else delete h.stunned;
       break;
     }
     case 'monster-position': {

@@ -74,6 +74,10 @@ export type SpawnPoint = typeof SpawnPointSchema.infer;
 export const AttackTypeSchema = type("'melee' | 'ranged'");
 export type AttackType = typeof AttackTypeSchema.infer;
 
+/** Compétences des monstres appliquées par le moteur (voir `MONSTER_SKILLS`). */
+export const MonsterSkillSchema = type("'crit-extra-wound' | 'attack-all-adjacent' | 'extra-die-next-to-monster' | 'stun'");
+export type MonsterSkill = typeof MonsterSkillSchema.infer;
+
 export const MonsterStatsSchema = type({
   life: 'number.integer > 0',
   overkill: 'number.integer > 0',
@@ -81,9 +85,15 @@ export const MonsterStatsSchema = type({
   attackType: AttackTypeSchema,
   attackDice: 'number.integer >= 0',
   movement: 'number.integer >= 0',
-  /** Anciennes données : plus utilisés (les dés des héros sont lancés par le joueur, qui indique les blessures du monstre). */
+  /**
+   * Dés de défense (blancs) du monstre quand un héros l'attaque : le joueur les lance et indique les blessures qui passent
+   * (un bouclier ou un critique annule une touche). 0 ou absent : pas de défense.
+   */
   'defense?': 'number.integer >= 0 | undefined',
+  /** Relances de l'attaque du monstre (ex. Orc Captain : 1). */
   'rerolls?': 'number.integer >= 0 | undefined',
+  /** Compétences : critique = blessure en plus, attaque de tous les héros adjacents, dé en plus près d'un monstre, étourdissement. */
+  'skills?': MonsterSkillSchema.array().or('undefined'),
 });
 export type MonsterStats = typeof MonsterStatsSchema.infer;
 
@@ -100,6 +110,8 @@ export const MonsterDefinitionSchema = type({
   'kind?': "'minion' | 'villain' | undefined",
   /** Nombre de figurines dans la boîte : on n'en pose pas davantage. */
   'copies?': 'number.integer > 0 | undefined',
+  /** Boîte partagée : des types qui utilisent les mêmes figurines (Orc Marauder et Orc Captain : 8 Orcs en tout) ont le même groupe. */
+  'group?': 'string | undefined',
   levels: { '[string]': MonsterStatsSchema },
   'majorLevels?': { '[string]': MonsterStatsSchema },
 });
@@ -138,6 +150,8 @@ export const HeroSchema = type({
   dead: 'boolean',
   /** Jetons Death du scénario en cours. */
   deaths: 'number.integer >= 0',
+  /** Étourdi (par un Hammer Beastman) : jeton Étourdi posé sur la figurine, à retirer à la main. */
+  'stunned?': 'boolean | undefined',
   'mountId?': 'string | null | undefined',
   /** Cartes arme du héros. Absentes = saisie libre (mise en place sans cartes). */
   'weapons?': WeaponCardSchema.array().or('undefined'),
@@ -246,6 +260,8 @@ export const GameStateSchema = type({
   sessionId: 'string',
   contentVersion: 'string',
   scenarioId: 'string',
+  /** Scénario généré aléatoirement (JSON de sa définition) : il n'existe pas dans les données livrées, la partie le garde. */
+  'generatedScenario?': 'string | undefined',
   difficulty: DifficultySchema,
   expansions: ExpansionSchema.array(),
   /** Jeu de cartes Monster du niveau courant (ex. « 1 », « 2-3 »). */

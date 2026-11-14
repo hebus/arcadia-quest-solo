@@ -18,15 +18,18 @@ describe('univers original : Port-Cendre', () => {
     expect(g.deck.draw.length).toBeGreaterThan(0);
   });
 
-  it('le bestiaire ne contient que deux minions, avec les statistiques communiquées', () => {
-    expect(Object.keys(ORIGINAL_CONTENT.monsters).sort()).toEqual(['GA', 'OM']);
+  it('le bestiaire : le Goblin Archer (niveau 2-3) et les six monstres du niveau 1, avec les statistiques communiquées', () => {
+    expect(Object.keys(ORIGINAL_CONTENT.monsters).sort()).toEqual(['GA', 'HB', 'M', 'OC', 'OM', 'SB', 'T']);
     const { GA, OM } = ORIGINAL_CONTENT.monsters;
     expect(GA).toMatchObject({ name: 'Goblin Archer', kind: 'minion', copies: 6 });
-    expect(OM).toMatchObject({ name: 'Orc Marauder', kind: 'minion', copies: 8 });
-    // Goblin Archer, minor, niveau 2-3 : 2 de vie, overkill 3, mouvement 1, 1 PO, 2 dés à distance.
+    expect(OM).toMatchObject({ name: 'Orc Marauder', kind: 'minion', copies: 8, group: 'orc' });
+    // Goblin Archer, minor, niveau 2-3 : 2 de vie, overkill 3, mouvement 1, 1 PO, 2 dés à distance (pas de niveau 1 saisi).
     expect(GA!.levels).toEqual({ '2-3': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 } });
-    // Orc Marauder, minor, niveau 1 : 2 de vie, overkill 3, mouvement 1, 1 PO, 3 dés de mêlée.
-    expect(OM!.levels).toEqual({ '1': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 } });
+    // Orc Marauder, minor : niveau 1 (2 de vie, overkill 3, 3 dés de mêlée) et niveau 2-3 (3 de vie, overkill 4).
+    expect(OM!.levels).toEqual({
+      '1': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 },
+      '2-3': { life: 3, overkill: 4, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 },
+    });
     expect(GA!.majorLevels).toBeUndefined();
     expect(OM!.majorLevels).toBeUndefined();
   });

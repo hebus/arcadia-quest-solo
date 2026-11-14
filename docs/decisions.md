@@ -69,12 +69,12 @@ Il n'existe que 5 jetons Spawn, un de chaque : épée+épée, épée+arc, épée
 - Les autres niveaux et les versions major ne sont pas encore saisis : l'application signale « Stats manquantes » plutôt que d'inventer des valeurs. Un scénario ne peut donc, pour l'instant, utiliser que les monstres dont le niveau du scénario est saisi (Orc Marauder au niveau 1, Goblin Archer au niveau 2-3).
 - Le deck d'activation compte une carte par niveau autre que celui du scénario, même quand les stats de ces niveaux ne sont pas saisies.
 - Nombre de figurines : on ne pose pas plus de monstres d'un type que la boîte n'en contient (validation de la mise en place, des scénarios et du terrain d'essai).
-- Les deux scénarios fournis (« Les Braises de Port-Cendre » et le terrain d'essai) n'utilisent que des Orc Marauder, niveau 1. L'ancien bestiaire de test (Rôdeur, Archer d'os, Brute, Sorcière, Seigneur Cendre) est supprimé.
+- Le terrain d'essai (`terrain-essai`, banc d'essai en placement libre) est construit depuis **6 tuiles du jeu** (voir « Terrain d'essai » plus bas) avec **un monstre de chaque type du niveau 1** ; son menu propose tous les types de niveau 1. Le scénario 1 utilise les six types de niveau 1 (voir « Tuiles dans les scénarios »). L'ancien bestiaire de test (Rôdeur, Archer d'os, Brute, Sorcière, Seigneur Cendre) est supprimé.
 
 ## Dés de combat (noirs) et de défense (blancs)
 
 - **Dé de combat, noir** : 3 épées, 2 arcs, 1 critique. Une attaque de **mêlée** touche avec une épée ou un critique ; une attaque **à distance** touche avec un arc ou un critique ; sinon c'est un échec. Il n'y a pas de face vide : un jet de spawn tombe donc toujours sur épée, arc ou critique.
-- **Dé de défense, blanc** : 2 boucliers, 1 critique, 3 faces vides. Un **bouclier** ou un **critique** annule une touche (valable pour un monstre qui aurait des dés de défense comme pour les héros, dont le joueur lance les dés).
+- **Dé de défense, blanc** : 1 bouclier, 1 critique, 4 faces vides (une seule face bouclier et une seule face critique : toutes les autres sont vides). Un **bouclier** ou un **critique** annule une touche (valable pour un monstre qui aurait des dés de défense comme pour les héros, dont le joueur lance les dés).
 - Un critique est une réussite et ajoute un dé (règle du livret, inchangée).
 - Données dans `src/game-data/dice.ts`, réglables dans Paramètres.
 
@@ -123,6 +123,7 @@ Un joueur qui se repose **passe son tour** : toutes ses cartes équipement redev
 - Une tuile ne se pose que sur **une seule face** par scénario : si on utilise le verso (B), le recto (A) n'est pas utilisé, et inversement. La validation refuse les deux faces d'une même tuile, la même face deux fois, une tuile non définie et une taille de plateau qui ne correspond pas (3 cases par tuile).
 - **Affichage** : le numéro de chaque tuile (par exemple 3B) est écrit au centre de la tuile, sur le plateau de jeu, l'aperçu du briefing et la mise en place ; pas d'indication d'orientation (le dessin suffit). Le briefing n'affiche ni liste de tuiles ni rotation. Un bouton « Voir les tuiles », **uniquement au briefing** (il aide à construire le plateau sur la table), montre les tuiles **en réduit dans un dialogue**. Il n'existe plus pendant la partie : ni à la mise en place, ni dans le menu.
 - Scénario 1 (« Les Braises de Port-Cendre ») : 3×3 tuiles, 5A, 3B (90°), 2A (chapelle, bâtiment en L), 8A (remise, bâtiment en L), 4A (la case bloquée du centre est le puits), 9A, 7A (départ des héros), 6B (180°), 1B (grande salle). **Cet assemblage reste un choix à confirmer** : il n'est pas issu de la boîte du jeu.
+- **Population du scénario 1** (niveau 1, boîtes respectées, renforts du script compris) : le **Seigneur Cendre est un Minotaur** (vilain, 5 de vie, 4 dés, un critique donne une blessure en plus), tenu en **garde** au fond de la chapelle ; un **Troll** (son attaque touche tous les héros adjacents) garde la **grande salle** ; un **Orc Captain** garde la porte de la chapelle et un autre la remise ; deux **Spear Beastman** (tireurs : l'un au centre de la rue, l'autre collé à un Orc Marauder, donc avec son dé en plus) ; un **Hammer Beastman** (étourdit) patrouille devant la remise ; quatre **Orc Marauder** dans la rue. Les 2 renforts du script (porte de la chapelle ouverte, brasero éteint) sont des Orc Marauder : avec les 2 Orc Captain et les 4 Orc Marauder du départ, cela fait les 8 Orcs de la boîte. Le chef est le Minotaur plutôt que le Troll : c'est lui qui a le plus de vie (5) et une seule défense, le Troll gardant la salle où l'on peut l'éviter. La quête « seigneur » suit le Minotaur (`M1`).
 
 ## Moins de 9 tuiles, tuiles décalées
 
@@ -136,3 +137,52 @@ Un joueur qui se repose **passe son tour** : toutes ses cartes équipement redev
 - Les tuiles n'ont pas de portes : les portes sont des **pions** posés par le scénario (22 au plus, dont une spéciale violette).
 - Un pion porte se pose **sur un mur** et le remplace. Fermé, il se franchit en l'ouvrant (1 PM). Posé **côté « porte ouverte »**, il **supprime le mur** : on s'en sert pour agrandir un bâtiment (relier deux bâtiments) ou pour l'ouvrir sur la rue. Un pion sur une arête sans mur est refusé.
 - **Départ des héros** : il faut au moins une porte sur le contour de leur bâtiment de départ pour qu'ils puissent en sortir (`heroStartsEnclosed`) ; un scénario ou une mise en place qui les enferme est refusé.
+
+## Mode aléatoire
+
+- Dans « Jouer un scénario », la carte « 🎲 Scénario aléatoire » demande le **nombre de tuiles du terrain** (1 à 9) et génère un scénario (`generateScenario`, `src/engine/scenario/generate.ts`). « ↻ Autre tirage » en génère un autre avec le même nombre de tuiles. Le tirage est reproductible : même graine, même scénario (la graine fait partie de l'identifiant `aleatoire-<graine>`).
+- **Terrain** : les numéros de tuiles sont tirés sans remise, chacune sur une face (A ou B) tirée parmi celles qui sont définies, avec une rotation tirée par quarts de tour ; l'assemblage est d'un seul tenant (chaque tuile touche une autre par un côté). Pas de décalage de tuiles pour l'instant.
+- **Portes** : les bâtiments et salles sont murés par les tuiles, le générateur pose les pions porte : une porte **ouverte** sur le bâtiment de départ des héros (pour qu'ils sortent), une porte sur chaque autre bâtiment (fermée aux trois quarts). Jamais plus de 22 portes.
+- **Départ des héros** : une zone de départ d'une tuile (3 cases d'un même bâtiment) ; à défaut, trois cases de rue côte à côte.
+- **Jetons Spawn** : jusqu'à 5, de types différents (parmi les 5 qui existent), sur des cases de rue distinctes loin du départ.
+- **Monstres** : 2 à 8 Orc Marauder (le nombre croît avec le terrain), les seuls dont le niveau 1 est saisi ; un tiers environ sont des gardes, un chef gardien tient souvent un bâtiment fermé.
+- **Quêtes** : atteindre un objectif tiré (relique, clé, brasier, coffre) puis abattre le chef maraudeur ; l'histoire (introduction, victoire, défaite) est tirée dans de courtes listes.
+- Un tirage n'est gardé que s'il est **valide et jouable** : le scénario passe la validation, les héros peuvent sortir de leur départ, et monstres, objectif et jetons Spawn sont atteignables (une porte, fermée ou ouverte, se franchit). Sinon, un nouveau tirage est essayé (300 au plus), puis une erreur claire est affichée.
+- Le scénario généré n'existe pas dans les données livrées : la partie le **garde avec elle** (`generatedScenario`, JSON de sa définition), ce qui permet de reprendre la partie, d'annuler et d'afficher son épilogue.
+- Aucun équilibrage n'est garanti : difficulté conseillée « moyenne » dans tous les cas.
+
+## Monstres du niveau 1
+
+Bestiaire de niveau 1 complet (`src/game-data/original/monsters.ts`), avec le Goblin Archer du niveau 2-3 :
+
+| Monstre | Classe | Vie | Overkill | Mvt | Défense | Attaque | PO | Compétence | Boîte |
+|---|---|---|---|---|---|---|---|---|---|
+| Orc Marauder (OM) | minion minor | 2 | 3 | 1 | | 3 dés épée | 1 | | 8 Orcs (avec OC) |
+| Orc Captain (OC) | minion minor | 2 | 4 | 1 | | 3 dés épée | 2 | 1 relance | 8 Orcs (avec OM) |
+| Minotaur (M) | vilain minor | 5 | 6 | 2 | 1 dé | 4 dés épée | 3 | chaque critique = 1 blessure en plus (et un dé de plus, règle habituelle) | 1 |
+| Troll (T) | vilain minor | 4 | 6 | 2 | 2 dés | 4 dés épée | 3 | son attaque cible tous les héros adjacents | 1 |
+| Spear Beastman (SB) | minion major | 3 | 5 | 1 | | 3 dés arc | 2 | un dé d'attaque de plus s'il est adjacent à un autre monstre | 2 |
+| Hammer Beastman (HB) | minion major | 3 | 5 | 1 | | 4 dés épée | 2 | si au moins une blessure passe, le héros est étourdi | 2 |
+
+- **Rang** : SB et HB existent en **major** au niveau 1 (stats dans `majorLevels['1']`). Sans rang précisé sur la figurine, l'application prend celui où le monstre existe au niveau du scénario ; l'interface affiche la classe (« minion majeur », « vilain mineur »…).
+- **`tier`** (utilisé pour désigner qui riposte en premier) est un **choix** : minion minor 1, minion major 2, vilain 3.
+- **Boîtes partagées** : les 8 figurines d'Orc servent à l'Orc Marauder comme à l'Orc Captain (`group: 'orc'`) ; la mise en place, la validation des scénarios, le terrain d'essai et le générateur comptent par boîte (« Trop de figurines Orc Marauder et Orc Captain : 9 pour 8 dans la boîte »).
+- **Défense des monstres** : le joueur lance les dés blancs du monstre quand un héros l'attaque (un bouclier ou un critique annule une touche) avant d'indiquer les blessures ; le dialogue d'attaque rappelle la défense, la classe et les capacités du monstre ciblé.
+- **Générateur de scénarios** : il utilise tout le bestiaire de niveau 1 dans les limites des boîtes ; le chef gardien est un vilain (Minotaur ou Troll, tiré) et la quête s'appelle « Abattre le <nom du chef> » ; le deck liste tous les types présents. Terrain d'essai : le deck contient les six types du niveau 1 (le menu du terrain les propose tous).
+
+## Terrain d'essai
+
+- Banc d'essai (`sandbox: true`) : placement libre, menu « Terrain d'essai » (ajouter ou retirer des monstres, régler blessures et dés, sauter le tour de guilde, remettre la disposition de départ).
+- **Plateau de 10×6 cases, 6 tuiles du jeu** (une seule face par tuile) : 5A, 4A (sa case bloquée, au centre, est le puits en (4,1)), 2A (bâtiment en L : la chapelle), 7A (bâtiment de départ des héros), 1B (la grande salle) et 3B **décalée d'une case vers la droite** : la colonne (6,3) à (6,5) est un espace vide, bloquant, entre la salle et 3B.
+- **Pions porte** : `porte-chapelle` (fermée, c'est la **porte spéciale violette**, en repère), `porte-salle` (fermée) et `porte-depart` (ouverte, pour que les héros sortent de leur bâtiment).
+- **Jetons Spawn** : les 5 (épée+épée en S1, arc+arc en S2 : les préréglages de dés du terrain visent S1 et S2), sur des cases de rue.
+- **Un monstre de chaque type du niveau 1**, placés pour essayer les compétences : OM1, OM2 et OM3 (Orc Marauder ; OM2 touche SB1), OC1 (Orc Captain, 1 relance, garde la porte de la chapelle), M1 (Minotaur, critique = blessure en plus, garde le fond de la chapelle), T1 (Troll, partage la case de départ de Zazu : Close à deux héros, son attaque les cible tous), SB1 (Spear Beastman, un dé d'attaque de plus car adjacent à OM2) et HB1 (Hammer Beastman, étourdit, près de la sortie du départ). Orcs : 4 en jeu sur les 8 de la boîte ; Minotaur et Troll : leur unique figurine est posée ; Spear et Hammer Beastman : 1 sur 2.
+- Le deck liste les six types ; `monsterCardSet` « 1 ».
+
+## Petite campagne « La Chute des Braises »
+
+- **Trois chapitres** joués dans l'ordre avec la même guilde de 3 héros (nom et points de vie, gardés d'une partie à l'autre) : 1. *Les Braises de Port-Cendre* (le scénario 1 existant), 2. *Le Marché des Ombres*, 3. *La Forge du Maître-Fer*. Définition : `src/game-data/original/campaigns/chute-des-braises.ts`. Tous les chapitres sont au **niveau de cartes « 1 »**, les seules statistiques de monstres saisies pour l'instant ; aucun Goblin Archer.
+- **Chapitre 2** (moyen, 6 tuiles : 9B, 5A, 7B, 6B, 4A, 2A) : le Troll Gorge-Sombre tient la maison de comptes. Quêtes : forcer le coffre-fort (le **pion porte spécial violet**), reprendre la bourse dans la salle du marché, abattre le Troll. Population : Troll, 2 Orc Captain, 2 Hammer Beastman, 2 Spear Beastman, 4 Orc Marauder, 2 renforts (les 8 Orcs). Un pion porte posé **côté ouvert** supprime le mur entre la salle du marché et la maison de comptes.
+- **Chapitre 3** (difficile, 9 tuiles dont la 9A **décalée d'une case** : une colonne vide, bloquante, isole la forge, qu'on n'atteint que par une porte) : le Minotaur Maître-Fer en garde dans la fonderie, le Troll dans la grande salle. Quêtes : éteindre deux braseros, abattre le Maître-Fer. Population : Minotaur, Troll, 2 Orc Captain, 2 Spear Beastman, 2 Hammer Beastman, 3 Orc Marauder, 3 renforts (les 8 Orcs). Le pion violet est l'entrée de l'île.
+- **Progression** (`src/engine/campaignRun.ts`, `stores/campaignRunStore.ts`) : le chapitre suivant se déverrouille quand le précédent est **gagné** ; une défaite le laisse « à rejouer » et ne débloque rien. Les **PO gagnés par la guilde** (monstres tués + une pièce par quête accomplie) se cumulent sur tout le parcours, défaites comprises. Une partie ne compte qu'une fois (enregistrée par identifiant de partie), et un chapitre verrouillé ou déjà gagné n'est pas enregistré. La progression est gardée sur l'appareil (préférence `campaign-run`). La phase d'amélioration (cartes) reste physique ; la campagne à 6 scénarios historique (`campaign.ts`) n'est pas touchée.
+- **Interface** : la carte « Campagne » est en tête du choix des scénarios (commencer, chapitres et leur état, PO de la guilde, jouer/rejouer, recommencer avec confirmation). L'écran de résultat d'un chapitre l'enregistre automatiquement et propose « Retour à la campagne ». Les chapitres 2 et 3 n'apparaissent pas dans la liste des scénarios isolés.

@@ -11,7 +11,7 @@ import { completeQuest } from '@/engine/state';
 import { activateHero, finishHeroActivations, restGuild, skipGuildTurn, startScenario } from '@/engine/turn/machine';
 import { DEFAULT_ATTACK_DIE, DEFAULT_DEFENSE_DIE } from '@/game-data/dice';
 import type { MonsterDefinition } from '@/engine/domain/schemas';
-import { scenarioById } from '@/game-data/original';
+import { scenarioOfGame } from '@/game-data/original';
 import { runScript, type Rule, type StoryBeat } from '@/engine/scenario/script';
 import { Repository } from '@/infrastructure/persistence/repository';
 
@@ -259,7 +259,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       void repository?.saveSession(g).catch(() => undefined);
     },
     loadGame(state) {
-      set({ game: state, script: scenarioById(state.scenarioId)?.script ?? [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null });
+      set({ game: state, script: scenarioOfGame(state)?.script ?? [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null });
     },
     begin() {
       const g = get().game;

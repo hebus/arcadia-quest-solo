@@ -1,3 +1,4 @@
+import { boxProblems } from './figurines';
 import { MONSTER_LEVELS, monsterStats } from './monsters';
 import { safeParse } from './domain/validate';
 import {
@@ -52,6 +53,7 @@ export interface DeckRules {
 export interface SetupConfig {
   sessionId: string;
   scenarioId: string;
+  generatedScenario?: string;
   difficulty: Difficulty;
   expansions?: Expansion[];
   monsterCardSet: string;
@@ -138,6 +140,7 @@ export function createGame(config: SetupConfig, content: Content): GameState {
     sessionId: config.sessionId,
     contentVersion: content.version,
     scenarioId: config.scenarioId,
+    ...(config.generatedScenario ? { generatedScenario: config.generatedScenario } : {}),
     difficulty: config.difficulty,
     expansions: config.expansions ?? [],
     monsterCardSet: config.monsterCardSet,
@@ -211,10 +214,7 @@ export function validateGameState(s: GameState, content?: Content): string[] {
     // On ne pose pas plus de figurines que la boîte n'en contient (celles retirées du jeu ne comptent plus).
     const used = new Map<string, number>();
     for (const m of s.monsters) if (m.status !== 'box' && m.status !== 'removed') used.set(m.definitionId, (used.get(m.definitionId) ?? 0) + 1);
-    for (const [id, n] of used) {
-      const copies = content.monsters[id]?.copies;
-      if (copies !== undefined && n > copies) problems.push(`Trop de figurines ${content.monsters[id]!.name} : ${n} pour ${copies} dans la boîte`);
-    }
+    problems.push(...boxProblems(used, content.monsters));
   }
   for (const id of s.spawnTile) {
     if (s.monsters.find((m) => m.id === id)?.status !== 'spawn-tile') problems.push(`${id} sur la Spawn Tile avec un statut incohérent`);

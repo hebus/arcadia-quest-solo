@@ -19,7 +19,7 @@ import { TileEditor } from '@/features/tiles/TileEditor';
 import { useGameStore } from '@/stores/gameStore';
 
 type Screen = 'home' | 'scenarios' | 'setup' | 'game' | 'settings' | 'guide' | 'tiles';
-function GameView({ leave }: { leave: () => void }) {
+function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => void }) {
   useGameAudio();
   const announcing = useAttackAnnouncement();
   const stepsPending = useGameStore((s) => s.instructions.some((i) => !i.confirmed));
@@ -31,7 +31,7 @@ function GameView({ leave }: { leave: () => void }) {
   const [result, setResult] = useState(false);
   if (!g) return <p>Aucune partie en cours.</p>;
   const ended = g.phase === 'SCENARIO_WON' || g.phase === 'SCENARIO_LOST';
-  if (ended && result) return <ResultScreen onLeave={leave} />;
+  if (ended && result) return <ResultScreen onLeave={leave} onCampaign={toCampaign} />;
   return (
     <div className="mx-auto max-w-7xl space-y-2">
       <ErrorBanner message={error} onClose={clear} />
@@ -70,7 +70,7 @@ export function App() {
       {screen === 'home' && <HomeScreen go={setScreen} />}
       {screen === 'scenarios' && <ScenarioPicker onStart={() => setScreen('game')} />}
       {screen === 'setup' && <SetupWizard onDone={() => setScreen('game')} openLibrary={() => setScreen('tiles')} />}
-      {screen === 'game' && <GameView leave={() => setScreen('home')} />}
+      {screen === 'game' && <GameView leave={() => setScreen('home')} toCampaign={() => setScreen('scenarios')} />}
       {screen === 'settings' && <SettingsScreen />}
       {screen === 'guide' && <GuideScreen />}
       {screen === 'tiles' && (

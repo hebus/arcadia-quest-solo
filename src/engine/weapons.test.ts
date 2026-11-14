@@ -132,7 +132,9 @@ describe('monstre : cinq caractéristiques', () => {
   it('vie, blessures pour tuer sur le coup, mouvement, dés d’attaque + type, récompense — rien d’autre', () => {
     for (const m of Object.values(ORIGINAL_CONTENT.monsters)) {
       for (const stats of Object.values(m.levels)) {
-        expect(Object.keys(stats).sort()).toEqual(['attackDice', 'attackType', 'life', 'movement', 'overkill', 'reward']);
+        // Les cinq caractéristiques de base ; en plus, seulement défense, relances et compétences quand le monstre en a.
+        const base = ['attackDice', 'attackType', 'life', 'movement', 'overkill', 'reward'];
+        expect(Object.keys(stats).filter((k) => !['defense', 'rerolls', 'skills'].includes(k)).sort()).toEqual(base);
       }
     }
   });

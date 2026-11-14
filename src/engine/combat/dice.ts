@@ -3,6 +3,8 @@ import type { RandomSource } from '../random';
 
 export interface PoolResult {
   faces: string[];
+  /** Nombre de faces critiques obtenues (le critique est aussi compté dans `successes`). */
+  crits: number;
   successes: number;
   rerollsUsed: number;
 }
@@ -45,6 +47,7 @@ export function rollPool(
   }
   return {
     faces: results.map((f) => f.symbol),
+    crits: results.filter((f) => f.crit).length,
     successes: results.filter((f) => isSuccess(f, kind, type)).length,
     rerollsUsed: used,
   };
@@ -54,6 +57,10 @@ export interface AttackOutcome {
   hits: number;
   saves: number;
   wounds: number;
+  /** Critiques de l'attaque (sert à la compétence « chaque critique donne une blessure supplémentaire »). */
+  crits?: number;
+  /** Blessures supplémentaires dues aux critiques, déjà comprises dans `wounds` (non parables). */
+  extraWounds?: number;
   attackFaces: string[];
   defenseFaces: string[];
 }
@@ -67,16 +74,21 @@ export function resolveAttackRoll(p: {
   attackDie: DieFaceDef[];
   defenseDie: DieFaceDef[];
   rng: RandomSource;
+  /** Compétence du Minotaur : chaque critique de l'attaque donne une blessure supplémentaire, non parable. */
+  critWounds?: boolean;
 }): AttackOutcome {
   const atk = rollPool(p.attackDice, p.attackDie, 'attack', p.attackType, p.attackerRerolls, p.rng);
   const def =
     p.defenseDice > 0
       ? rollPool(p.defenseDice, p.defenseDie, 'defense', p.attackType, p.defenderRerolls, p.rng)
-      : { faces: [], successes: 0, rerollsUsed: 0 };
+      : { faces: [], crits: 0, successes: 0, rerollsUsed: 0 };
+  const extraWounds = p.critWounds ? atk.crits : 0;
   return {
     hits: atk.successes,
     saves: def.successes,
-    wounds: Math.max(0, atk.successes - def.successes),
+    wounds: Math.max(0, atk.successes - def.successes) + extraWounds,
+    crits: atk.crits,
+    extraWounds,
     attackFaces: atk.faces,
     defenseFaces: def.faces,
   };

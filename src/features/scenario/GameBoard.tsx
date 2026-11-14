@@ -1,4 +1,4 @@
-import { statsOfMonster } from '@/engine/monsters';
+import { monsterClassLabel, skillLines, statsOfMonster } from '@/engine/monsters';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, Panel } from '@/components/ui';
 import { Modal } from '@/components/Modal';
@@ -66,6 +66,23 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
               {stats && <span className="text-sm text-stone-300" title="Points de vie">{'❤'.repeat(Math.max(0, stats.life - total))}{'🖤'.repeat(Math.min(stats.life, total))}</span>}
               {invalid.includes(t) && <Badge tone="bad">hors de portée</Badge>}
               {dealt > 0 && (outright ? <Badge tone="good">tué sur le coup : pas de riposte</Badge> : dies ? (monsterCanPayback(g, content, t, heroId) ? <Badge tone="good">tué (il peut riposter)</Badge> : <Badge tone="good">tué : il ne peut pas riposter, retiré directement</Badge>) : <Badge tone="warn">survit : il riposte</Badge>)}
+              {m && stats && (
+                <div className="basis-full space-y-0.5 text-sm text-stone-300" data-testid={`monster-card-${t}`}>
+                  <p>
+                    <strong>{content.monsters[m.definitionId]?.name ?? m.definitionId}</strong> · {monsterClassLabel(content.monsters[m.definitionId], g.monsterCardSet)}
+                  </p>
+                  {!!stats.defense && (
+                    <p data-testid={`monster-defense-${t}`}>
+                      Défense : {stats.defense} dé{stats.defense > 1 ? 's' : ''} blanc{stats.defense > 1 ? 's' : ''} : un bouclier ou un critique annule une touche, lancez-les avant d’indiquer les blessures.
+                    </p>
+                  )}
+                  {skillLines(stats).map((line) => (
+                    <p key={line} className="text-amber-200" data-testid={`monster-skill-${t}`}>
+                      ✦ {line}
+                    </p>
+                  ))}
+                </div>
+              )}
               <span className="ml-auto">
                 <Stepper label={`Blessures de ${t}`} value={dealt} onChange={(n) => setWounds({ ...wounds, [t]: n })} />
               </span>

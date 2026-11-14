@@ -45,9 +45,16 @@ describe('jet de défense du joueur', () => {
     expect(r).toMatchObject({ hits: 0, saves: 0, wounds: 0 });
   });
 
-  it('un héros sans dé de défense n’a rien à lancer : toutes les touches blessent', () => {
-    const r = oracleWith([face('touche', true)]).attack({ ...ctx, defenseDice: 0 });
-    expect(r).toMatchObject({ hits: 3, wounds: 3 });
+  it('les dés de défense du héros se gèrent en physique : leur nombre est inconnu (0), on demande quand même les boucliers', () => {
+    try {
+      oracleWith([face('touche', true)]).attack({ ...ctx, defenseDice: 0 });
+      throw new Error('une saisie était attendue');
+    } catch (e) {
+      expect(e).toBeInstanceOf(NeedInput);
+      expect((e as NeedInput).request).toMatchObject({ kind: 'defense-result', hits: 3, defenseDice: 0 });
+    }
+    const r = oracleWith([face('touche', true)], [{ kind: 'defense-result', saves: 2 }]).attack({ ...ctx, defenseDice: 0 });
+    expect(r).toMatchObject({ hits: 3, saves: 2, wounds: 1 });
   });
 
   it('la saisie d’une attaque dit qui attaque qui et où, pour le montrer sur le plateau avant les dés', () => {

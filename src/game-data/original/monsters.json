@@ -1,0 +1,272 @@
+{
+  "format": "arcadia-quest-monsters",
+  "version": 1,
+  "aide": [
+    "Bestiaire du jeu. Pour chaque monstre et chaque niveau (1, 2-3, 4-5, 6) : une fiche de caractéristiques.",
+    "Une fiche vide (tous les champs à null) signifie « pas encore saisie » : l'application la signale (« stats manquantes ») sans rien inventer.",
+    "Pour remplir un niveau, renseignez : rank (\"minor\" ou \"major\"), life (vie), overkill, movement (mouvement), reward (récompense en PO), attackType (\"melee\" ou \"ranged\") et attackDice (nombre de dés d'attaque). Ces sept champs sont obligatoires dès qu'un seul est rempli.",
+    "Facultatifs : defense (nombre de dés de défense blancs du monstre, null si aucun), rerolls (relances de son attaque, null si aucune), skills (compétences gérées par l'application).",
+    "Compétences possibles : \"crit-extra-wound\" (chaque critique donne une blessure en plus), \"attack-all-adjacent\" (son attaque cible tous les héros adjacents), \"extra-die-next-to-monster\" (un dé d'attaque en plus s'il est adjacent à un autre monstre), \"stun\" (si au moins une blessure passe, le héros est étourdi).",
+    "Le rang (minor ou major) est celui du monstre à ce niveau : il peut changer d'un niveau à l'autre. kind : \"minion\" ou \"villain\". tier : rang de riposte (choix de l'application : minion minor 1, minion major 2, vilain 3).",
+    "copies : nombre de figurines dans la boîte. group : des monstres qui partagent les mêmes figurines (ex. Orc Marauder et Orc Captain : 8 Orcs en tout) ont le même group.",
+    "Pour d'autres niveaux (4-5, 6), ajoutez la clé du niveau dans levels en copiant une fiche vide."
+  ],
+  "monsters": [
+    {
+      "id": "GA",
+      "name": "Goblin Archer",
+      "abbr": "GA",
+      "kind": "minion",
+      "tier": 1,
+      "copies": 6,
+      "levels": {
+        "1": {
+          "rank": null,
+          "life": null,
+          "overkill": null,
+          "movement": null,
+          "reward": null,
+          "attackType": null,
+          "attackDice": null,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        },
+        "2-3": {
+          "rank": "minor",
+          "life": 2,
+          "overkill": 3,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "ranged",
+          "attackDice": 2,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        }
+      }
+    },
+    {
+      "id": "OM",
+      "name": "Orc Marauder",
+      "abbr": "OM",
+      "kind": "minion",
+      "tier": 1,
+      "group": "orc",
+      "copies": 8,
+      "levels": {
+        "1": {
+          "rank": "minor",
+          "life": 2,
+          "overkill": 3,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "melee",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        },
+        "2-3": {
+          "rank": "minor",
+          "life": 3,
+          "overkill": 4,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "melee",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        }
+      }
+    },
+    {
+      "id": "OC",
+      "name": "Orc Captain",
+      "abbr": "OC",
+      "kind": "minion",
+      "tier": 1,
+      "group": "orc",
+      "copies": 8,
+      "levels": {
+        "1": {
+          "rank": "minor",
+          "life": 2,
+          "overkill": 4,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": 1,
+          "skills": []
+        },
+        "2-3": {
+          "rank": "minor",
+          "life": 3,
+          "overkill": 5,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        }
+      }
+    },
+    {
+      "id": "M",
+      "name": "Minotaur",
+      "abbr": "M",
+      "kind": "villain",
+      "tier": 3,
+      "copies": 1,
+      "levels": {
+        "1": {
+          "rank": "minor",
+          "life": 5,
+          "overkill": 6,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": 1,
+          "rerolls": null,
+          "skills": [
+            "crit-extra-wound"
+          ]
+        },
+        "2-3": {
+          "rank": "minor",
+          "life": 6,
+          "overkill": 7,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": 1,
+          "rerolls": null,
+          "skills": [
+            "crit-extra-wound"
+          ]
+        }
+      }
+    },
+    {
+      "id": "T",
+      "name": "Troll",
+      "abbr": "T",
+      "kind": "villain",
+      "tier": 3,
+      "copies": 1,
+      "levels": {
+        "1": {
+          "rank": "minor",
+          "life": 4,
+          "overkill": 6,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": 2,
+          "rerolls": null,
+          "skills": [
+            "attack-all-adjacent"
+          ]
+        },
+        "2-3": {
+          "rank": "minor",
+          "life": 5,
+          "overkill": 7,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": 2,
+          "rerolls": null,
+          "skills": [
+            "attack-all-adjacent"
+          ]
+        }
+      }
+    },
+    {
+      "id": "SB",
+      "name": "Spear Beastman",
+      "abbr": "SB",
+      "kind": "minion",
+      "tier": 2,
+      "copies": 2,
+      "levels": {
+        "1": {
+          "rank": "major",
+          "life": 3,
+          "overkill": 5,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "ranged",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "extra-die-next-to-monster"
+          ]
+        },
+        "2-3": {
+          "rank": "major",
+          "life": 4,
+          "overkill": 6,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "ranged",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "extra-die-next-to-monster"
+          ]
+        }
+      }
+    },
+    {
+      "id": "HB",
+      "name": "Hammer Beastman",
+      "abbr": "HB",
+      "kind": "minion",
+      "tier": 2,
+      "copies": 2,
+      "levels": {
+        "1": {
+          "rank": "major",
+          "life": 3,
+          "overkill": 5,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "stun"
+          ]
+        },
+        "2-3": {
+          "rank": "major",
+          "life": 4,
+          "overkill": 6,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "stun"
+          ]
+        }
+      }
+    }
+  ]
+}

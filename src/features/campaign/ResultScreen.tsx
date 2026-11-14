@@ -1,21 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge, Button, ErrorBanner, Panel, inputClass } from '@/components/ui';
 import { monsterCardSetFor, nextRank, upgradeRevealCount } from '@/engine/campaign';
 import { defeatThreshold, questsDone } from '@/engine/state';
-import { scenarioById } from '@/game-data/original';
+import { scenarioOfGame } from '@/game-data/original';
 import { useCampaignStore } from '@/stores/campaignStore';
+import { CAMPAIGN, CHAPTER_IDS, useCampaignRunStore } from '@/stores/campaignRunStore';
+import { chapterProgress, isRunComplete, totalGold } from '@/engine/campaignRun';
 import { useGameStore } from '@/stores/gameStore';
 
 /** Fin de scénario (plan §4.3 H) puis phase d'amélioration solo (livret solo v1.3 p.7). */
-export function ResultScreen({ onLeave }: { onLeave: () => void }) {
+export function ResultScreen({ onLeave, onCampaign }: { onLeave: () => void; onCampaign?: () => void }) {
   const g = useGameStore((s) => s.game)!;
   const camp = useCampaignStore();
   const won = g.phase === 'SCENARIO_WON';
   const [purchases, setPurchases] = useState<{ card: string; cost: number }[]>([]);
   const [discard, setDiscard] = useState('');
   const coinsWon = g.coins + questsDone(g);
-  const story = scenarioById(g.scenarioId)?.story;
+  const story = scenarioOfGame(g)?.story;
   const recorded = camp.campaign?.results.some((r) => r.scenarioId === g.scenarioId);
+  // Petite campagne : le résultat du chapitre est enregistré dès l'écran de résultat (une partie ne compte qu'une fois).
+  const run = useCampaignRunStore((s) => s.run);
+  const recordChapter = useCampaignRunStore((s) => s.record);
+  useEffect(() => {
+    recordChapter(g);
+  }, [g, recordChapter]);
+  const chapter = CHAPTER_IDS.indexOf(g.scenarioId);
+  const progress = chapterProgress(run, CHAPTER_IDS);
 
   return (
     <div className="space-y-3">
@@ -40,6 +50,20 @@ export function ResultScreen({ onLeave }: { onLeave: () => void }) {
           <li>Cartes à révéler à la phase d&apos;amélioration : {upgradeRevealCount(won, coinsWon)}</li>
         </ul>
       </Panel>
+      {run && chapter >= 0 && (
+        <Panel title={`${CAMPAIGN.title} · chapitre ${chapter + 1} sur ${CHAPTER_IDS.length}`}>
+          <p data-testid="chapter-result">
+            {won ? 'Chapitre gagné.' : 'Chapitre perdu : la campagne continue, vous pouvez le rejouer.'} PO de la guilde : <strong>{totalGold(run)}</strong> <span aria-hidden="true">🪙</span>
+          </p>
+          {won && progress[chapter + 1] && progress[chapter + 1]!.state !== 'locked' && <p className="text-sm text-stone-300" data-testid="chapter-unlocked">Chapitre {chapter + 2} débloqué.</p>}
+          {isRunComplete(run, CHAPTER_IDS) && <p role="status" className="text-emerald-300">Campagne terminée !</p>}
+          {onCampaign && (
+            <Button className="mt-2" variant="primary" onClick={onCampaign}>
+              Retour à la campagne
+            </Button>
+          )}
+        </Panel>
+      )}
       {!camp.campaign && (
         <Panel title="Campagne">
           <p className="mb-2">Aucune campagne liée : le scénario est joué en mode isolé.</p>

@@ -8,6 +8,7 @@ type Kind = Correction['kind'];
 const KINDS: { kind: Kind; label: string }[] = [
   { kind: 'hero-wounds', label: 'Blessures d\'un héros' },
   { kind: 'hero-dead', label: 'Mort / résurrection d\'un héros' },
+  { kind: 'hero-stunned', label: 'Héros étourdi ou non' },
   { kind: 'monster-status', label: 'Monstre : plateau / Spawn Tile / boîte' },
   { kind: 'monster-wounds', label: 'Blessures d\'un monstre' },
   { kind: 'monster-guard', label: 'Garde ou non' },
@@ -51,6 +52,7 @@ export function CorrectionsPanel() {
       case 'hero-position': return { kind, heroId: id, to: at ?? null };
       case 'hero-wounds': return { kind, heroId: id, wounds: n };
       case 'hero-dead': return { kind, heroId: id, dead: flag, at };
+      case 'hero-stunned': return { kind, heroId: id, stunned: flag };
       case 'monster-position': return { kind, monsterId: id, to: at! };
       case 'monster-status': return { kind, monsterId: id, status, at };
       case 'monster-wounds': return { kind, monsterId: id, wounds: n };
@@ -63,8 +65,8 @@ export function CorrectionsPanel() {
   };
 
   const usesNum = ['hero-wounds', 'monster-wounds', 'deaths', 'coins'].includes(kind);
-  const usesFlag = ['hero-dead', 'monster-guard', 'door', 'quest'].includes(kind);
-  const flagLabel = { 'hero-dead': 'mort', 'monster-guard': 'garde', door: 'ouverte', quest: 'accomplie' }[kind as 'door'] ?? '';
+  const usesFlag = ['hero-dead', 'hero-stunned', 'monster-guard', 'door', 'quest'].includes(kind);
+  const flagLabel = { 'hero-dead': 'mort', 'hero-stunned': 'étourdi', 'monster-guard': 'garde', door: 'ouverte', quest: 'accomplie' }[kind as 'door'] ?? '';
 
   return (
     <Panel title="Corrections">
