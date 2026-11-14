@@ -2,3 +2,6 @@ node_modules
 dist
 *.log
 dev-dist
+
+# Règles officielles (droits d'auteur) : à garder en local uniquement
+docs/source/
