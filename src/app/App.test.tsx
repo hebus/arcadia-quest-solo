@@ -57,7 +57,12 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /Repérer Maya/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Repérer Zazu/ })).toBeDisabled();
     // Un jet de spawn sans jeton correspondant ne fait rien (pas de relance) : la graine est fixée pour que les dés tombent sur un jeton.
-    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, rngSeed: 1 } })));
+    // L'ordre des cartes d'activation, lui, est tiré au hasard à la création de la partie : la défense des héros est numérique ici,
+    // pour que le tour des monstres aille toujours jusqu'au bout, quel que soit le monstre qui attaque.
+    act(() => {
+      useGameStore.getState().setSettings({ defenseRoll: 'digital' });
+      useGameStore.setState((st) => ({ game: { ...st.game!, rngSeed: 1 } }));
+    });
     // « Fin de tour » passe la main aux monstres et lance leur tour directement : bandeau « Tour des monstres ».
     await user.click(screen.getByRole('button', { name: 'Fin de tour' }));
     expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Manche 2');
