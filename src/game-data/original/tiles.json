@@ -1,0 +1,862 @@
+{
+  "format": "arcadia-quest-tiles",
+  "version": 1,
+  "tiles": [
+    {
+      "id": "1A",
+      "name": "1A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "1B",
+      "name": "1B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "blocked": []
+    },
+    {
+      "id": "2A",
+      "name": "2A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "2B",
+      "name": "2B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "walls": [
+        [
+          {
+            "x": -1,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        [
+          {
+            "x": 0,
+            "y": -1
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        [
+          {
+            "x": 1,
+            "y": -1
+          },
+          {
+            "x": 1,
+            "y": 0
+          }
+        ],
+        [
+          {
+            "x": 2,
+            "y": -1
+          },
+          {
+            "x": 2,
+            "y": 0
+          }
+        ],
+        [
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 0
+          }
+        ],
+        [
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ],
+        [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ],
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      ],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "blocked": []
+    },
+    {
+      "id": "3A",
+      "name": "3A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "3B",
+      "name": "3B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "4A",
+      "name": "4A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "4B",
+      "name": "4B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "5A",
+      "name": "5A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "5B",
+      "name": "5B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "6A",
+      "name": "6A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "6B",
+      "name": "6B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "7A",
+      "name": "7A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "7B",
+      "name": "7B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "blocked": []
+    },
+    {
+      "id": "8A",
+      "name": "8A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "8B",
+      "name": "8B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "9A",
+      "name": "9A",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    },
+    {
+      "id": "9B",
+      "name": "9B",
+      "crop": {
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0
+      },
+      "interior": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "walls": [],
+      "openedWalls": [],
+      "doors": [],
+      "heroStart": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "imageRotation": 0,
+      "rooms": [],
+      "blocked": []
+    }
+  ]
+}

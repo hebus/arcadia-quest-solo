@@ -7,8 +7,8 @@ import {
   TileDefSchema,
   autoWalls,
   buildings,
+  roomGroups,
   effectiveWalls,
-  isInterior,
   pruneTile,
   sameEdge,
   toggleEdge,
@@ -21,10 +21,12 @@ import { BoardView, type Highlight } from '@/rendering/board/BoardView';
 import { useTileStore } from '@/stores/tileStore';
 import { readScan } from './imageImport';
 
-type Tool = 'interior' | 'start' | 'wall' | 'door';
+type Tool = 'interior' | 'room' | 'blocked' | 'start' | 'wall' | 'door';
 
 const TOOLS: { id: Tool; label: string; help: string }[] = [
   { id: 'interior', label: 'Bâtiments', help: 'Touchez une case pour la passer en intérieur de bâtiment (ou la remettre en rue). Des cases d’intérieur contiguës forment un seul bâtiment, muré automatiquement.' },
+  { id: 'room', label: 'Salles', help: 'Touchez une case pour la passer en salle : un sol de dalles, différent de la rue et du parquet des bâtiments. Une salle fonctionne comme un bâtiment : des cases de salle contiguës forment une seule salle, murée automatiquement, avec des portes à poser sur son contour. Touchez de nouveau pour la remettre en rue.' },
+  { id: 'blocked', label: 'Cases bloquées', help: 'Touchez une case pour la bloquer : elle devient impassable (ni déplacement, ni ligne de vue, aucune figurine ne peut y être posée). Touchez de nouveau pour la débloquer.' },
   { id: 'start', label: 'Départ des héros', help: 'Touchez les cases qui forment la zone de départ des héros imprimée sur cette face (en jaune). Touchez de nouveau pour la retirer. Une face sans zone de départ n’en a aucune.' },
   { id: 'wall', label: 'Murs', help: 'Touchez une arête pour ajouter un mur, ou pour supprimer un mur de bâtiment (réapparaît en pointillés gris : touchez-le pour le remettre). Les arêtes du bord de la tuile sont cliquables.' },
   { id: 'door', label: 'Portes', help: 'Touchez une arête de mur pour poser ou retirer une porte (état fermée ou ouverte réglé à la mise en place du scénario).' },
@@ -151,21 +153,34 @@ export function TileEditor() {
     const doors: Door[] = doorKeys.map(([a, b], i) => ({ id: `t${i}`, a, b, open: false }));
     const walls = effectiveWalls(selected).filter((w) => !doorKeys.some((d) => sameEdge(d, w)));
     return {
-      board: { width: TILE, height: TILE, holes: [], portals: [], interior: selected.interior, walls, doors },
+      // Les cases bloquées restent touchables dans l'éditeur (pas de trou) : elles sont seulement dessinées en blocs.
+      board: { width: TILE, height: TILE, holes: [], portals: [], interior: selected.interior, rooms: selected.rooms, blocked: selected.blocked, walls, doors },
       inactive: selected.openedWalls as [Position, Position][],
       groups: buildings(selected),
+      rooms: roomGroups(selected),
       start: selected.heroStart.map((pos): Highlight => ({ pos, kind: 'end', label: 'D' })),
     };
   })();
 
   const onCell = (p: Position) => {
     if (!selected) return;
-    if (tool === 'interior') {
-      const has = isInterior(selected, p);
-      update({ interior: has ? selected.interior.filter((c) => !(c.x === p.x && c.y === p.y)) : [...selected.interior, p] });
+    const is = (c: Position) => c.x === p.x && c.y === p.y;
+    const without = (list: Position[]) => list.filter((c) => !is(c));
+    if (tool === 'interior' || tool === 'room' || tool === 'blocked') {
+      // Une case a un seul type : rue, bâtiment, salle ou bloquée. Retoucher le type courant la remet en rue.
+      const field = tool === 'interior' ? 'interior' : tool === 'room' ? 'rooms' : 'blocked';
+      const on = selected[field].some(is);
+      const patch: Partial<TileDef> = { interior: without(selected.interior), rooms: without(selected.rooms), blocked: without(selected.blocked) };
+      if (!on) patch[field] = [...selected[field], p];
+      // Une case bloquée ne peut pas servir de départ.
+      if (tool === 'blocked' && !on) patch.heroStart = without(selected.heroStart);
+      update(patch);
+      setError(null);
     } else if (tool === 'start') {
-      const has = selected.heroStart.some((c) => c.x === p.x && c.y === p.y);
-      update({ heroStart: has ? selected.heroStart.filter((c) => !(c.x === p.x && c.y === p.y)) : [...selected.heroStart, p] });
+      if (selected.blocked.some(is)) return setError('Une case bloquée ne peut pas faire partie de la zone de départ des héros.');
+      const has = selected.heroStart.some(is);
+      update({ heroStart: has ? without(selected.heroStart) : [...selected.heroStart, p] });
+      setError(null);
     }
   };
 
@@ -183,7 +198,7 @@ export function TileEditor() {
   };
 
   const help = TOOLS.find((t) => t.id === tool)!.help;
-  const cellTool = tool === 'interior' || tool === 'start';
+  const cellTool = tool === 'interior' || tool === 'room' || tool === 'blocked' || tool === 'start';
 
   return (
     <div className="space-y-3">
@@ -262,7 +277,7 @@ export function TileEditor() {
                       <Button className="w-full text-left" variant={id === selectedId ? 'primary' : 'secondary'} aria-pressed={id === selectedId} aria-label={`Face ${id}`} onClick={() => openFace(id)}>
                         <span className="font-semibold">{id}</span>
                         <span className="ml-2 text-sm opacity-80">
-                          {t ? `${t.image ? '🖼 ' : ''}${buildings(t).length} bât. · ${t.heroStart.length} dép.` : 'à définir'}
+                          {t ? `${t.image ? '🖼 ' : ''}${buildings(t).length} bât. · ${t.heroStart.length} dép.${t.rooms.length ? ` · ${roomGroups(t).length} salle` : ''}${t.blocked.length ? ` · ${t.blocked.length} bloquée` : ''}` : 'à définir'}
                         </span>
                       </Button>
                     </td>
@@ -326,7 +341,7 @@ export function TileEditor() {
                 inactiveEdges={view.inactive}
                 showCoords={false}
               />
-              <p className="mt-2 text-sm text-stone-400">Rue : cases normales · orangé : intérieur · jaune D : départ des héros · trait blanc : mur · trait brun : porte · pointillé gris : mur retiré.</p>
+              <p className="mt-2 text-sm text-stone-400">Rue : cases normales · brun : bâtiment · bleu-gris : salle · bloc barré : case bloquée · jaune D : départ des héros · trait blanc : mur · trait brun : porte · pointillé gris : mur retiré.</p>
             </div>
             <div className="space-y-3">
               <label className="block">
@@ -345,6 +360,9 @@ export function TileEditor() {
                 <ul className="list-disc pl-5 text-sm">
                   <li>
                     Bâtiments : {view.groups.length === 0 ? 'aucun (toutes les cases sont de la rue)' : view.groups.map((g, i) => `bâtiment ${i + 1} (${g.length} case${g.length > 1 ? 's' : ''})`).join(', ')}
+                  </li>
+                  <li>
+                    Salles : {view.rooms.length === 0 ? 'aucune' : view.rooms.map((g, i) => `salle ${i + 1} (${g.length} case${g.length > 1 ? 's' : ''})`).join(', ')} · cases bloquées : {selected.blocked.length === 0 ? 'aucune' : `${selected.blocked.length} case(s)`}
                   </li>
                   <li>
                     Départ des héros : {selected.heroStart.length === 0 ? 'aucune zone' : <Badge tone="good">{selected.heroStart.length} case(s)</Badge>}
@@ -394,7 +412,7 @@ export function TileEditor() {
                   </div>
                 </>
               )}
-              <Button onClick={() => update({ interior: [], walls: [], openedWalls: [], doors: [], heroStart: [] })} disabled={selected.interior.length + selected.walls.length + selected.doors.length + selected.heroStart.length === 0}>
+              <Button onClick={() => update({ interior: [], rooms: [], blocked: [], walls: [], openedWalls: [], doors: [], heroStart: [] })} disabled={selected.interior.length + selected.rooms.length + selected.blocked.length + selected.walls.length + selected.doors.length + selected.heroStart.length === 0}>
                 Tout effacer (retour à une tuile de rue)
               </Button>
               <p className="text-sm text-stone-400">

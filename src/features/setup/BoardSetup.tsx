@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Button, Panel, inputClass } from '@/components/ui';
 import { SPAWN_TOKEN_TYPES, samePair, spawnTokenLabel } from '@/engine/spawn/tokens';
+import { DOOR_TOKENS } from '@/engine/doorTokens';
 import { freeTileFaces, isCatalogTile, tileNumber } from '@/engine/tileCatalog';
 import type { Door, Portal, Position, SpawnPoint } from '@/engine/domain/schemas';
 import {
   boardFromLayout,
   layoutDoors,
   layoutHeroStarts,
+  placementOrigin,
   sameEdge,
   toggleEdge,
   type BoardExtras,
@@ -14,9 +16,10 @@ import {
   type Rotation,
   type TileDef,
   type TileLayout,
+  type TilePlacement,
 } from '@/engine/tiles';
 import { BoardView, type BoardToken } from '@/rendering/board/BoardView';
-import { BLANK_TILE, BUILTIN_TILES } from './builtinTiles';
+import { BLANK_TILE, allTiles } from './builtinTiles';
 
 export interface HeroRow {
   name: string;
@@ -43,12 +46,13 @@ export interface InstRow {
 
 export { BLANK_TILE };
 
-type Tool = 'tile' | 'wall' | 'door' | 'portal' | 'spawn' | 'hero' | 'monster' | 'guard' | 'erase';
+type Tool = 'tile' | 'wall' | 'door' | 'special' | 'portal' | 'spawn' | 'hero' | 'monster' | 'guard' | 'erase';
 
 const TOOLS: { id: Tool; label: string; help: string }[] = [
   { id: 'tile', label: '1. Tuiles', help: 'Choisissez un emplacement, puis la tuile et son orientation.' },
   { id: 'wall', label: 'Mur', help: 'Touchez une arête entre deux cases pour ajouter ou retirer un mur supplémentaire.' },
   { id: 'door', label: 'Porte', help: 'Touchez une porte de tuile : fermée, puis ouverte, puis retirée (pointillé gris, le mur revient). Sur une arête sans porte de tuile, ajoute une porte du scénario.' },
+  { id: 'special', label: 'Porte spéciale', help: 'Touchez une porte pour en faire la porte spéciale (pion violet : il n’y en a qu’un dans la boîte), touchez-la de nouveau pour retirer la marque.' },
   { id: 'portal', label: 'Portail', help: 'Touchez une case : portail rouge, puis bleu, puis retiré. Les portails de même couleur sont reliés.' },
   { id: 'spawn', label: 'Jeton Spawn', help: 'Choisissez la paire de dés, puis touchez une case. Retouchez pour retirer.' },
   { id: 'hero', label: 'Héros', help: 'Choisissez un héros, puis touchez sa case de départ. Les cases jaunes sont les zones de départ des héros définies sur les tuiles.' },
@@ -88,7 +92,7 @@ export function BoardSetup(p: Props) {
   const freeTokens = SPAWN_TOKEN_TYPES.filter(([a, b]) => !p.spawns.some((s) => samePair(s.dice, a, b)));
   const token = freeTokens.find((t) => t.join('+') === tokenKey) ?? freeTokens[0];
 
-  const library = useMemo(() => [...BUILTIN_TILES, ...p.tilesLib], [p.tilesLib]);
+  const library = useMemo(() => allTiles(p.tilesLib), [p.tilesLib]);
   const byId = useMemo(() => Object.fromEntries(library.map((t) => [t.id, t])), [library]);
   const usable = p.layout.placements.every((pl) => byId[pl.tileId]);
   const board = useMemo(
@@ -104,18 +108,30 @@ export function BoardSetup(p: Props) {
   const current = slot ? p.layout.placements.find((x) => x.tx === slot.tx && x.ty === slot.ty) : undefined;
   const freeFaces = freeTileFaces(p.layout.placements.map((x) => x.tileId), current?.tileId);
 
+  /** Pose, change ou retire la tuile d'un emplacement. Changer de tuile ou la tourner garde son décalage. */
   const setPlacement = (tx: number, ty: number, tileId: string | null, rotation: Rotation = 0) => {
+    const existing = p.layout.placements.find((x) => x.tx === tx && x.ty === ty);
     const others = p.layout.placements.filter((x) => !(x.tx === tx && x.ty === ty));
-    p.setLayout({ ...p.layout, placements: tileId ? [...others, { tileId, tx, ty, rotation }] : others });
-    if (!tileId) pruneOutside(tx, ty);
+    const offset = existing ? { ...(existing.dx ? { dx: existing.dx } : {}), ...(existing.dy ? { dy: existing.dy } : {}) } : {};
+    p.setLayout({ ...p.layout, placements: tileId ? [...others, { tileId, tx, ty, rotation, ...offset }] : others });
+    if (!tileId && existing) pruneOutside(existing);
   };
 
-  /** Retire ce qui se trouvait sur un emplacement vidé. */
-  const pruneOutside = (tx: number, ty: number) => {
-    const inSlot = (q: Position) => Math.floor(q.x / 3) === tx && Math.floor(q.y / 3) === ty;
-    p.setSpawns(p.spawns.filter((s) => !inSlot(s.at)));
-    p.setHeroes(p.heroes.map((h) => (h.pos && inSlot(h.pos) ? { ...h, pos: null } : h)));
-    p.setInsts(p.insts.filter((m) => !inSlot(m.pos)));
+  /** Décale la tuile d'un emplacement d'une case (vers la droite, la gauche, le bas ou le haut) : cela laisse des cases vides, bloquantes, entre elle et ses voisines. */
+  const shiftPlacement = (pl: TilePlacement, ddx: number, ddy: number) => {
+    const dx = (pl.dx ?? 0) + ddx;
+    const dy = (pl.dy ?? 0) + ddy;
+    const moved: TilePlacement = { tileId: pl.tileId, tx: pl.tx, ty: pl.ty, rotation: pl.rotation, ...(dx ? { dx } : {}), ...(dy ? { dy } : {}) };
+    p.setLayout({ ...p.layout, placements: p.layout.placements.map((x) => (x === pl ? moved : x)) });
+  };
+
+  /** Retire ce qui se trouvait sur les cases d'une tuile retirée. */
+  const pruneOutside = (pl: TilePlacement) => {
+    const o = placementOrigin(pl);
+    const onTile = (q: Position) => q.x >= o.x && q.x < o.x + 3 && q.y >= o.y && q.y < o.y + 3;
+    p.setSpawns(p.spawns.filter((s) => !onTile(s.at)));
+    p.setHeroes(p.heroes.map((h) => (h.pos && onTile(h.pos) ? { ...h, pos: null } : h)));
+    p.setInsts(p.insts.filter((m) => !onTile(m.pos)));
   };
 
   const resize = (tilesW: number, tilesH: number) =>
@@ -130,13 +146,21 @@ export function BoardSetup(p: Props) {
       if (tileDoor) {
         const cur = p.extras.doorStates[tileDoor.id] ?? 'closed';
         const next = cur === 'closed' ? 'open' : cur === 'open' ? 'none' : 'closed';
-        p.setExtras({ ...p.extras, doorStates: { ...p.extras.doorStates, [tileDoor.id]: next } });
+        // Une porte retirée rend son pion : elle ne peut plus être la porte spéciale.
+        const specialDoorId = next === 'none' && p.extras.specialDoorId === tileDoor.id ? null : p.extras.specialDoorId;
+        p.setExtras({ ...p.extras, specialDoorId, doorStates: { ...p.extras.doorStates, [tileDoor.id]: next } });
         return;
       }
       const d = p.extras.doors.find((x) => sameEdge(edgeOf(x), e));
       if (!d) p.setExtras({ ...p.extras, doors: [...p.extras.doors, { id: `d${p.extras.doors.length + 1}-${a.x}${a.y}${b.x}${b.y}`, a, b, open: false }] });
       else if (!d.open) p.setExtras({ ...p.extras, doors: p.extras.doors.map((x) => (x === d ? { ...x, open: true } : x)) });
-      else p.setExtras({ ...p.extras, doors: p.extras.doors.filter((x) => x !== d) });
+      else p.setExtras({ ...p.extras, specialDoorId: p.extras.specialDoorId === d.id ? null : p.extras.specialDoorId, doors: p.extras.doors.filter((x) => x !== d) });
+    }
+    if (tool === 'special') {
+      // La porte touchée (de tuile, non retirée, ou ajoutée à la main) devient la porte spéciale, ou perd la marque.
+      const tileDoor = tileDoors.find((x) => sameEdge([x.a, x.b], e));
+      const id = tileDoor && (p.extras.doorStates[tileDoor.id] ?? 'closed') !== 'none' ? tileDoor.id : p.extras.doors.find((x) => sameEdge(edgeOf(x), e))?.id;
+      if (id) p.setExtras({ ...p.extras, specialDoorId: p.extras.specialDoorId === id ? null : id });
     }
   };
 
@@ -198,6 +222,11 @@ export function BoardSetup(p: Props) {
         ))}
       </nav>
       <p className="text-amber-200">{help}</p>
+      {(tool === 'door' || tool === 'special') && board && (
+        <p className={`text-sm ${board.doors.length > DOOR_TOKENS ? 'text-red-300' : 'text-stone-300'}`} role="status">
+          Pions porte posés : {board.doors.length} / {DOOR_TOKENS} (recto ouvert, verso fermé) · porte spéciale violette : {board.doors.some((d) => d.special) ? 'posée' : 'non posée'} (1 pion).
+        </p>
+      )}
 
       {tool === 'tile' && (
         <Panel title="Assemblage des tuiles" actions={<Button onClick={p.onOpenLibrary}>Bibliothèque de scans</Button>}>
@@ -256,6 +285,22 @@ export function BoardSetup(p: Props) {
                   <Button onClick={() => setPlacement(slot.tx, slot.ty, current.tileId, ((current.rotation + 270) % 360) as Rotation)}>↺ Tourner</Button>
                   <Button onClick={() => setPlacement(slot.tx, slot.ty, current.tileId, ((current.rotation + 90) % 360) as Rotation)}>↻ Tourner</Button>
                   <Button variant="danger" onClick={() => setPlacement(slot.tx, slot.ty, null)}>Retirer</Button>
+                  <fieldset className="flex flex-wrap items-center gap-1" aria-label="Décalage de la tuile">
+                    <legend className="sr-only">Décalage de la tuile</legend>
+                    <span className="text-sm text-stone-300">Décaler :</span>
+                    <Button aria-label="Décaler vers la gauche" onClick={() => shiftPlacement(current, -1, 0)}>←</Button>
+                    <Button aria-label="Décaler vers le haut" onClick={() => shiftPlacement(current, 0, -1)}>↑</Button>
+                    <Button aria-label="Décaler vers le bas" onClick={() => shiftPlacement(current, 0, 1)}>↓</Button>
+                    <Button aria-label="Décaler vers la droite" onClick={() => shiftPlacement(current, 1, 0)}>→</Button>
+                    {(current.dx || current.dy) && (
+                      <>
+                        <span className="text-sm text-amber-300" data-testid="shift-info">
+                          {[current.dx ? `${Math.abs(current.dx)} case${Math.abs(current.dx) > 1 ? 's' : ''} ${current.dx > 0 ? 'à droite' : 'à gauche'}` : '', current.dy ? `${Math.abs(current.dy)} case${Math.abs(current.dy) > 1 ? 's' : ''} ${current.dy > 0 ? 'en bas' : 'en haut'}` : ''].filter(Boolean).join(', ')}
+                        </span>
+                        <Button variant="ghost" onClick={() => shiftPlacement(current, -(current.dx ?? 0), -(current.dy ?? 0))}>Recaler</Button>
+                      </>
+                    )}
+                  </fieldset>
                 </>
               )}
             </div>
@@ -304,11 +349,12 @@ export function BoardSetup(p: Props) {
           label="Plateau en préparation"
           board={board}
           tiles={placed}
+          tileLabels={p.layout.placements.filter((pl) => isCatalogTile(pl.tileId)).map((pl) => ({ tx: pl.tx, ty: pl.ty, dx: pl.dx, dy: pl.dy, label: pl.tileId }))}
           spawns={p.spawns}
           tokens={tokens}
           onCell={onCell}
           onToken={onToken}
-          onEdge={tool === 'wall' || tool === 'door' ? onEdge : undefined}
+          onEdge={tool === 'wall' || tool === 'door' || tool === 'special' ? onEdge : undefined}
           inactiveEdges={removedDoors}
           highlights={tool === 'hero' ? startCells.map((pos) => ({ pos, kind: 'end' as const })) : []}
         />
@@ -318,7 +364,7 @@ export function BoardSetup(p: Props) {
       {p.layout.placements.length === 0 && <p className="text-stone-400">Posez au moins une tuile pour faire apparaître le plateau.</p>}
       {unplaced.length > 0 && p.layout.placements.length > 0 && <p className="text-sm text-amber-300">Héros à placer : {unplaced.join(', ')}.</p>}
       <p className="text-sm text-stone-400">
-        Bleu : héros · rouge : monstres (bordure orange : garde) · brun : jeton Spawn · trait brun : porte fermée · pointillé vert : porte ouverte · anneau : portail.
+        Bleu : héros · rouge : monstres (bordure orange : garde) · brun : jeton Spawn · trait brun : porte fermée · pointillé vert : porte ouverte · trait violet : porte spéciale · anneau : portail.
       </p>
     </div>
   );

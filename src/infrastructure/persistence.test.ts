@@ -92,7 +92,7 @@ describe('effacement des sauvegardes', () => {
     await r.saveCampaign(createCampaign({ id: 'c1', name: 'Camp', contentVersion: 'v', heroIds: ['a', 'b', 'c'] }));
     await r.backup('test', '{}');
     await r.setPref('x', 1);
-    await r.saveTile({ id: 't1', name: 'T1', crop: { l: 0, t: 0, r: 0, b: 0 }, imageRotation: 0, interior: [], walls: [], openedWalls: [], doors: [], heroStart: [] });
+    await r.saveTile({ id: 't1', name: 'T1', crop: { l: 0, t: 0, r: 0, b: 0 }, imageRotation: 0, interior: [], walls: [], openedWalls: [], doors: [], rooms: [], blocked: [], heroStart: [] });
     return { r, g };
   }
 

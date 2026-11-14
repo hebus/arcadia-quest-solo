@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useCampaignStore } from '@/stores/campaignStore';
 import { defaultContent, useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
+import { scenarioToSetup } from '@/engine/scenario/definition';
+import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
+import { CAVE_AUX_CENDRES_LEGACY } from '@/tests/fixtures/legacyScenario';
 import { App } from './App';
 
 const game = () => useGameStore.getState().game!;
@@ -20,6 +23,12 @@ async function startScenario(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
   await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
   await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
+  // Ces tests portent sur les portes : ils jouent sur l'ancienne géométrie du scénario 1 (plateau écrit à la main).
+  act(() => {
+    const store = useGameStore.getState();
+    store.newGame(scenarioToSetup(CAVE_AUX_CENDRES_LEGACY, { sessionId: 's', difficulty: 'medium', seed: 5, heroes: ORIGINAL_HEROES.slice(0, 3) }, ORIGINAL_CONTENT), CAVE_AUX_CENDRES_LEGACY.script ?? []);
+    store.begin();
+  });
   act(() => useGameStore.getState().correct({ kind: 'hero-position', heroId: 'h1', to: { x: 2, y: 6 } })); // au bord de la porte de la remise
 }
 

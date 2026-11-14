@@ -25,7 +25,7 @@ const pair = (s: string, line: number): [Position, Position] => {
  *   size 8x5
  *   hole 3,2
  *   wall 1,0-1,1
- *   door d1 3,2-4,2 closed        (ou open)
+ *   door d1 3,2-4,2 closed        (ou open ; ajouter « special » pour la porte spéciale violette, une seule)
  *   room 5,0 4x3                   (bâtiment : cases d'intérieur, contour muré automatiquement)
  *   portal p1 2,3 red
  *   spawn S1 0,0 sword+bow         (un des 5 jetons : sword+sword, sword+bow, sword+crit, bow+bow, bow+crit)
@@ -55,10 +55,10 @@ export function parseBoardDsl(text: string): ParsedBoard {
         board.walls.push(pair(a[0] ?? '', line));
         break;
       case 'door': {
-        const [id, edge, state] = a;
-        if (!id || !edge || (state !== 'open' && state !== 'closed')) throw new Error(`Ligne ${line} : door <id> x,y-x,y open|closed`);
+        const [id, edge, state, flag] = a;
+        if (!id || !edge || (state !== 'open' && state !== 'closed') || (flag !== undefined && flag !== 'special')) throw new Error(`Ligne ${line} : door <id> x,y-x,y open|closed [special]`);
         const [p, q] = pair(edge, line);
-        board.doors.push({ id, a: p, b: q, open: state === 'open' });
+        board.doors.push({ id, a: p, b: q, open: state === 'open', ...(flag === 'special' ? { special: true } : {}) });
         break;
       }
       case 'room': {

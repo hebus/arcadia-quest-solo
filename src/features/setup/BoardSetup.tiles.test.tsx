@@ -13,7 +13,7 @@ function setup(placed: string[]) {
       tilesLib={['1A', '1B', '2A', '2B'].map(tile)}
       layout={{ tilesW: 2, tilesH: 1, placements: placed.map((tileId, i) => ({ tileId, tx: i, ty: 0, rotation: 0 as const })) }}
       setLayout={setLayout}
-      extras={{ walls: [], doors: [], portals: [], doorStates: {} }}
+      extras={{ walls: [], doors: [], portals: [], doorStates: {}, specialDoorId: null }}
       setExtras={() => undefined}
       spawns={[]}
       setSpawns={() => undefined}

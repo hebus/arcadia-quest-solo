@@ -49,6 +49,8 @@ interface Props {
   objectives?: { id: string; at: Position; icon?: ObjectiveIconName | undefined; title: string; done: boolean }[];
   /** Lignes de visée (centre de la case de l'attaquant → centre de la cible) pour les attaques à distance. */
   lines?: { from: Position; to: Position; tone: 'clear' | 'blocked' }[];
+  /** Numéro de chaque tuile (ex. 3B), affiché au centre de la tuile (tx, ty : colonne et ligne de tuiles, à partir de 0). */
+  tileLabels?: { tx: number; ty: number; dx?: number | undefined; dy?: number | undefined; label: string }[];
   /** Étape d'instruction à montrer visuellement (fantômes, flèches, croix, portes). */
   overlay?: InstructionOverlay;
   onCell?: (p: Position) => void;
@@ -141,7 +143,7 @@ interface DragState {
 }
 
 /** Plateau en SVG : art de tuiles généré, murs, portes, pions déplaçables et instructions visuelles. */
-export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlights = [], paths = [], ghosts = [], objectives = [], lines = [], overlay, onCell, onToken, canDrag, onTokenMove, onDoor, doorIds, doorHints = [], onEdge, outerEdges = false, inactiveEdges = [], showCoords = true, label = 'Plateau' }: Props) {
+export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlights = [], paths = [], ghosts = [], objectives = [], lines = [], tileLabels = [], overlay, onCell, onToken, canDrag, onTokenMove, onDoor, doorIds, doorHints = [], onEdge, outerEdges = false, inactiveEdges = [], showCoords = true, label = 'Plateau' }: Props) {
   const uid = useId().replace(/:/g, '');
   const svgRef = useRef<SVGSVGElement>(null);
   const suppressClick = useRef(false);
@@ -151,6 +153,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
   const stack = new Map<string, number>();
   const inCell = new Map<string, number>();
   const isHole = (x: number, y: number) => board.holes.some((h) => h.x === x && h.y === y);
+  const isBlocked = (x: number, y: number) => (board.blocked ?? []).some((h) => h.x === x && h.y === y);
   const inBoard = (p: Position) => p.x >= 0 && p.y >= 0 && p.x < board.width && p.y < board.height && !isHole(p.x, p.y);
 
   const edges: [Position, Position][] = [];
@@ -244,8 +247,8 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
 
       {Array.from({ length: board.height }, (_, y) =>
         Array.from({ length: board.width }, (_, x) =>
-          isHole(x, y) ? null : (
-            <g key={`bg${x},${y}`} transform={`translate(${x * C} ${y * C}) scale(${C})`} pointerEvents="none">
+          isHole(x, y) && !isBlocked(x, y) ? null : (
+            <g key={`bg${x},${y}`} data-testid={isBlocked(x, y) ? `blocked-${x}-${y}` : undefined} transform={`translate(${x * C} ${y * C}) scale(${C})`} pointerEvents="none">
               <Art items={cellArt(cellKind(board, { x, y }), { x, y })} />
             </g>
           ),
@@ -260,10 +263,31 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
         const ix = -(dw * l) / 100;
         const iy = -(dh * t) / 100;
         return (
-          <g key={`img${placement.tx},${placement.ty}`} transform={`translate(${placement.tx * TILE * C} ${placement.ty * TILE * C}) rotate(${placement.rotation} ${(TILE * C) / 2} ${(TILE * C) / 2})`}>
+          <g key={`img${placement.tx},${placement.ty}`} transform={`translate(${(placement.tx * TILE + (placement.dx ?? 0)) * C} ${(placement.ty * TILE + (placement.dy ?? 0)) * C}) rotate(${placement.rotation} ${(TILE * C) / 2} ${(TILE * C) / 2})`}>
             <g clipPath={`url(#${uid}-clip-${placement.tx}-${placement.ty})`}>
               <image href={def.image} x={ix} y={iy} width={dw} height={dh} preserveAspectRatio="none" transform={`rotate(${def.imageRotation} ${ix + dw / 2} ${iy + dh / 2})`} />
             </g>
+          </g>
+        );
+      })}
+
+      {/* Numéro de la tuile au centre de la tuile : sous les pions, il n'indique pas l'orientation (le dessin suffit pour poser la tuile). */}
+      {tileLabels.map((t) => {
+        // Centre de la case du milieu de la tuile (la 2e des 3 cases, soit 1,5 case depuis le coin de la tuile).
+        const cx = (t.tx * TILE + (t.dx ?? 0) + TILE / 2) * C;
+        const cy = (t.ty * TILE + (t.dy ?? 0) + TILE / 2) * C;
+        const FS = 46;
+        const style = { fill: '#fff', fillOpacity: 0.3, stroke: '#000', strokeOpacity: 0.35, strokeWidth: 2, paintOrder: 'stroke', fontWeight: 'bold' } as const;
+        return (
+          <g key={`tl${t.tx},${t.ty}`} data-testid={`tile-label-${t.tx}-${t.ty}`} pointerEvents="none">
+            {/* Le chiffre est centré exactement sur la case du milieu : la ligne de base est abaissée de la demi-hauteur des chiffres (≈ 0,36 em), sans dépendre du rendu de dominant-baseline. */}
+            <text data-testid={`tile-number-${t.tx}-${t.ty}`} x={cx} y={cy + FS * 0.36} textAnchor="middle" fontSize={FS} {...style}>
+              {t.label.slice(0, -1)}
+            </text>
+            {/* La face (A ou B) se pose à côté, sans décaler le chiffre. */}
+            <text data-testid={`tile-face-${t.tx}-${t.ty}`} x={cx + FS * 0.42} y={cy + FS * 0.36} textAnchor="start" fontSize={FS * 0.5} {...style}>
+              {t.label.slice(-1)}
+            </text>
           </g>
         );
       })}
@@ -322,7 +346,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
         <g key={d.id}>
           {doorGlow.has(d.id) && <line {...edgeLine(d.a, d.b)} stroke="#facc15" strokeWidth="14" strokeLinecap="round" className="aq-pulse" pointerEvents="none" />}
           <line {...edgeLine(d.a, d.b)} stroke="#1c1006" strokeWidth="10" strokeLinecap="round" strokeDasharray={d.open ? '5 6' : undefined} />
-          <line data-testid={`door-${d.id}`} {...edgeLine(d.a, d.b)} stroke={d.open ? '#22c55e' : '#b45309'} strokeWidth="6" strokeLinecap="round" strokeDasharray={d.open ? '5 6' : undefined} pointerEvents="none" />
+          <line data-testid={`door-${d.id}`} data-special={d.special ? 'true' : undefined} {...edgeLine(d.a, d.b)} stroke={d.special ? '#a855f7' : d.open ? '#22c55e' : '#b45309'} strokeWidth="6" strokeLinecap="round" strokeDasharray={d.open ? '5 6' : undefined} pointerEvents="none" />
           {onDoor && (!doorIds || doorIds.includes(d.id)) && <line data-testid={`door-hit-${d.id}`} {...edgeLine(d.a, d.b)} stroke="transparent" strokeWidth="22" strokeLinecap="round" style={{ cursor: 'pointer' }} onClick={() => onDoor(d.id)} />}
         </g>
       ))}

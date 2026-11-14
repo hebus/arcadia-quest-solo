@@ -85,6 +85,9 @@ Il n'existe que 5 jetons Spawn, un de chaque : épée+épée, épée+arc, épée
 - Chaque tuile n'existe qu'en un exemplaire : sur un plateau, **une seule face** d'une même tuile (pas 1A et 1B ensemble) et jamais deux fois la même. Un plateau compte donc 9 tuiles au plus.
 - **Éditeur des tuiles** (Bibliothèque de tuiles) : un catalogue des 9 tuiles, recto/verso, où l'on définit chaque face une fois pour toutes :
   - **zones de bâtiments** : cases d'intérieur, murées automatiquement (un bâtiment = des cases contiguës) ;
+  - **salles** : elles fonctionnent comme les bâtiments (cases contiguës = une seule salle, contour muré automatiquement, portes posables sur le contour, murs ouvrables) ; seul le sol change (dalles de pierre, à côté des pavés de la rue et du parquet des bâtiments). Un bâtiment et une salle côte à côte sont séparés par un mur ;
+  - **cases bloquées** : impassables, ni déplacement, ni ligne de vue, aucune figurine posée ; pour le moteur, ce sont des cases absentes, dessinées en blocs barrés ;
+  - une case n'a qu'un type : rue, bâtiment, salle ou bloquée ; une case bloquée ne peut pas faire partie d'une zone de départ ;
   - **zone de départ des héros** : les cases de départ imprimées sur la face (`heroStart`) ;
   - murs et portes ; scan de la face (facultatif, nommé d'après sa face : « 3B.png »).
   Toucher une face vierge la crée comme tuile de rue. Les définitions s'exportent et s'importent en JSON (bouton Exporter / Importer un fichier) pour les conserver ou les partager.
@@ -105,3 +108,31 @@ Il n'existe que 5 jetons Spawn, un de chaque : épée+épée, épée+arc, épée
 ## Repos
 
 Un joueur qui se repose **passe son tour** : toutes ses cartes équipement redeviennent disponibles et peuvent être réorganisées (les joueurs gèrent leurs cartes, l'application n'en suit aucune), et les **héros tués sont ressuscités** (position choisie sur le plateau). Aucun héros ne doit avoir été activé ce tour-là.
+
+## Pions porte
+
+- Le jeu physique compte **22 pions porte**, recto/verso : un côté « porte ouverte », l'autre « porte fermée ». **Un seul** est spécial, **violet**, et désigne la porte spéciale du scénario (`src/engine/doorTokens.ts`).
+- Un plateau ne peut donc pas compter plus de 22 portes (portes de tuiles non retirées + portes ajoutées), dont au plus une spéciale. Une porte retirée rend son pion. La mise en place et la validation des scénarios le contrôlent.
+- Mise en place : l'outil « Porte spéciale » marque une porte (violette), un compteur indique « pions porte posés : n / 22 ». DSL de scénario : `door d1 3,2-4,2 closed special`.
+- La porte spéciale est pour l'instant un repère : l'application ne lui applique aucune règle propre (à définir avec le scénario).
+
+## Tuiles dans les scénarios
+
+- Les **18 faces du jeu physique** (1A à 9B) sont livrées avec l'application dans `src/game-data/original/tiles.json` (export de l'éditeur de tuiles : bouton « Exporter »). Pour les mettre à jour, on remplace ce fichier par un nouvel export. Les tuiles de la bibliothèque de l'appareil l'emportent à code égal. Les scans sont facultatifs et ne sont pas encore dans ce fichier.
+- Un scénario peut indiquer ses tuiles (`tiles` : numéro et face de chaque tuile, rotation par quarts de tour). Son plateau est alors **construit depuis les définitions des tuiles** (`scenarioBoard`) : bâtiments, salles, cases bloquées, murs, rotation. La description textuelle du scénario ne donne plus que les **pions porte**, les jetons Spawn, les murs et les portails qu'il ajoute ; elle ne décrit ni `room` ni `hole` (ils viennent des tuiles).
+- Une tuile ne se pose que sur **une seule face** par scénario : si on utilise le verso (B), le recto (A) n'est pas utilisé, et inversement. La validation refuse les deux faces d'une même tuile, la même face deux fois, une tuile non définie et une taille de plateau qui ne correspond pas (3 cases par tuile).
+- **Affichage** : le numéro de chaque tuile (par exemple 3B) est écrit au centre de la tuile, sur le plateau de jeu, l'aperçu du briefing et la mise en place ; pas d'indication d'orientation (le dessin suffit). Le briefing n'affiche ni liste de tuiles ni rotation. Un bouton « Voir les tuiles », **uniquement au briefing** (il aide à construire le plateau sur la table), montre les tuiles **en réduit dans un dialogue**. Il n'existe plus pendant la partie : ni à la mise en place, ni dans le menu.
+- Scénario 1 (« Les Braises de Port-Cendre ») : 3×3 tuiles, 5A, 3B (90°), 2A (chapelle, bâtiment en L), 8A (remise, bâtiment en L), 4A (la case bloquée du centre est le puits), 9A, 7A (départ des héros), 6B (180°), 1B (grande salle). **Cet assemblage reste un choix à confirmer** : il n'est pas issu de la boîte du jeu.
+
+## Moins de 9 tuiles, tuiles décalées
+
+- Un scénario n'a **pas à utiliser les 9 tuiles** : une grille d'emplacements (`tilesW × tilesH`) peut n'en contenir que quelques-unes. Les emplacements vides sont des cases absentes, donc impassables.
+- Une tuile peut être **décalée** (`dx`, `dy`, en cases, positifs ou négatifs) par rapport à son emplacement, pour créer des espaces bloquants entre les tuiles : les cases que aucune tuile ne couvre sont des cases absentes (impassables, ni déplacement ni ligne de vue). Le plateau s'agrandit si une tuile décalée dépasse la grille (`layoutExtent`) et la taille `size` de la description du scénario doit suivre.
+- Une tuile ne peut pas être décalée hors du plateau (coordonnée négative : on décale plutôt les autres vers la droite ou vers le bas), et deux tuiles ne peuvent pas se chevaucher. L'assistant de mise en place propose des boutons ← ↑ ↓ → (une case par clic), « Recaler » et garde le décalage quand on tourne ou change la tuile.
+- Le numéro de tuile écrit sur le plateau et les zones de départ suivent le décalage.
+
+## Pions porte et murs
+
+- Les tuiles n'ont pas de portes : les portes sont des **pions** posés par le scénario (22 au plus, dont une spéciale violette).
+- Un pion porte se pose **sur un mur** et le remplace. Fermé, il se franchit en l'ouvrant (1 PM). Posé **côté « porte ouverte »**, il **supprime le mur** : on s'en sert pour agrandir un bâtiment (relier deux bâtiments) ou pour l'ouvrir sur la rue. Un pion sur une arête sans mur est refusé.
+- **Départ des héros** : il faut au moins une porte sur le contour de leur bâtiment de départ pour qu'ils puissent en sortir (`heroStartsEnclosed`) ; un scénario ou une mise en place qui les enferme est refusé.

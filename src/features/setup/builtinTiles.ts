@@ -1,4 +1,5 @@
 import { parse } from '@/engine/domain/validate';
+import { GAME_TILES } from '@/game-data/original/tiles';
 import { TileDefSchema, type TileDef } from '@/engine/tiles';
 
 /** Tuile de rue vierge : toutes les cases sont franchissables. */
@@ -19,3 +20,9 @@ export const DEMO_HOUSE_TILE: TileDef = parse(TileDefSchema, {
 
 /** Tuiles toujours disponibles, en plus de la bibliothèque de scans. */
 export const BUILTIN_TILES: TileDef[] = [BLANK_TILE, DEMO_HOUSE_TILE];
+
+/**
+ * Toutes les tuiles utilisables : tuiles de test, tuiles du jeu livrées avec l'application, puis celles de la bibliothèque de
+ * l'appareil (qui l'emportent à code égal : on peut corriger une face sans toucher aux données livrées).
+ */
+export const allTiles = (library: readonly TileDef[]): TileDef[] => [...new Map([...BUILTIN_TILES, ...GAME_TILES, ...library].map((t) => [t.id, t] as const)).values()];

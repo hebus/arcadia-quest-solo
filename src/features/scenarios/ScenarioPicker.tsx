@@ -1,10 +1,11 @@
+import { TilesButton } from '@/features/scenario/TilesButton';
 import { useMemo, useState } from 'react';
 import { MiniPawn } from '@/components/MiniPawn';
 import { ObjectiveIcon } from '@/components/ObjectiveIcon';
 import { Button, ErrorBanner, Panel } from '@/components/ui';
 import { parseBoardDsl } from '@/engine/boardDsl';
 import type { Difficulty } from '@/engine/domain/schemas';
-import { scenarioToSetup, type HeroTemplate, type ScenarioDefinition } from '@/engine/scenario/definition';
+import { scenarioBoard, scenarioToSetup, type HeroTemplate, type ScenarioDefinition } from '@/engine/scenario/definition';
 import { ORIGINAL_CONTENT, ORIGINAL_HEROES, ORIGINAL_SCENARIOS } from '@/game-data/original';
 import { BoardView, type BoardToken } from '@/rendering/board/BoardView';
 import { useGameStore } from '@/stores/gameStore';
@@ -12,15 +13,25 @@ import { useGameStore } from '@/stores/gameStore';
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: 'Facile', medium: 'Moyenne', hard: 'Difficile', legendary: 'Légendaire' };
 const HEROES_PER_GAME = 3;
 
+/** Plateau d'un scénario : depuis ses tuiles ; si l'une n'est pas définie, la description textuelle sert d'aperçu. */
+function boardOf(def: ScenarioDefinition) {
+  try {
+    return scenarioBoard(def, ORIGINAL_CONTENT);
+  } catch {
+    return parseBoardDsl(def.board);
+  }
+}
+
 /** Aperçu visuel du scénario : plateau, départ des héros, monstres et objectifs, sans une coordonnée écrite. */
 function ScenarioPreview({ def, heroes }: { def: ScenarioDefinition; heroes: HeroTemplate[] }) {
-  const { board, spawnPoints } = useMemo(() => parseBoardDsl(def.board), [def]);
+  const { board, spawnPoints } = useMemo(() => boardOf(def), [def]);
   const tokens: BoardToken[] = [
     ...heroes.map((h, i) => ({ id: `h${i + 1}`, kind: 'hero' as const, label: h.name.slice(0, 2).toUpperCase(), at: def.heroStarts[i]! })),
     ...def.monsters.map((m) => ({ id: m.id, kind: 'monster' as const, label: m.definitionId.slice(0, 2).toUpperCase(), at: m.at, guard: m.guard })),
   ];
   const objectives = def.quests.flatMap((q) => (q.at ? [{ id: q.id, at: q.at, icon: q.icon, title: q.title, done: false }] : []));
-  return <BoardView label="Aperçu du scénario" board={board} spawns={spawnPoints} tokens={tokens} objectives={objectives} showCoords={false} />;
+  const tileLabels = (def.tiles?.placements ?? []).map((pl) => ({ tx: pl.tx, ty: pl.ty, dx: pl.dx, dy: pl.dy, label: pl.tileId }));
+  return <BoardView label="Aperçu du scénario" board={board} spawns={spawnPoints} tokens={tokens} objectives={objectives} tileLabels={tileLabels} showCoords={false} />;
 }
 
 /** Choix d'un scénario de l'univers original, de ses héros, puis briefing narratif avant de jouer : aucune mise en place manuelle. */
@@ -86,9 +97,12 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
           <h2 className="text-2xl font-semibold text-amber-300">{def.title}</h2>
           <p className="text-sm text-stone-300">{def.tagline}</p>
         </div>
-        <Button variant="ghost" onClick={() => setDef(null)}>
-          ← Autres scénarios
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {def.tiles && <TilesButton board={boardOf(def).board} layout={def.tiles} />}
+          <Button variant="ghost" onClick={() => setDef(null)}>
+            ← Autres scénarios
+          </Button>
+        </div>
       </header>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_min(calc(100dvh_-_11rem),46vw)]">

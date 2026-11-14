@@ -1,6 +1,10 @@
+import { doorTokenProblems } from '../doorTokens';
+import { HERO_START_ENCLOSED, heroStartsEnclosed } from '../startArea';
+import { tilePlacementProblems } from '../tileCatalog';
+import { boardFromLayout, doorsWithoutWall, layoutExtent, layoutProblems } from '../tiles';
 import { type } from 'arktype';
-import { parseBoardDsl } from '../boardDsl';
-import { DifficultySchema, PositionSchema, type Content, type Difficulty, type Position } from '../domain/schemas';
+import { parseBoardDsl, type ParsedBoard } from '../boardDsl';
+import { DifficultySchema, PositionSchema, TileLayoutSchema, type Content, type Difficulty, type Position } from '../domain/schemas';
 import { parse } from '../domain/validate';
 import { CELL_CAPACITY } from '../movement/board';
 import { createGame, type DeckRules, type SetupConfig } from '../setup';
@@ -51,6 +55,11 @@ export const ScenarioDefinitionSchema = type({
   },
   /** Plateau décrit avec le DSL de `boardDsl.ts` (taille, pièces, murs, portes, portails, jetons Spawn). */
   board: 'string',
+  /**
+   * Tuiles à assembler pour le plateau (numéro et face de chaque tuile, rotation par quarts de tour) : affichées dans le
+   * briefing et au début de la partie. Une tuile ne se pose que sur une seule face dans un scénario.
+   */
+  'tiles?': TileLayoutSchema.or('undefined'),
   /** Cases de départ des héros, dans l'ordre : le 1er héros choisi prend la 1re case. */
   heroStarts: PositionSchema.array(),
   monsters: type({
@@ -89,11 +98,30 @@ export interface StartOptions {
 const samePos = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
 
 /** Contrôles d'intégrité du scénario ; renvoie la liste des problèmes (vide = jouable). */
-export function validateScenario(def: ScenarioDefinition, content: Pick<Content, 'monsters'>): string[] {
+/**
+ * Plateau d'un scénario. Sans `tiles`, il vient de la description textuelle. Avec `tiles`, il est construit depuis les tuiles
+ * du jeu (murs, bâtiments, salles, cases bloquées, rotation) ; la description n'apporte plus que les jetons Spawn, les portes
+ * (pions porte), les murs et les portails ajoutés par le scénario.
+ */
+export function scenarioBoard(def: ScenarioDefinition, content: Pick<Content, 'tiles'>): ParsedBoard {
+  const parsed = parseBoardDsl(def.board);
+  if (!def.tiles) return parsed;
+  const tiles = content.tiles ?? {};
+  for (const pl of def.tiles.placements) {
+    if (!tiles[pl.tileId]) throw new Error(`la tuile ${pl.tileId} n'est pas définie : définissez-la dans l'éditeur de tuiles.`);
+  }
+  if (parsed.board.interior?.length || parsed.board.holes.length) {
+    throw new Error('un plateau en tuiles ne décrit ni bâtiments (room) ni trous (hole) : ils viennent des tuiles.');
+  }
+  const board = boardFromLayout(tiles, def.tiles, { walls: parsed.board.walls, doors: parsed.board.doors, portals: parsed.board.portals });
+  return { board, spawnPoints: parsed.spawnPoints };
+}
+
+export function validateScenario(def: ScenarioDefinition, content: Pick<Content, 'monsters' | 'tiles'>): string[] {
   const problems: string[] = [];
   let parsed: ReturnType<typeof parseBoardDsl>;
   try {
-    parsed = parseBoardDsl(def.board);
+    parsed = scenarioBoard(def, content);
   } catch (e) {
     return [`Plateau : ${e instanceof Error ? e.message : String(e)}`];
   }
@@ -119,6 +147,27 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
   for (const q of def.quests) if (q.at && !playable(q.at)) problems.push(`Objectif « ${q.title} » hors du plateau ${where(q.at)}`);
   if (def.heroStarts.length < 1) problems.push('Aucune case de départ pour les héros');
   if (spawnPoints.length === 0) problems.push('Aucun jeton Spawn');
+  problems.push(...doorTokenProblems(board.doors));
+  if (def.heroStarts.every(playable) && heroStartsEnclosed(board, def.heroStarts)) problems.push(HERO_START_ENCLOSED);
+  if (def.tiles) {
+    const check = tilePlacementProblems(def.tiles.placements.map((p) => p.tileId));
+    problems.push(...check.errors);
+    for (const id of check.notInGame) problems.push(`Tuile « ${id} » : il n'existe que les tuiles 1A/1B à 9A/9B.`);
+    // La taille annoncée par la description (size LxH) doit correspondre aux tuiles : 3 cases par tuile.
+    const size = parseBoardDsl(def.board).board;
+    // Un pion porte se pose sur un mur et le remplace : sur une arête sans mur, il n'a pas de sens.
+    if (def.tiles.placements.every((p) => content.tiles?.[p.tileId])) {
+      const hand = parseBoardDsl(def.board).board;
+      for (const d of doorsWithoutWall(content.tiles ?? {}, def.tiles, { walls: hand.walls, doors: hand.doors, portals: hand.portals })) {
+        problems.push(`La porte « ${d.id} » est posée sur une arête sans mur : un pion porte remplace un mur (côté « porte ouverte », il le supprime).`);
+      }
+    }
+    const extent = layoutExtent(def.tiles);
+    if (extent.width !== size.width || extent.height !== size.height) {
+      problems.push(`Les tuiles (${extent.width}×${extent.height} cases) ne correspondent pas au plateau (${size.width}×${size.height}).`);
+    }
+    problems.push(...layoutProblems(def.tiles));
+  }
   if (def.quests.length === 0) problems.push('Aucune quête');
   problems.push(
     ...validateScript(def.script ?? [], {
@@ -134,11 +183,11 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
 }
 
 /** Configuration de partie prête à jouer : plus aucune mise en place manuelle. */
-export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, content: Pick<Content, 'monsters'>): SetupConfig {
+export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, content: Pick<Content, 'monsters' | 'tiles'>): SetupConfig {
   const problems = validateScenario(def, content);
   if (problems.length) throw new Error(`Scénario « ${def.title} » invalide :\n- ${problems.join('\n- ')}`);
   if (opts.heroes.length > def.heroStarts.length) throw new Error(`Ce scénario accepte ${def.heroStarts.length} héros au plus`);
-  const { board, spawnPoints } = parseBoardDsl(def.board);
+  const { board, spawnPoints } = scenarioBoard(def, content);
   const deck: DeckRules = {
     ...(def.deck?.listedMonsterIds ? { listedMonsterIds: def.deck.listedMonsterIds } : {}),
     ...(def.deck?.excluded ? { excluded: def.deck.excluded } : {}),
@@ -152,6 +201,7 @@ export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, con
     difficulty: opts.difficulty,
     monsterCardSet: def.monsterCardSet,
     board,
+    ...(def.tiles ? { tileLayout: def.tiles } : {}),
     spawnPoints,
     heroes: opts.heroes.map((h, i) => ({
       id: `h${i + 1}`,

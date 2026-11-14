@@ -38,3 +38,27 @@ describe('art de tuiles généré', () => {
     expect(cellKind({}, { x: 0, y: 0 })).toBe('street');
   });
 });
+
+const p = { x: 1, y: 1 };
+const board = { interior: [{ x: 0, y: 0 }], rooms: [{ x: 1, y: 1 }, { x: 0, y: 0 }], blocked: [{ x: 2, y: 2 }, { x: 1, y: 1 }] };
+
+describe('sol des cases : rue, bâtiment, salle, case bloquée', () => {
+  it('la nature d’une case : bloquée avant tout, puis bâtiment, puis salle, sinon rue', () => {
+    expect(cellKind(board, { x: 2, y: 2 })).toBe('blocked');
+    expect(cellKind(board, { x: 1, y: 1 })).toBe('blocked'); // bloquée l'emporte sur salle
+    expect(cellKind(board, { x: 0, y: 0 })).toBe('interior'); // bâtiment l'emporte sur salle
+    expect(cellKind({ rooms: [{ x: 1, y: 1 }] }, p)).toBe('room');
+    expect(cellKind({}, p)).toBe('street');
+  });
+
+  it('une salle a un sol à part : ni les pavés de la rue, ni le parquet des bâtiments', () => {
+    const art = (k: Parameters<typeof cellArt>[0]) => JSON.stringify(cellArt(k, p));
+    expect(art('room')).not.toBe(art('street'));
+    expect(art('room')).not.toBe(art('interior'));
+    expect(art('blocked')).not.toBe(art('street'));
+  });
+
+  it('le dessin d’une même case est toujours identique', () => {
+    expect(cellArt('room', p)).toEqual(cellArt('room', p));
+  });
+});

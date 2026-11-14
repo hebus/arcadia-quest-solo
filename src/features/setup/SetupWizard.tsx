@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react';
 import { Badge, Button, ErrorBanner, Panel, inputClass } from '@/components/ui';
 import type { Difficulty, MonsterDefinition, MonsterStats, SpawnPoint } from '@/engine/domain/schemas';
 import type { DeckRules, SetupConfig } from '@/engine/setup';
-import { boardFromLayout, type BoardExtras, type TileLayout } from '@/engine/tiles';
+import { boardFromLayout, doorsWithoutWall, layoutProblems, type BoardExtras, type TileLayout } from '@/engine/tiles';
 import { allScenarios } from '@/game-data/scenarios/catalog';
 import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
 import { BoardSetup, slug, type DefRow, type HeroRow, type InstRow } from './BoardSetup';
+import { doorTokenProblems } from '@/engine/doorTokens';
+import { HERO_START_ENCLOSED, heroStartsEnclosed } from '@/engine/startArea';
 import { tilePlacementProblems } from '@/engine/tileCatalog';
-import { BLANK_TILE, BUILTIN_TILES, DEMO_HOUSE_TILE } from './builtinTiles';
+import { BLANK_TILE, DEMO_HOUSE_TILE, allTiles } from './builtinTiles';
 
 const STEPS = ['Scénario', 'Héros et monstres', 'Plateau', 'Quêtes et deck', 'Vérification'];
 
 /** Un plateau complet utilise en général 3×3 tuiles de 3×3 cases. */
 const DEFAULT_LAYOUT: TileLayout = { tilesW: 3, tilesH: 3, placements: [] };
-const NO_EXTRAS: Required<BoardExtras> = { walls: [], doors: [], portals: [], doorStates: {} };
+const NO_EXTRAS: Required<BoardExtras> = { walls: [], doors: [], portals: [], doorStates: {}, specialDoorId: null };
 
 const DEMO = {
   heroes: [
@@ -41,6 +43,7 @@ const DEMO = {
     doors: [],
     portals: [],
     doorStates: {},
+    specialDoorId: null,
   } as Required<BoardExtras>,
   spawns: [
     { id: 'S1', at: { x: 0, y: 0 }, dice: ['sword', 'bow'] },
@@ -110,15 +113,24 @@ export function SetupWizard({ onDone, openLibrary }: { onDone: () => void; openL
   const num = (v: string) => Number(v);
 
   const build = () => {
-    const tileMap = Object.fromEntries([...BUILTIN_TILES, ...tiles].map((t) => [t.id, t]));
+    const tileMap = Object.fromEntries(allTiles(tiles).map((t) => [t.id, t]));
     if (layout.placements.length === 0) throw new Error('Posez au moins une tuile (étape Plateau).');
     // Seules 9 tuiles doubles faces existent (A à I) : chacune une seule fois, sur une seule face.
     const tileCheck = tilePlacementProblems(layout.placements.map((p) => p.tileId));
-    if (tileCheck.errors.length) throw new Error(tileCheck.errors.join(' '));
+    const shiftCheck = layoutProblems(layout); // tuile décalée hors du plateau, tuiles qui se chevauchent
+    if (tileCheck.errors.length || shiftCheck.length) throw new Error([...tileCheck.errors, ...shiftCheck].join(' '));
     const board = boardFromLayout(tileMap, layout, extras);
+    // Un pion porte se pose sur un mur et le remplace (côté « porte ouverte », il le supprime) : pas sur une arête sans mur.
+    const strayDoors = doorsWithoutWall(tileMap, layout, extras);
+    if (strayDoors.length) throw new Error(`Une porte est posée sur une arête sans mur : un pion porte remplace un mur (côté « porte ouverte », il le supprime).`);
+    // Seuls 22 pions porte existent (recto ouvert / verso fermé), dont un seul spécial (violet).
+    const doorCheck = doorTokenProblems(board.doors);
+    if (doorCheck.length) throw new Error(doorCheck.join(' '));
     const notPlaced = heroes.filter((h) => !h.pos).map((h) => h.name);
     if (notPlaced.length) throw new Error(`Placez les héros sur le plateau : ${notPlaced.join(', ')}.`);
     if (spawns.length === 0) throw new Error('Ajoutez au moins un jeton Spawn (outil « Jeton Spawn »).');
+    // Les héros doivent pouvoir sortir de leur bâtiment de départ : au moins une porte sur son contour.
+    if (heroStartsEnclosed(board, heroes.flatMap((h) => (h.pos ? [h.pos] : [])))) throw new Error(HERO_START_ENCLOSED);
     const warnings: string[] = [];
     if (tileCheck.notInGame.length) {
       warnings.push(`Tuiles de test hors du jeu de base (${tileCheck.notInGame.map((id) => tileMap[id]?.name ?? id).join(', ')}) : ce plateau n'est pas réalisable avec le matériel, seules les 9 tuiles 1 à 9 (recto/verso A et B) existent.`);

@@ -5,12 +5,24 @@ import { App } from '@/app/App';
 import { useCampaignStore } from '@/stores/campaignStore';
 import { defaultContent, useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
+import { scenarioToSetup } from '@/engine/scenario/definition';
+import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
+import { CAVE_AUX_CENDRES_LEGACY } from '@/tests/fixtures/legacyScenario';
 
 beforeEach(() => {
   useGameStore.setState({ game: null, history: [], instructions: [], traces: [], answers: [], error: null, agent: { status: 'ready' }, content: defaultContent(), selectedId: null, placing: null, correctionMode: false });
   useCampaignStore.setState({ campaign: null, error: null });
   useTileStore.setState({ tiles: [], loaded: true });
 });
+
+/** Ces tests portent sur le combat : ils jouent sur l'ancienne géométrie du scénario 1 (plateau écrit à la main, rue dégagée). */
+function useLegacyGeometry() {
+  act(() => {
+    const store = useGameStore.getState();
+    store.newGame(scenarioToSetup(CAVE_AUX_CENDRES_LEGACY, { sessionId: 's', difficulty: 'medium', seed: 5, heroes: ORIGINAL_HEROES.slice(0, 3) }, ORIGINAL_CONTENT), CAVE_AUX_CENDRES_LEGACY.script ?? []);
+    store.begin();
+  });
+}
 
 describe('scénario de l’univers original', () => {
   it('accueil → briefing → héros → partie prête, sans mise en place manuelle', async () => {
@@ -46,7 +58,7 @@ describe('scénario de l’univers original', () => {
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
 
     // Le héros se retrouve sur la case de la clé (recalage) : la règle du script se déclenche.
-    useGameStore.getState().correct({ kind: 'hero-position', heroId: 'h1', to: { x: 1, y: 3 } });
+    useGameStore.getState().correct({ kind: 'hero-position', heroId: 'h1', to: { x: 0, y: 3 } });
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('Quête accomplie');
     expect(dialog).toHaveTextContent('Reprendre la Clé de Braise');
@@ -69,6 +81,7 @@ describe('scénario de l’univers original', () => {
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
+    useLegacyGeometry();
     // La riposte du rôdeur demanderait la saisie des boucliers : ce test porte sur l’attaque, la défense est donc numérique ici.
     useGameStore.getState().setSettings({ defenseRoll: 'digital' });
     // Mira (h1) à côté du rôdeur 1, en (3,1).
@@ -112,6 +125,7 @@ describe('scénario de l’univers original', () => {
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
+    useLegacyGeometry();
     // Mira en (6,8) ; rôdeur 1 collé à elle (hors de la ligne de tir) ; rôdeur 2 loin au bout de la rue, hors d'atteinte.
     act(() =>
       useGameStore.setState((st) => ({
@@ -162,3 +176,54 @@ describe('scénario de l’univers original', () => {
   });
 });
 
+describe('tuiles du scénario 1', () => {
+  it('le numéro de chaque tuile est au centre de la tuile, sur l’aperçu du briefing et sur le plateau de la partie', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
+    const preview = screen.getByRole('img', { name: 'Aperçu du scénario' });
+    expect(within(preview).getByTestId('tile-label-2-0')).toHaveTextContent('2A'); // la chapelle, en haut à droite
+    expect(within(preview).getByTestId('tile-label-0-2')).toHaveTextContent('7A'); // le départ des héros, en bas à gauche
+    expect(preview.querySelectorAll('[data-testid^="tile-label-"]')).toHaveLength(9);
+    // Pas de liste de tuiles ni d'orientation dans le briefing : les numéros suffisent.
+    expect(screen.queryByTestId('tile-assembly')).not.toBeInTheDocument();
+    expect(screen.queryByText(/tournée de/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
+    const board = await screen.findByRole('img', { name: 'Plateau de jeu' });
+    expect(within(board).getByTestId('tile-label-1-0')).toHaveTextContent('3B');
+    expect(board.querySelectorAll('[data-testid^="tile-label-"]')).toHaveLength(9);
+  });
+
+  it('un bouton du briefing affiche les tuiles en réduit dans un dialogue, pour aider à construire le plateau', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
+    await user.click(screen.getByRole('button', { name: /Voir les tuiles/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Tuiles du plateau' });
+    const mini = within(dialog).getByRole('img', { name: 'Tuiles du plateau (réduit)' });
+    expect(mini.querySelectorAll('[data-testid^="tile-label-"]')).toHaveLength(9);
+    expect(within(dialog).getByTestId('tile-label-0-1')).toHaveTextContent('8A');
+    await user.click(within(dialog).getByRole('button', { name: /Fermer/ }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('pendant la partie, le bouton « Voir les tuiles » n’existe plus : ni à la mise en place, ni dans le menu', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
+    await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
+    // Mise en place de la partie.
+    await screen.findByRole('button', { name: 'Démarrer le scénario' });
+    expect(screen.queryByRole('button', { name: /Voir les tuiles/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Démarrer le scénario' }));
+    expect(screen.queryByRole('button', { name: /Voir les tuiles/ })).not.toBeInTheDocument();
+    // Menu de la partie : pas d'onglet « Tuiles ».
+    await user.click(screen.getByRole('button', { name: /Menu/ }));
+    expect(within(screen.getByRole('navigation', { name: 'Sections du menu' })).queryByRole('button', { name: 'Tuiles' })).not.toBeInTheDocument();
+    // Les numéros restent écrits sur le plateau.
+    expect(screen.getAllByRole('img', { name: 'Plateau de jeu' })[0]!.querySelectorAll('[data-testid^="tile-label-"]')).toHaveLength(9);
+  });
+});

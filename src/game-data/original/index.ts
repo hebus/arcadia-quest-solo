@@ -3,6 +3,7 @@ import type { ScenarioDefinition } from '@/engine/scenario/definition';
 import { DEFAULT_ATTACK_DIE, DEFAULT_DEFENSE_DIE } from '../dice';
 import { ORIGINAL_HEROES } from './heroes';
 import { ORIGINAL_MONSTERS } from './monsters';
+import { GAME_TILES } from './tiles';
 import { CAVE_AUX_CENDRES } from './scenarios/cave-aux-cendres';
 import { TERRAIN_ESSAI } from './scenarios/terrain-essai';
 
@@ -15,6 +16,7 @@ export const ORIGINAL_CONTENT: Content = {
   monsters: Object.fromEntries(ORIGINAL_MONSTERS.map((m) => [m.id, m])),
   attackDie: DEFAULT_ATTACK_DIE,
   defenseDie: DEFAULT_DEFENSE_DIE,
+  tiles: Object.fromEntries(GAME_TILES.map((t) => [t.id, t])),
 };
 
 export const scenarioById = (id: string): ScenarioDefinition | undefined => ORIGINAL_SCENARIOS.find((s) => s.id === id);

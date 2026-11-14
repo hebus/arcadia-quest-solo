@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameState } from '@/engine/domain/schemas';
 import { createScenarioGame, validateScenario, type ScenarioDefinition } from '@/engine/scenario/definition';
 import { startScenario } from '@/engine/turn/machine';
-import { CAVE_AUX_CENDRES } from '@/game-data/original/scenarios/cave-aux-cendres';
+import { CAVE_AUX_CENDRES_LEGACY as CAVE_AUX_CENDRES } from '@/tests/fixtures/legacyScenario';
 import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
 import { runScript, type Rule } from './script';
 

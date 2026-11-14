@@ -13,6 +13,12 @@ export const TilePlacementSchema = type({
   tx: 'number.integer >= 0',
   ty: 'number.integer >= 0',
   rotation: RotationSchema,
+  /**
+   * Décalage de la tuile, en cases, par rapport à son emplacement (tx, ty) : vers la droite (dx > 0) ou la gauche, vers le bas
+   * (dy > 0) ou le haut. Décaler une tuile laisse des cases vides, donc bloquantes, entre elle et ses voisines.
+   */
+  'dx?': 'number.integer | undefined',
+  'dy?': 'number.integer | undefined',
 });
 export type TilePlacement = typeof TilePlacementSchema.infer;
 
@@ -28,6 +34,8 @@ export const DoorSchema = type({
   a: PositionSchema,
   b: PositionSchema,
   open: 'boolean',
+  /** Porte spéciale : l'unique pion porte violet de la boîte. */
+  'special?': 'boolean | undefined',
 });
 export type Door = typeof DoorSchema.infer;
 
@@ -41,6 +49,10 @@ export const BoardSchema = type({
   holes: PositionSchema.array(),
   /** Cases d'intérieur (bâtiments), pour l'affichage : le déplacement ne dépend que des murs et des portes. */
   'interior?': PositionSchema.array().or('undefined'),
+  /** Salles : cases dont le sol diffère de la rue (affichage seulement). */
+  'rooms?': PositionSchema.array().or('undefined'),
+  /** Cases bloquées (impassables) : elles figurent aussi dans `holes`, qui porte les règles ; ici, pour les dessiner. */
+  'blocked?': PositionSchema.array().or('undefined'),
   walls: type([PositionSchema, PositionSchema]).array(),
   doors: DoorSchema.array(),
   portals: PortalSchema.array(),
@@ -298,4 +310,6 @@ export interface Content {
   /** Faces du dé de combat (noir) et du dé de défense (blanc). */
   attackDie: DieFaceDef[];
   defenseDie: DieFaceDef[];
+  /** Les tuiles du jeu physique (1A à 9B), par code de face : les plateaux des scénarios se construisent depuis elles. */
+  tiles?: Record<string, import('../tiles').TileDef>;
 }

@@ -15,7 +15,7 @@ import { actorInfo, overlayForAttackAnnouncement, overlayForQueue } from '@/rend
 import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
 import { TurnBanner, turnSide } from './TurnBanner';
-import { BUILTIN_TILES } from '../setup/builtinTiles';
+import { allTiles } from '../setup/builtinTiles';
 
 const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
 
@@ -177,7 +177,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
       ? g.monsters.filter((m) => m.status === 'board' && m.position).map((m) => ({ from: hero.position!, to: m.position!, tone: validTargets.includes(m.id) ? ('clear' as const) : ('blocked' as const) }))
       : [];
 
-  const tileMap = useMemo(() => Object.fromEntries([...BUILTIN_TILES, ...tiles].map((t) => [t.id, t])), [tiles]);
+  const tileMap = useMemo(() => Object.fromEntries(allTiles(tiles).map((t) => [t.id, t])), [tiles]);
   const placed: PlacedTile[] = (g.tileLayout?.placements ?? []).flatMap((pl) => (tileMap[pl.tileId] ? [{ def: tileMap[pl.tileId]!, placement: pl }] : []));
 
   // Étapes physiques en attente : la première est montrée en détail sur le plateau, les suivantes laissent les figurines à leur case d'avant.
@@ -386,6 +386,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
         label="Plateau de jeu"
         board={g.board}
         tiles={placed}
+        tileLabels={(g.tileLayout?.placements ?? []).map((pl) => ({ tx: pl.tx, ty: pl.ty, dx: pl.dx, dy: pl.dy, label: pl.tileId }))}
         spawns={g.spawnPoints}
         tokens={tokens}
         highlights={highlights}

@@ -6,7 +6,7 @@ import { planMonsterAction } from './movement/plan';
 import { restGuild, startScenario } from './turn/machine';
 import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
 import { TEST_ORIGINAL_CONTENT } from '@/tests/fixtures/originalContent';
-import { CAVE_AUX_CENDRES } from '@/game-data/original/scenarios/cave-aux-cendres';
+import { CAVE_AUX_CENDRES_LEGACY as CAVE_AUX_CENDRES } from '@/tests/fixtures/legacyScenario';
 
 /** Mira (h1) en (3,2), à côté du rôdeur 1 en (3,1). */
 function started(): GameState {

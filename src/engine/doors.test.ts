@@ -5,7 +5,7 @@ import type { GameState } from './domain/schemas';
 import { createScenarioGame } from './scenario/definition';
 import { startScenario } from './turn/machine';
 import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
-import { CAVE_AUX_CENDRES } from '@/game-data/original/scenarios/cave-aux-cendres';
+import { CAVE_AUX_CENDRES_LEGACY as CAVE_AUX_CENDRES } from '@/tests/fixtures/legacyScenario';
 
 const DOOR = 'porte-remise'; // porte fermée entre (2,6) dans la rue et (2,5) dans la remise
 
