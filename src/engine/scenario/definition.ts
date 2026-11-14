@@ -8,7 +8,9 @@ import { parseBoardDsl, type ParsedBoard } from '../boardDsl';
 import { DifficultySchema, PositionSchema, TileLayoutSchema, type Content, type Difficulty, type Position } from '../domain/schemas';
 import { parse } from '../domain/validate';
 import { CELL_CAPACITY } from '../movement/board';
+import { monsterStats } from '../monsters';
 import { createGame, type DeckRules, type SetupConfig } from '../setup';
+import { DIFFICULTIES, DIFFICULTY_LABEL, DifficultyVariantsSchema, MonsterPlacementSchema, resolveDifficulty, variantProblems } from './difficulty';
 import { RuleSchema, validateScript } from './script';
 
 /** Modèle de héros jouable : l'univers du jeu fournit les gabarits, le scénario place les trois choisis. */
@@ -63,13 +65,12 @@ export const ScenarioDefinitionSchema = type({
   'tiles?': TileLayoutSchema.or('undefined'),
   /** Cases de départ des héros, dans l'ordre : le 1er héros choisi prend la 1re case. */
   heroStarts: PositionSchema.array(),
-  monsters: type({
-    id: 'string',
-    definitionId: 'string',
-    at: PositionSchema,
-    'guard?': 'boolean | undefined',
-    'rank?': "'minor' | 'major' | undefined",
-  }).array(),
+  monsters: MonsterPlacementSchema.array(),
+  /**
+   * Scénario « one shot » : variantes par difficulté (niveau des fiches de monstres, monstres retirés ou ajoutés). Sans variante
+   * pour une difficulté, le scénario se joue tel quel.
+   */
+  'difficulties?': DifficultyVariantsSchema.or('undefined'),
   quests: ScenarioQuestSchema.array(),
   /** Terrain d'essai : outils de placement et de réglage des dés, pas une aventure. */
   'sandbox?': 'boolean | undefined',
@@ -120,7 +121,17 @@ export function scenarioBoard(def: ScenarioDefinition, content: Pick<Content, 't
   return { board, spawnPoints: parsed.spawnPoints };
 }
 
-export function validateScenario(def: ScenarioDefinition, content: Pick<Content, 'monsters' | 'tiles'>): string[] {
+export function validateScenario(def: ScenarioDefinition, content: Pick<Content, 'monsters' | 'tiles' | 'rewards'>): string[] {
+  if (!def.difficulties) return validateOne(def, content);
+  const problems = variantProblems(def);
+  // Chacune des quatre difficultés doit donner un scénario jouable, avec ses statistiques et ses boîtes.
+  for (const d of DIFFICULTIES) {
+    problems.push(...validateOne(resolveDifficulty(def, d), content).map((p) => `[${DIFFICULTY_LABEL[d]}] ${p}`));
+  }
+  return problems;
+}
+
+function validateOne(def: ScenarioDefinition, content: Pick<Content, 'monsters' | 'tiles' | 'rewards'>): string[] {
   const problems: string[] = [];
   let parsed: ReturnType<typeof parseBoardDsl>;
   try {
@@ -143,7 +154,16 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
   const perType = new Map<string, number>();
   for (const m of def.monsters) perType.set(m.definitionId, (perType.get(m.definitionId) ?? 0) + 1);
   // Les types qui partagent une boîte (Orc Marauder et Orc Captain : 8 Orcs) se comptent ensemble.
-  problems.push(...boxProblems(perType, content.monsters));
+  // Les renforts du script (effet spawn) sortent de la même boîte : on les compte aussi.
+  const spawned = (def.script ?? []).flatMap((r) => r.then.flatMap((e) => (e.type === 'spawn' ? [e.definitionId] : [])));
+  const withReinforcements = new Map(perType);
+  for (const id of spawned) withReinforcements.set(id, (withReinforcements.get(id) ?? 0) + 1);
+  problems.push(...boxProblems(withReinforcements, content.monsters));
+  // Chaque monstre doit avoir sa fiche au niveau de cartes du scénario (rien n'est inventé).
+  for (const id of new Set([...perType.keys(), ...spawned])) {
+    const d = content.monsters[id];
+    if (d && !monsterStats(d, def.monsterCardSet)) problems.push(`Le monstre ${id} n'a pas de statistiques au niveau ${def.monsterCardSet}.`);
+  }
   for (const [k, n] of used) if (n > CELL_CAPACITY) problems.push(`Plus de ${CELL_CAPACITY} figurines sur la case ${k}`);
   for (const q of def.quests) if (q.at && !playable(q.at)) problems.push(`Objectif « ${q.title} » hors du plateau ${where(q.at)}`);
   if (def.heroStarts.length < 1) problems.push('Aucune case de départ pour les héros');
@@ -178,6 +198,7 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
       monsterIds: def.monsters.map((m) => m.id),
       knownDefinitions: (id) => !!content.monsters[id],
       playable,
+      ...(content.rewards ? { rewards: content.rewards } : {}),
     }),
   );
   for (const id of def.deck?.listedMonsterIds ?? []) if (!content.monsters[id]) problems.push(`Deck : monstre inconnu ${id}`);
@@ -185,7 +206,8 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
 }
 
 /** Configuration de partie prête à jouer : plus aucune mise en place manuelle. */
-export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, content: Pick<Content, 'monsters' | 'tiles'>): SetupConfig {
+export function scenarioToSetup(original: ScenarioDefinition, opts: StartOptions, content: Pick<Content, 'monsters' | 'tiles' | 'rewards'>): SetupConfig {
+  const def = resolveDifficulty(original, opts.difficulty);
   const problems = validateScenario(def, content);
   if (problems.length) throw new Error(`Scénario « ${def.title} » invalide :\n- ${problems.join('\n- ')}`);
   if (opts.heroes.length > def.heroStarts.length) throw new Error(`Ce scénario accepte ${def.heroStarts.length} héros au plus`);
@@ -200,7 +222,7 @@ export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, con
   return {
     sessionId: opts.sessionId,
     scenarioId: def.id,
-    ...(def.generated ? { generatedScenario: JSON.stringify(def) } : {}),
+    ...(def.generated ? { generatedScenario: JSON.stringify(original) } : {}),
     difficulty: opts.difficulty,
     monsterCardSet: def.monsterCardSet,
     board,

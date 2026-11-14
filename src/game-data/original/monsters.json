@@ -9,7 +9,7 @@
     "Compétences possibles : \"crit-extra-wound\" (chaque critique donne une blessure en plus), \"attack-all-adjacent\" (son attaque cible tous les héros adjacents), \"extra-die-next-to-monster\" (un dé d'attaque en plus s'il est adjacent à un autre monstre), \"stun\" (si au moins une blessure passe, le héros est étourdi).",
     "Le rang (minor ou major) est celui du monstre à ce niveau : il peut changer d'un niveau à l'autre. kind : \"minion\" ou \"villain\". tier : rang de riposte (choix de l'application : minion minor 1, minion major 2, vilain 3).",
     "copies : nombre de figurines dans la boîte. group : des monstres qui partagent les mêmes figurines (ex. Orc Marauder et Orc Captain : 8 Orcs en tout) ont le même group.",
-    "Pour d'autres niveaux (4-5, 6), ajoutez la clé du niveau dans levels en copiant une fiche vide."
+    "Les niveaux 4-5 et 6 sont, pour l'instant, des COPIES des valeurs du niveau 2-3 : remplacez celles qui changent. Pour ajouter un niveau, copiez une fiche dans levels avec la clé du niveau."
   ],
   "monsters": [
     {
@@ -40,6 +40,30 @@
           "reward": 1,
           "attackType": "ranged",
           "attackDice": 2,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        },
+        "4-5": {
+          "rank": "minor",
+          "life": 3,
+          "overkill": 4,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "ranged",
+          "attackDice": 3,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        },
+        "6": {
+          "rank": "minor",
+          "life": 4,
+          "overkill": 5,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "ranged",
+          "attackDice": 3,
           "defense": null,
           "rerolls": null,
           "skills": []
@@ -78,6 +102,30 @@
           "defense": null,
           "rerolls": null,
           "skills": []
+        },
+        "4-5": {
+          "rank": "minor",
+          "life": 4,
+          "overkill": 5,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
+        },
+        "6": {
+          "rank": "minor",
+          "life": 5,
+          "overkill": 6,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": []
         }
       }
     },
@@ -113,6 +161,30 @@
           "defense": null,
           "rerolls": 1,
           "skills": []
+        },
+        "4-5": {
+          "rank": "minor",
+          "life": 4,
+          "overkill": 6,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": 2,
+          "skills": []
+        },
+        "6": {
+          "rank": "minor",
+          "life": 5,
+          "overkill": 7,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": 2,
+          "skills": []
         }
       }
     },
@@ -146,6 +218,34 @@
           "reward": 3,
           "attackType": "melee",
           "attackDice": 4,
+          "defense": 1,
+          "rerolls": null,
+          "skills": [
+            "crit-extra-wound"
+          ]
+        },
+        "4-5": {
+          "rank": "minor",
+          "life": 7,
+          "overkill": 9,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 5,
+          "defense": 2,
+          "rerolls": null,
+          "skills": [
+            "crit-extra-wound"
+          ]
+        },
+        "6": {
+          "rank": "minor",
+          "life": 8,
+          "overkill": 9,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 5,
           "defense": 1,
           "rerolls": null,
           "skills": [
@@ -189,6 +289,34 @@
           "skills": [
             "attack-all-adjacent"
           ]
+        },
+        "4-5": {
+          "rank": "minor",
+          "life": 6,
+          "overkill": 8,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 5,
+          "defense": 3,
+          "rerolls": null,
+          "skills": [
+            "attack-all-adjacent"
+          ]
+        },
+        "6": {
+          "rank": "minor",
+          "life": 8,
+          "overkill": 8,
+          "movement": 2,
+          "reward": 3,
+          "attackType": "melee",
+          "attackDice": 5,
+          "defense": 3,
+          "rerolls": null,
+          "skills": [
+            "attack-all-adjacent"
+          ]
         }
       }
     },
@@ -227,6 +355,34 @@
           "skills": [
             "extra-die-next-to-monster"
           ]
+        },
+        "4-5": {
+          "rank": "major",
+          "life": 5,
+          "overkill": 7,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "ranged",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "extra-die-next-to-monster"
+          ]
+        },
+        "6": {
+          "rank": "major",
+          "life": 7,
+          "overkill": 7,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "ranged",
+          "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "extra-die-next-to-monster"
+          ]
         }
       }
     },
@@ -260,6 +416,34 @@
           "reward": 2,
           "attackType": "melee",
           "attackDice": 4,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "stun"
+          ]
+        },
+        "4-5": {
+          "rank": "major",
+          "life": 5,
+          "overkill": 7,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 5,
+          "defense": null,
+          "rerolls": null,
+          "skills": [
+            "stun"
+          ]
+        },
+        "6": {
+          "rank": "major",
+          "life": 7,
+          "overkill": 7,
+          "movement": 1,
+          "reward": 2,
+          "attackType": "melee",
+          "attackDice": 5,
           "defense": null,
           "rerolls": null,
           "skills": [

@@ -18,6 +18,8 @@ export const RunAttemptSchema = type({
   /** PO gagnés pendant cette partie : monstres tués + une pièce par quête accomplie (comme à la fin d'un scénario). */
   coinsWon: 'number.integer >= 0',
   deaths: 'number.integer >= 0',
+  /** Cartes Récompense gagnées pendant cette partie (identifiants de carte). */
+  'rewards?': 'string[] | undefined',
 });
 export type RunAttempt = typeof RunAttemptSchema.infer;
 
@@ -70,6 +72,9 @@ export function chapterProgress(run: CampaignRun | null, chapterIds: readonly st
 }
 
 /** Cumul des PO gagnés par la guilde depuis le début de la campagne. */
+/** Cartes Récompense gagnées par la guilde pendant la campagne (parties gagnées ou perdues : le butin est ramassé en route). */
+export const runRewards = (run: CampaignRun | null): string[] => (run?.attempts ?? []).flatMap((a) => a.rewards ?? []);
+
 export const totalGold = (run: CampaignRun | null): number => (run?.attempts ?? []).reduce((n, a) => n + a.coinsWon, 0);
 
 /** Le prochain chapitre à jouer (le premier non gagné), ou `null` quand la campagne est terminée. */
@@ -85,13 +90,16 @@ export const isRunComplete = (run: CampaignRun | null, chapterIds: readonly stri
  * Enregistre la fin d'une partie dans la campagne. Sans effet si la partie n'est pas terminée, n'appartient à aucun chapitre,
  * appartient à un chapitre encore verrouillé, ou a déjà été enregistrée (une partie ne compte qu'une fois).
  */
-export function recordAttempt(run: CampaignRun, chapterIds: readonly string[], g: Pick<GameState, 'sessionId' | 'scenarioId' | 'phase' | 'coins' | 'quests' | 'deaths'>): CampaignRun {
+export function recordAttempt(run: CampaignRun, chapterIds: readonly string[], g: Pick<GameState, 'sessionId' | 'scenarioId' | 'phase' | 'coins' | 'quests' | 'deaths'> & Partial<Pick<GameState, 'rewards'>>): CampaignRun {
   if (g.phase !== 'SCENARIO_WON' && g.phase !== 'SCENARIO_LOST') return run;
   const chapter = chapterIds.indexOf(g.scenarioId);
   if (chapter < 0) return run;
   if (run.attempts.some((a) => a.sessionId === g.sessionId)) return run;
   const state = chapterProgress(run, chapterIds)[chapter]!.state;
   if (state === 'locked' || state === 'won') return run; // un chapitre verrouillé ne peut pas compter ; un chapitre gagné ne se rejoue pas ici
-  const attempt: RunAttempt = { sessionId: g.sessionId, chapter, scenarioId: g.scenarioId, won: g.phase === 'SCENARIO_WON', coinsWon: coinsOfGame(g), deaths: g.deaths };
+  const attempt: RunAttempt = { sessionId: g.sessionId, chapter, scenarioId: g.scenarioId, won: g.phase === 'SCENARIO_WON', coinsWon: coinsOfGame(g), deaths: g.deaths, ...(g.rewards?.length ? { rewards: g.rewards.map((r) => r.cardId) } : {}) };
   return { ...run, attempts: [...run.attempts, attempt] };
 }
+
+/** Une campagne est « en cours » quand elle est commencée et pas terminée : l'abandonner demande une confirmation. */
+export const runInProgress = (run: CampaignRun | null, chapterIds: readonly string[]): boolean => !!run && !isRunComplete(run, chapterIds);

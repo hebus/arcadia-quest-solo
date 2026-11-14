@@ -11,7 +11,7 @@ import { completeQuest } from '@/engine/state';
 import { activateHero, finishHeroActivations, restGuild, skipGuildTurn, startScenario } from '@/engine/turn/machine';
 import { DEFAULT_ATTACK_DIE, DEFAULT_DEFENSE_DIE } from '@/game-data/dice';
 import type { MonsterDefinition } from '@/engine/domain/schemas';
-import { scenarioOfGame } from '@/game-data/original';
+import { ORIGINAL_REWARDS, scenarioForGame } from '@/game-data/original';
 import { runScript, type Rule, type StoryBeat } from '@/engine/scenario/script';
 import { Repository } from '@/infrastructure/persistence/repository';
 
@@ -103,6 +103,7 @@ export const defaultContent = (monsters: Record<string, MonsterDefinition> = {})
   monsters,
   attackDie: DEFAULT_ATTACK_DIE,
   defenseDie: DEFAULT_DEFENSE_DIE,
+  rewards: ORIGINAL_REWARDS,
 });
 
 let repository: Repository | null = null;
@@ -119,7 +120,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
   const commit = (label: string, next: GameState, extra: Partial<GameStore> = {}) => {
     const prev = get().game;
     // Le maître de jeu réagit à chaque transaction : récit, quêtes validées, renforts, portes.
-    const scripted = runScript(next, get().script);
+    const scripted = runScript(next, get().script, get().content.rewards);
     const final = scripted.state;
     set((s) => ({
       game: final,
@@ -259,7 +260,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
       void repository?.saveSession(g).catch(() => undefined);
     },
     loadGame(state) {
-      set({ game: state, script: scenarioOfGame(state)?.script ?? [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null });
+      set({ game: state, script: scenarioForGame(state)?.script ?? [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null });
     },
     begin() {
       const g = get().game;

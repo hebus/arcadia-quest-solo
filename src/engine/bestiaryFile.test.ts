@@ -102,3 +102,49 @@ describe('monsters.json livré', () => {
     expect(monsterStats(ga, '2-3')).toMatchObject({ life: 2 }); // l'autre niveau ne change pas
   });
 });
+
+describe('niveaux 4-5 et 6 du fichier', () => {
+  const by = Object.fromEntries(ORIGINAL_MONSTERS.map((m) => [m.id, m]));
+
+  it('les 7 monstres ont une fiche saisie aux niveaux 4-5 et 6, avec le même rang qu’au niveau 2-3', () => {
+    for (const id of ['GA', 'OM', 'OC', 'M', 'T', 'SB', 'HB']) {
+      for (const lv of ['4-5', '6']) {
+        expect(monsterStats(by[id], lv), `${id} ${lv}`).toBeDefined();
+        expect(rankAtLevel(by[id], lv), `${id} ${lv}`).toBe(rankAtLevel(by[id], '2-3'));
+      }
+    }
+  });
+
+  it('les valeurs saisies pour les niveaux 4-5 et 6 sont lues', () => {
+    expect(monsterStats(by.OM, '4-5')).toMatchObject({ life: 4, overkill: 5, attackDice: 4 });
+    expect(monsterStats(by.OM, '6')).toMatchObject({ life: 5, overkill: 6, attackDice: 4 });
+    expect(monsterStats(by.OC, '4-5')).toMatchObject({ life: 4, overkill: 6, reward: 2, rerolls: 2, attackDice: 4 });
+    expect(monsterStats(by.M, '4-5')).toMatchObject({ life: 7, overkill: 9, defense: 2, attackDice: 5, skills: ['crit-extra-wound'] });
+    expect(monsterStats(by.M, '6')).toMatchObject({ life: 8, overkill: 9, attackDice: 5, skills: ['crit-extra-wound'] });
+    expect(monsterStats(by.T, '4-5')).toMatchObject({ life: 6, overkill: 8, defense: 3, skills: ['attack-all-adjacent'] });
+    expect(monsterStats(by.T, '6')).toMatchObject({ life: 8, overkill: 8, defense: 3 });
+    expect(monsterStats(by.SB, '6')).toMatchObject({ life: 7, overkill: 7, attackType: 'ranged', attackDice: 4, skills: ['extra-die-next-to-monster'] });
+    expect(monsterStats(by.HB, '4-5')).toMatchObject({ life: 5, overkill: 7, attackDice: 5, skills: ['stun'] });
+    expect(monsterStats(by.GA, '4-5')).toMatchObject({ life: 3, overkill: 4, attackDice: 3 });
+    expect(monsterStats(by.GA, '6')).toMatchObject({ life: 4, overkill: 5, attackDice: 3 });
+  });
+
+  it('les monstres montent en puissance : la vie ne baisse jamais d’un niveau au suivant', () => {
+    for (const m of ORIGINAL_MONSTERS) {
+      const lives = (['1', '2-3', '4-5', '6'] as const).flatMap((lv) => {
+        const st = monsterStats(m, lv);
+        return st ? [st.life] : [];
+      });
+      expect(lives, m.id).toEqual([...lives].sort((a, b) => a - b));
+    }
+  });
+
+  it('modifier une fiche 4-5 ou 6 ne touche pas aux autres niveaux', () => {
+    const edited = JSON.parse(JSON.stringify(data)) as { monsters: { id: string; levels: Record<string, Record<string, unknown>> }[] };
+    Object.assign(edited.monsters.find((m) => m.id === 'OM')!.levels['6']!, { life: 9, overkill: 10 });
+    const om = parseBestiaryFile(edited).find((m) => m.id === 'OM')!;
+    expect(monsterStats(om, '6')).toMatchObject({ life: 9, overkill: 10 });
+    expect(monsterStats(om, '4-5')).toMatchObject({ life: 4, overkill: 5 });
+    expect(monsterStats(om, '2-3')).toMatchObject({ life: 3, overkill: 4 });
+  });
+});

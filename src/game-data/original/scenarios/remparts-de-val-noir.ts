@@ -1,0 +1,112 @@
+import type { ScenarioDefinition } from '@/engine/scenario/definition';
+
+/**
+ * Chapitre 3 de la campagne moyenne « Le Siège de Val-Noir » : les Remparts. Plateau de 7 tuiles posées en croix dans une grille de
+ * 3 × 3 (9 × 9 cases) : les deux coins vides, en haut à gauche et en bas à droite, sont des cases absentes, donc bloquantes.
+ * Repère (x → droite, y → bas) : les héros partent de la colonne de bâtiments en bas à gauche (tuile 8A) ; la salle du trône est la
+ * grande salle de la tuile 1B (milieu droit) ; la galerie des archers est la rangée de salles de la tuile 2B (en haut à droite).
+ *
+ * Population (niveau de cartes « 4-5 ») : le Minotaur Cornelune (chef, en garde au fond de la salle du trône), deux Orc Captain, trois
+ * Orc Marauder, un Spear Beastman collé à un Orc, un Hammer Beastman et trois Goblin Archer ; 2 renforts d'Orc Marauder (7 Orcs sur 8).
+ */
+export const REMPARTS_DE_VAL_NOIR: ScenarioDefinition = {
+  id: 'remparts-de-val-noir',
+  title: 'Les Remparts de Val-Noir',
+  tagline: 'Reprenez la relique des remparts, brisez le sceau du trône, abattez Cornelune.',
+  recommended: 'medium',
+  story: {
+    intro: [
+      'La halle est reprise, et la carte du troll mène aux remparts : un minotaure nommé Cornelune y a installé son trône, au cœur de la vieille salle d’armes, et ses archers couvrent la galerie.',
+      'La relique du bourg, un reliquaire d’argent, dort dans la galerie des archers. Quant au sceau du trône, il est violet : on dit qu’il ne cède qu’à ceux qui osent entrer sans y être invités.',
+      'Prenez la relique, brisez le sceau du trône, puis abattez Cornelune avant que ses troupes ne ferment les remparts.',
+    ],
+    win: ['Cornelune s’effondre sur son trône de pierre, et ses cornes roulent sur les dalles. Sous le trône, un sceau de guerre : le chef des chefs attend à la Fosse aux Cendres.'],
+    lose: ['Les remparts se referment. Sur son trône, le minotaure sourit : Val-Noir lui appartient encore.'],
+  },
+  // Plateau de 7 tuiles en croix : 9B, 2B, 6A, 4A (le puits, case bloquée), 1B (le trône), 8A (le départ) et 5A (tournée).
+  tiles: {
+    tilesW: 3,
+    tilesH: 3,
+    placements: [
+      { tileId: '9B', tx: 1, ty: 0, rotation: 0 },
+      { tileId: '2B', tx: 2, ty: 0, rotation: 0 },
+      { tileId: '6A', tx: 0, ty: 1, rotation: 0 },
+      { tileId: '4A', tx: 1, ty: 1, rotation: 0 },
+      { tileId: '1B', tx: 2, ty: 1, rotation: 0 },
+      { tileId: '8A', tx: 0, ty: 2, rotation: 0 },
+      { tileId: '5A', tx: 1, ty: 2, rotation: 90 },
+    ],
+  },
+  // Pions porte : la sortie du départ (ouverte), le trône (le pion spécial violet), puis l'entrée de la tour des archers, la cuve (couloir) et la galerie du reliquaire, trois portes en enfilade. Cinq jetons Spawn.
+  board: `
+size 9x9
+door porte-depart 0,7-1,7 open
+door porte-trone 5,4-6,4 closed special
+door porte-entree 5,2-6,2 closed
+door porte-cuve 7,1-7,2 closed
+door porte-galerie 6,1-6,0 closed
+spawn S1 4,0 sword+sword
+spawn S2 8,1 bow+bow
+spawn S3 5,6 sword+bow
+spawn S4 1,3 sword+crit
+spawn S5 5,8 bow+crit
+`,
+  heroStarts: [
+    { x: 0, y: 6 },
+    { x: 0, y: 7 },
+    { x: 0, y: 8 },
+  ],
+  monsters: [
+    // Le chef : le Minotaur Cornelune tient le fond de la salle du trône, en garde (chaque critique donne une blessure en plus).
+    { id: 'M1', definitionId: 'M', at: { x: 8, y: 4 }, guard: true },
+    { id: 'OC1', definitionId: 'OC', at: { x: 6, y: 4 }, guard: true },
+    { id: 'OC2', definitionId: 'OC', at: { x: 5, y: 2 }, guard: true },
+    // Un Spear Beastman collé à un Orc Marauder lance un dé d'attaque en plus.
+    { id: 'OM1', definitionId: 'OM', at: { x: 3, y: 3 } },
+    { id: 'SB1', definitionId: 'SB', at: { x: 4, y: 3 } },
+    { id: 'HB1', definitionId: 'HB', at: { x: 4, y: 5 } },
+    { id: 'OM2', definitionId: 'OM', at: { x: 2, y: 7 } },
+    { id: 'OM3', definitionId: 'OM', at: { x: 5, y: 7 } },
+    // Trois Goblin Archer couvrent la galerie et la rue.
+    { id: 'GA1', definitionId: 'GA', at: { x: 7, y: 1 } },
+    { id: 'GA2', definitionId: 'GA', at: { x: 4, y: 1 } },
+    { id: 'GA3', definitionId: 'GA', at: { x: 4, y: 7 } },
+  ],
+  quests: [
+    { id: 'relique', icon: 'gem', title: 'Reprendre la relique de la galerie', completion: 'Le reliquaire est froid sous vos doigts : Val-Noir retrouve son trésor.', at: { x: 7, y: 0 } },
+    { id: 'sceau', icon: 'key', title: 'Briser le sceau du trône (porte violette)', completion: 'Le sceau violet éclate. Derrière lui, la salle du trône est béante.', at: { x: 6, y: 4 } },
+    { id: 'minotaure', icon: 'skull', title: 'Abattre le Minotaur Cornelune', completion: 'Le minotaure s’écroule : ses cornes roulent sur les dalles.', at: { x: 8, y: 4 } },
+  ],
+  script: [
+    {
+      id: 'galerie-ouverte',
+      when: [{ type: 'door-open', doorId: 'porte-galerie' }],
+      then: [
+        { type: 'narrate', title: 'La galerie des archers', tone: 'danger', text: 'La porte grince : des silhouettes se redressent derrière les créneaux, et un maraudeur dévale l’escalier.' },
+        { type: 'spawn', monsterId: 'OM4', definitionId: 'OM', at: { x: 4, y: 2 } },
+      ],
+    },
+    {
+      id: 'relique-prise',
+      when: [{ type: 'hero-on', at: { x: 7, y: 0 } }],
+      then: [{ type: 'complete-quest', questId: 'relique', text: 'Le reliquaire est froid sous vos doigts : Val-Noir retrouve son trésor.' }],
+    },
+    {
+      id: 'trone-brise',
+      when: [{ type: 'door-open', doorId: 'porte-trone' }],
+      then: [
+        { type: 'complete-quest', questId: 'sceau', text: 'Le sceau violet éclate. Derrière lui, la salle du trône est béante.' },
+        { type: 'narrate', title: 'Le trône', tone: 'danger', text: 'Le sceau éclate comme un coup de cor. Sur son trône, Cornelune se lève, et ses gardes se ruent.' },
+        { type: 'spawn', monsterId: 'OM5', definitionId: 'OM', at: { x: 5, y: 3 } },
+      ],
+    },
+    {
+      id: 'minotaure-tombe',
+      when: [{ type: 'monster-down', monsterId: 'M1' }],
+      then: [{ type: 'complete-quest', questId: 'minotaure', text: 'Le minotaure s’écroule : ses cornes roulent sur les dalles.' }],
+    },
+  ],
+  monsterCardSet: '4-5',
+  // Une carte par type de monstre présent (au départ ou en renfort).
+  deck: { listedMonsterIds: ['M', 'OC', 'OM', 'SB', 'HB', 'GA'] },
+};

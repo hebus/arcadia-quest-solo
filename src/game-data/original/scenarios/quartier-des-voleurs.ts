@@ -1,0 +1,101 @@
+import type { ScenarioDefinition } from '@/engine/scenario/definition';
+import { levelVariant } from './oneshot';
+
+/**
+ * One shot « Le Quartier des Voleurs » : 4 tuiles (2 × 2, plateau 6 × 6), un terrain court et dense. Les héros partent du bâtiment
+ * en bas à gauche, cherchent la clé dans la tour (en haut à gauche), ouvrent le coffre (en bas, au milieu) et abattent le chef de
+ * la guilde des voleurs dans son repaire (en haut à droite).
+ */
+export const QUARTIER_DES_VOLEURS: ScenarioDefinition = {
+  id: 'quartier-des-voleurs',
+  title: 'Le Quartier des Voleurs',
+  tagline: 'Une clé, un coffre, un chef : tout se joue sur un petit terrain.',
+  recommended: 'easy',
+  story: {
+    intro: [
+      'La guilde des voleurs a volé le trésor du temple et l’a enfermé dans un coffre, au cœur de son quartier.',
+      'La clé dort dans la tour, au coin nord-ouest ; le chef de la bande, un capitaine orc, se terre dans son repaire au nord-est.',
+      'Prenez la clé, vidangez le coffre, puis réglez ses comptes au chef.',
+    ],
+    win: ['Le coffre est vide, le chef est à terre : le temple retrouve son trésor, et la guilde sa réputation.'],
+    lose: ['Les voleurs rient dans le noir : cette fois, c’est vous qu’ils ont dépouillés.'],
+  },
+  tiles: {
+    tilesW: 2,
+    tilesH: 2,
+    placements: [
+      { tileId: '1A', tx: 0, ty: 0, rotation: 0 },
+      { tileId: '4B', tx: 1, ty: 0, rotation: 0 },
+      { tileId: '6A', tx: 0, ty: 1, rotation: 0 },
+      { tileId: '9A', tx: 1, ty: 1, rotation: 0 },
+    ],
+  },
+  board: `
+size 6x6
+door porte-depart 1,4-1,5 open
+door porte-tour 0,0-0,1 closed
+door porte-coffre 3,4-3,5 closed
+door porte-repaire 5,0-5,1 closed special
+spawn S1 4,0 sword+sword
+spawn S2 1,3 bow+bow
+spawn S3 5,2 sword+bow
+`,
+  heroStarts: [
+    { x: 0, y: 5 },
+    { x: 1, y: 5 },
+    { x: 2, y: 5 },
+  ],
+  monsters: [
+    { id: 'OC1', definitionId: 'OC', at: { x: 5, y: 0 }, guard: true },
+    { id: 'OM1', definitionId: 'OM', at: { x: 1, y: 1 } },
+    { id: 'OM2', definitionId: 'OM', at: { x: 4, y: 3 } },
+    { id: 'SB1', definitionId: 'SB', at: { x: 4, y: 1 } },
+    { id: 'GA1', definitionId: 'GA', at: { x: 1, y: 2 } },
+    { id: 'GA2', definitionId: 'GA', at: { x: 4, y: 4 } },
+    { id: 'HB1', definitionId: 'HB', at: { x: 5, y: 2 } },
+  ],
+  quests: [
+    { id: 'cle', icon: 'key', title: 'Prendre la clé dans la tour', completion: 'La clé est dans votre poche.', at: { x: 0, y: 0 } },
+    { id: 'coffre', icon: 'chest', title: 'Ouvrir le coffre du trésor', completion: 'Le coffre s’ouvre sur une pluie de pièces.', at: { x: 3, y: 5 } },
+    { id: 'chef', icon: 'skull', title: 'Abattre le chef des voleurs', completion: 'Le chef des voleurs s’écroule.', at: { x: 5, y: 0 } },
+  ],
+  script: [
+    {
+      id: 'cle-prise',
+      when: [{ type: 'hero-on', at: { x: 0, y: 0 } }],
+      then: [{ type: 'complete-quest', questId: 'cle', text: 'La clé est dans votre poche.' }],
+    },
+    {
+      id: 'coffre-ouvert',
+      when: [{ type: 'hero-on', at: { x: 3, y: 5 } }, { type: 'quest-done', questId: 'cle' }],
+      then: [ { type: 'reward', card: 'random', text: 'Au fond du coffre, une arme qui n’a pas servi.' }, { type: 'complete-quest', questId: 'coffre', text: 'Le coffre s’ouvre sur une pluie de pièces.' }],
+    },
+    {
+      id: 'repaire-ouvert',
+      when: [{ type: 'door-open', doorId: 'porte-repaire' }],
+      then: [
+        { type: 'narrate', title: 'Le repaire', tone: 'danger', text: 'Le sceau violet saute : le chef des voleurs se lève, et un renfort accourt par les toits.' },
+        { type: 'spawn', monsterId: 'OM3', definitionId: 'OM', at: { x: 4, y: 0 } },
+      ],
+    },
+    {
+      id: 'chef-tombe',
+      when: [{ type: 'monster-down', monsterId: 'OC1' }],
+      then: [{ type: 'complete-quest', questId: 'chef', text: 'Le chef des voleurs s’écroule.' }],
+    },
+  ],
+  monsterCardSet: '2-3',
+  deck: { listedMonsterIds: ['OC', 'OM', 'SB', 'HB', 'GA'] },
+  difficulties: {
+    easy: levelVariant('easy', { removeMonsters: ['GA1', 'GA2'], removeListedMonsterIds: ['GA'] }),
+    medium: levelVariant('medium'),
+    hard: levelVariant('hard', { addMonsters: [{ id: 'OM4', definitionId: 'OM', at: { x: 3, y: 3 } }] }),
+    legendary: levelVariant('legendary', {
+      addMonsters: [
+        { id: 'OM4', definitionId: 'OM', at: { x: 3, y: 3 } },
+        { id: 'OC2', definitionId: 'OC', at: { x: 2, y: 1 } },
+        { id: 'HB2', definitionId: 'HB', at: { x: 5, y: 3 } },
+      ],
+    }),
+  },
+};

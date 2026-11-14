@@ -2,6 +2,8 @@ import { type } from 'arktype';
 import type { PhysicalInstruction } from '../activation/monsterTurn';
 import { PositionSchema, type GameState, type Position } from '../domain/schemas';
 import { CELL_CAPACITY } from '../movement/board';
+import { CountingRandom } from '../random';
+import { availableRewards, drawReward, rewardById, type RewardCard } from '../rewards';
 import { cloneState, completeQuest, isTerminal, log } from '../state';
 
 /**
@@ -16,13 +18,15 @@ export const ConditionSchema = type({ type: "'hero-on'", at: PositionSchema })
   .or({ type: "'round-reached'", round: 'number.integer > 0' });
 export type Condition = typeof ConditionSchema.infer;
 
-const BeatToneSchema = type("'story' | 'quest' | 'danger'");
+const BeatToneSchema = type("'story' | 'quest' | 'danger' | 'reward'");
 export type BeatTone = typeof BeatToneSchema.infer;
 
 export const EffectSchema = type({ type: "'narrate'", 'title?': 'string | undefined', text: 'string', 'tone?': BeatToneSchema.or('undefined') })
   .or({ type: "'complete-quest'", questId: 'string', 'text?': 'string | undefined' })
   .or({ type: "'spawn'", monsterId: 'string', definitionId: 'string', at: PositionSchema })
-  .or({ type: "'open-door'", doorId: 'string' });
+  .or({ type: "'open-door'", doorId: 'string' })
+  /** Carte Récompense : une carte précise (identifiant) ou « random » (tirée au hasard parmi celles qui restent dans la boîte). */
+  .or({ type: "'reward'", card: 'string', 'text?': 'string | undefined' });
 export type Effect = typeof EffectSchema.infer;
 
 export const RuleSchema = type({
@@ -49,6 +53,8 @@ export interface ScriptResult {
 
 const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
 const MAX_PASSES = 8;
+/** Valeur de `card` pour une récompense tirée au hasard. */
+export const RANDOM_REWARD = 'random';
 
 export function holds(c: Condition, s: GameState): boolean {
   switch (c.type) {
@@ -72,7 +78,7 @@ const occupants = (s: GameState, at: Position): number =>
   s.monsters.filter((m) => m.status === 'board' && m.position && same(m.position, at)).length +
   s.pets.filter((p) => !p.dead && p.position && same(p.position, at)).length;
 
-function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; instructions: PhysicalInstruction[] }, n: number): void {
+function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; instructions: PhysicalInstruction[] }, n: number, rewards: readonly RewardCard[]): void {
   const tag = `script-${rule.id}-${n}`;
   switch (e.type) {
     case 'narrate':
@@ -103,6 +109,24 @@ function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; i
       });
       break;
     }
+    case 'reward': {
+      const owned = (s.rewards ?? []).map((r) => r.cardId);
+      let cardId: string | undefined = e.card;
+      if (e.card === RANDOM_REWARD) {
+        const rng = new CountingRandom(s.rngSeed, s.rngCounter);
+        cardId = drawReward(rewards, owned, rng);
+        s.rngCounter = rng.counter;
+      }
+      const card = cardId && availableRewards(rewards, owned).includes(cardId) ? rewardById(rewards, cardId) : undefined;
+      if (!card) {
+        log(s, 'script-skipped', 'Récompense : plus aucune carte disponible dans la boîte.', { rule: rule.id });
+        break;
+      }
+      s.rewards = [...(s.rewards ?? []), { cardId: card.id, ruleId: rule.id }];
+      log(s, 'reward', `Récompense : ${card.name} (${card.id}).`, { rule: rule.id, cardId: card.id });
+      out.beats.push({ id: tag, title: `Récompense : ${card.name}`, text: `${e.text ? `${e.text} ` : ''}${card.type}. ${card.effect} Prenez la carte (${card.id}) et donnez-la à un héros.`, tone: 'reward' });
+      break;
+    }
     case 'open-door': {
       const d = s.board.doors.find((x) => x.id === e.doorId);
       if (!d || d.open) break;
@@ -119,7 +143,7 @@ function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; i
  * de récit et les actions physiques à montrer. Les déclenchements en cascade (une quête validée qui en débloque une autre)
  * sont traités jusqu'à stabilité. Pur : la partie en cours n'est pas modifiée.
  */
-export function runScript(state: GameState, rules: readonly Rule[]): ScriptResult {
+export function runScript(state: GameState, rules: readonly Rule[], rewards: readonly RewardCard[] = []): ScriptResult {
   const none: ScriptResult = { state, beats: [], instructions: [] };
   if (rules.length === 0 || state.phase === 'SCENARIO_SETUP' || isTerminal(state.phase)) return none;
   let s = state;
@@ -139,7 +163,7 @@ export function runScript(state: GameState, rules: readonly Rule[]): ScriptResul
       progressed = true;
       for (const e of rule.then) {
         if (isTerminal(s.phase)) break;
-        apply(rule, e, s, out, counter++);
+        apply(rule, e, s, out, counter++, rewards);
       }
       s.scriptFired = [...fired];
       if (isTerminal(s.phase)) break;
@@ -152,7 +176,7 @@ export function runScript(state: GameState, rules: readonly Rule[]): ScriptResul
 /** Références du script vérifiées contre le scénario : renvoie la liste des problèmes. */
 export function validateScript(
   rules: readonly Rule[],
-  ctx: { questIds: string[]; doorIds: string[]; monsterIds: string[]; knownDefinitions: (id: string) => boolean; playable: (p: Position) => boolean },
+  ctx: { questIds: string[]; doorIds: string[]; monsterIds: string[]; knownDefinitions: (id: string) => boolean; playable: (p: Position) => boolean; rewards?: readonly RewardCard[] },
 ): string[] {
   const problems: string[] = [];
   const ids = new Set<string>();
@@ -174,6 +198,7 @@ export function validateScript(
     }
     for (const e of r.then) {
       if (e.type === 'complete-quest' && !ctx.questIds.includes(e.questId)) problems.push(`Script « ${r.id} » : quête inconnue ${e.questId}`);
+      if (e.type === 'reward' && e.card !== RANDOM_REWARD && ctx.rewards && !ctx.rewards.some((c) => c.id === e.card)) problems.push(`Script « ${r.id} » : carte Récompense inconnue ${e.card}`);
       if (e.type === 'open-door' && !ctx.doorIds.includes(e.doorId)) problems.push(`Script « ${r.id} » : porte inconnue ${e.doorId}`);
       if (e.type === 'spawn') {
         if (!ctx.knownDefinitions(e.definitionId)) problems.push(`Script « ${r.id} » : monstre inconnu ${e.definitionId}`);

@@ -299,6 +299,8 @@ export const GameStateSchema = type({
   events: GameEventSchema.array(),
   /** Règles du script de scénario déjà déclenchées (une seule fois chacune). */
   'scriptFired?': 'string[] | undefined',
+  /** Cartes Récompense gagnées pendant la partie (vilain abattu, coffre ouvert) : identifiant de carte et règle qui l'a donnée. */
+  'rewards?': type({ cardId: 'string', ruleId: 'string' }).array().or('undefined'),
 });
 export type GameState = typeof GameStateSchema.infer;
 
@@ -328,4 +330,6 @@ export interface Content {
   defenseDie: DieFaceDef[];
   /** Les tuiles du jeu physique (1A à 9B), par code de face : les plateaux des scénarios se construisent depuis elles. */
   tiles?: Record<string, import('../tiles').TileDef>;
+  /** Cartes Récompense du jeu (équipement gagné sur un vilain ou dans un coffre). */
+  rewards?: import('../rewards').RewardCard[];
 }

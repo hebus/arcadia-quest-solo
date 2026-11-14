@@ -79,7 +79,13 @@ describe('scénario de l’univers original', () => {
     useGameStore.setState((s) => ({ game: { ...s.game!, quests: s.game!.quests.map((q) => (q.id === 'seigneur' ? q : { ...q, done: true })) } }));
     useGameStore.getState().correct({ kind: 'monster-status', monsterId: 'M1', status: 'spawn-tile' });
     expect(useGameStore.getState().game!.phase).toBe('SCENARIO_WON');
+    // Le Minotaur abattu laisse une carte Récompense : la fenêtre de récit l'annonce avant le résultat.
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Récompense');
+    expect(useGameStore.getState().game!.rewards).toHaveLength(1);
+    // Récompense, puis fin de la quête : les fenêtres de récit se ferment l'une après l'autre.
+    while (screen.queryByRole('dialog')) await user.click(screen.getByRole('button', { name: 'Continuer' }));
     await user.click(await screen.findByRole('button', { name: /Voir le résultat/ }));
+    expect(screen.getByTestId('rewards-won')).toBeInTheDocument();
     expect(screen.getByTestId('outro')).toHaveTextContent('la guilde a tenu');
   });
 

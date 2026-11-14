@@ -5,14 +5,18 @@ import { ObjectiveIcon } from '@/components/ObjectiveIcon';
 import { Button, ErrorBanner, Panel } from '@/components/ui';
 import { parseBoardDsl } from '@/engine/boardDsl';
 import type { Difficulty } from '@/engine/domain/schemas';
+import { DIFFICULTY_LEVEL, resolveDifficulty } from '@/engine/scenario/difficulty';
 import { scenarioBoard, scenarioToSetup, type HeroTemplate, type ScenarioDefinition } from '@/engine/scenario/definition';
-import { MAX_GENERATED_TILES, MIN_GENERATED_TILES, generateScenario } from '@/engine/scenario/generate';
+import { GENERATED_LEVELS, MAX_GENERATED_TILES, MIN_GENERATED_TILES, generateScenario, type GeneratedLevel } from '@/engine/scenario/generate';
 import { ORIGINAL_CONTENT, ORIGINAL_SCENARIOS } from '@/game-data/original';
 import { BoardView, type BoardToken } from '@/rendering/board/BoardView';
 import { GUILD_SIZE, MAX_HERO_LIFE, MIN_HERO_LIFE, guildProblems, guildToTemplates } from '@/engine/guild';
 import { Stepper } from '@/components/Tally';
 import { CampaignCard } from './CampaignCard';
-import { CHAPTER_IDS } from '@/stores/campaignRunStore';
+import { RandomCampaignCard } from './RandomCampaignCard';
+import { MediumCampaignCard } from './MediumCampaignCard';
+import { isCampaignChapter } from '@/engine/scenario/generateCampaign';
+import { CHAPTER_IDS, MEDIUM_IDS } from '@/stores/campaignRunStore';
 import { useGameStore } from '@/stores/gameStore';
 import { useGuildStore } from '@/stores/guildStore';
 
@@ -56,11 +60,12 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tileCount, setTileCount] = useState(4);
+  const [level, setLevel] = useState<GeneratedLevel>('1');
 
   /** Mode aléatoire : on donne le nombre de tuiles du terrain, un scénario est généré au hasard. */
-  const generate = (count: number) => {
+  const generate = (count: number, monsterLevel: GeneratedLevel) => {
     try {
-      const next = generateScenario({ tileCount: count, seed: Math.floor(Math.random() * 2 ** 31) }, ORIGINAL_CONTENT);
+      const next = generateScenario({ tileCount: count, seed: Math.floor(Math.random() * 2 ** 31), level: monsterLevel }, ORIGINAL_CONTENT);
       setError(null);
       setDef(next);
       setDifficulty(next.recommended);
@@ -74,15 +79,19 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
       <Panel title="Choisir un scénario">
         <ErrorBanner message={error} onClose={() => setError(null)} />
         <CampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
+        <MediumCampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
+        <RandomCampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
         <ul className="grid gap-3 md:grid-cols-2">
-          {ORIGINAL_SCENARIOS.filter((s) => !CHAPTER_IDS.slice(1).includes(s.id)).map((s) => (
+          {ORIGINAL_SCENARIOS.filter((s) => !CHAPTER_IDS.slice(1).includes(s.id) && !MEDIUM_IDS.slice(1).includes(s.id)).map((s) => (
             <li key={s.id} className="rounded-xl border border-stone-700 bg-stone-800 p-4">
               <h3 className="text-xl font-semibold text-amber-300">
                 {s.sandbox && <span aria-hidden="true">🧪 </span>}
                 {s.title}
               </h3>
               <p className="mt-1 text-stone-300">{s.tagline}</p>
-              <p className="mt-2 text-sm text-stone-400">Difficulté conseillée : {DIFFICULTY_LABEL[s.recommended]}</p>
+              <p className="mt-2 text-sm text-stone-400">
+                {s.difficulties ? `One shot · difficulté au choix (conseillée : ${DIFFICULTY_LABEL[s.recommended]})` : `Difficulté conseillée : ${DIFFICULTY_LABEL[s.recommended]}`}
+              </p>
               <Button className="mt-3" variant="primary" aria-label={`Voir le briefing : ${s.title}`} onClick={() => { setDef(s); setDifficulty(s.recommended); }}>
                 Voir le briefing
               </Button>
@@ -92,7 +101,7 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
             <h3 className="text-xl font-semibold text-amber-300">
               <span aria-hidden="true">🎲 </span>Scénario aléatoire
             </h3>
-            <p className="mt-1 text-stone-300">Choisissez le nombre de tuiles du terrain : un scénario est généré au hasard (tuiles, portes, monstres, quêtes).</p>
+            <p className="mt-1 text-stone-300">Choisissez le nombre de tuiles du terrain et le niveau des monstres : un scénario est généré au hasard (tuiles, portes, monstres, quêtes).</p>
             <label className="mt-3 flex items-center gap-3">
               Nombre de tuiles
               <input
@@ -106,7 +115,15 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
               />
               <span className="text-sm text-stone-400">de {MIN_GENERATED_TILES} à {MAX_GENERATED_TILES}</span>
             </label>
-            <Button className="mt-3" variant="primary" onClick={() => generate(tileCount)}>
+            <div role="group" aria-label="Niveau des monstres" className="mt-3 flex flex-wrap items-center gap-2">
+              <span>Niveau des monstres</span>
+              {GENERATED_LEVELS.map((l) => (
+                <Button key={l} variant={level === l ? 'primary' : 'secondary'} aria-pressed={level === l} aria-label={`Niveau ${l}`} onClick={() => setLevel(l)}>
+                  {l}
+                </Button>
+              ))}
+            </div>
+            <Button className="mt-3" variant="primary" onClick={() => generate(tileCount, level)}>
               Générer un scénario
             </Button>
           </li>
@@ -118,11 +135,15 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   const heroes = guildToTemplates(guild);
   const guildIssues = guildProblems(guild);
 
+  // La difficulté choisie : pour un one shot, elle décide du niveau des monstres et de leurs renforts (aperçu, départ et récit suivent).
+  const chosen = difficulty ?? def.recommended;
+  const played = resolveDifficulty(def, chosen);
+
   const start = () => {
     try {
-      const config = scenarioToSetup(def, { sessionId: `s-${Date.now()}`, difficulty: difficulty ?? def.recommended, seed: Date.now() % 2147483647, heroes }, ORIGINAL_CONTENT);
+      const config = scenarioToSetup(def, { sessionId: `s-${Date.now()}`, difficulty: chosen, seed: Date.now() % 2147483647, heroes }, ORIGINAL_CONTENT);
       setDefs(Object.values(ORIGINAL_CONTENT.monsters));
-      newGame(config, def.script ?? []);
+      newGame(config, played.script ?? []);
       if (useGameStore.getState().game) {
         // Terrain d'essai : on commence en placement libre, pour poser les pions comme on veut.
         if (def.sandbox) {
@@ -148,8 +169,8 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {def.tiles && <TilesButton board={boardOf(def).board} layout={def.tiles} />}
-          {def.generated && (
-            <Button variant="secondary" onClick={() => generate(def.tiles?.placements.length ?? tileCount)}>
+          {def.generated && !isCampaignChapter(def.id) && (
+            <Button variant="secondary" onClick={() => generate(def.tiles?.placements.length ?? tileCount, (GENERATED_LEVELS.find((l) => l === def.monsterCardSet) ?? '1'))}>
               ↻ Autre tirage
             </Button>
           )}
@@ -207,6 +228,12 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
             )}
           </section>
 
+          {def.difficulties && (
+            <p data-testid="difficulty-summary" className="text-sm text-amber-200">
+              Niveau des monstres : {DIFFICULTY_LEVEL[chosen]} · {played.monsters.length} monstre{played.monsters.length > 1 ? 's' : ''} au départ
+            </p>
+          )}
+
           <footer className="mt-auto flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm">
               Difficulté
@@ -225,7 +252,7 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
         </div>
 
         <div className="min-h-0 self-start">
-          <ScenarioPreview def={def} heroes={heroes} />
+          <ScenarioPreview def={played} heroes={heroes} />
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseBoardDsl } from '@/engine/boardDsl';
+import { resolveDifficulty } from '@/engine/scenario/difficulty';
 import { parseScenario, validateScenario, createScenarioGame } from '@/engine/scenario/definition';
 import { ORIGINAL_CONTENT, ORIGINAL_HEROES, ORIGINAL_SCENARIOS } from './index';
 
@@ -13,7 +14,7 @@ describe('univers original : Port-Cendre', () => {
     const g = createScenarioGame(def, { sessionId: 's', difficulty: def.recommended, seed: 7, heroes: ORIGINAL_HEROES.slice(0, 3) }, ORIGINAL_CONTENT);
     expect(g.heroes.map((h) => h.id)).toEqual(['h1', 'h2', 'h3']);
     expect(g.heroes.map((h) => h.position)).toEqual(def.heroStarts.slice(0, 3));
-    expect(g.monsters).toHaveLength(def.monsters.length);
+    expect(g.monsters).toHaveLength(resolveDifficulty(def, def.recommended).monsters.length);
     expect(g.quests.map((q) => q.id)).toEqual(def.quests.map((q) => q.id));
     expect(g.deck.draw.length).toBeGreaterThan(0);
   });
@@ -23,12 +24,18 @@ describe('univers original : Port-Cendre', () => {
     const { GA, OM } = ORIGINAL_CONTENT.monsters;
     expect(GA).toMatchObject({ name: 'Goblin Archer', kind: 'minion', copies: 6 });
     expect(OM).toMatchObject({ name: 'Orc Marauder', kind: 'minion', copies: 8, group: 'orc' });
-    // Goblin Archer, minor, niveau 2-3 : 2 de vie, overkill 3, mouvement 1, 1 PO, 2 dés à distance (pas de niveau 1 saisi).
-    expect(GA!.levels).toEqual({ '2-3': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 } });
+    // Goblin Archer, minor, niveaux 2-3, 4-5 et 6 (pas de niveau 1 : il n'existe pas à ce niveau).
+    expect(GA!.levels).toEqual({
+      '2-3': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 },
+      '4-5': { life: 3, overkill: 4, movement: 1, reward: 1, attackType: 'ranged', attackDice: 3 },
+      '6': { life: 4, overkill: 5, movement: 1, reward: 1, attackType: 'ranged', attackDice: 3 },
+    });
     // Orc Marauder, minor : niveau 1 (2 de vie, overkill 3, 3 dés de mêlée) et niveau 2-3 (3 de vie, overkill 4).
     expect(OM!.levels).toEqual({
       '1': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 },
       '2-3': { life: 3, overkill: 4, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 },
+      '4-5': { life: 4, overkill: 5, movement: 1, reward: 1, attackType: 'melee', attackDice: 4 },
+      '6': { life: 5, overkill: 6, movement: 1, reward: 1, attackType: 'melee', attackDice: 4 },
     });
     expect(GA!.majorLevels).toBeUndefined();
     expect(OM!.majorLevels).toBeUndefined();

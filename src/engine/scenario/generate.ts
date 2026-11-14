@@ -7,7 +7,7 @@ import { SPAWN_TOKEN_TYPES } from '../spawn/tokens';
 import { TILE_FACES, TILE_NUMBERS } from '../tileCatalog';
 import { boardFromLayout, layoutExtent, layoutHeroStarts, type TileDef, type TileLayout } from '../tiles';
 import { scenarioBoard, validateScenario, type ScenarioDefinition } from './definition';
-import type { Rule } from './script';
+import { RANDOM_REWARD, type Rule } from './script';
 
 /**
  * Générateur de scénarios aléatoires : on donne le nombre de tuiles du terrain, un scénario complet en sort — tuiles tirées
@@ -92,7 +92,7 @@ interface Door {
 }
 
 /** Une tentative de scénario ; renvoie `null` quand le tirage ne tient pas debout (trop peu de place, case inaccessible…). */
-function attempt(rng: RandomSource, count: number, seed: number, content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition | null {
+function attempt(rng: RandomSource, count: number, seed: number, level: GeneratedLevel, avoidChiefs: readonly string[], content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition | null {
   const tiles = content.tiles ?? {};
   const layout = drawLayout(rng, count, tiles);
   const bare = boardFromLayout(tiles, layout);
@@ -174,18 +174,21 @@ function attempt(rng: RandomSource, count: number, seed: number, content: Pick<C
   const closedGroups = others.filter((g) => doors.some((d) => g.exits.some(([a, b]) => samePos(a, d.a) && samePos(b, d.b))));
   const roomy = [...streets, ...closedGroups.flatMap((g) => g.cells)].filter((p) => starts.every((s) => dist(s, p) >= far) && !spawnCells.some((c) => samePos(c, p)));
   const total = Math.min(8, Math.max(2, count + 1));
-  // Le bestiaire de niveau 1, dans les limites des boîtes : 8 Orcs (Marauder et Captain), 1 Minotaur, 1 Troll, 2 Spear Beastman, 2 Hammer Beastman.
-  const roster = Object.values(content.monsters).filter((d) => monsterStats(d, '1'));
+  // Le bestiaire du niveau choisi (les monstres dont les statistiques existent à ce niveau), dans les limites des boîtes : 8 Orcs
+  // (Marauder et Captain), 1 Minotaur, 1 Troll, 2 Spear Beastman, 2 Hammer Beastman, et 6 Goblin Archer au niveau 2-3.
+  const roster = Object.values(content.monsters).filter((d) => monsterStats(d, level));
   const inPlay = new Map<string, number>();
   const take = (d: MonsterDefinition) => inPlay.set(d.id, (inPlay.get(d.id) ?? 0) + 1);
   const available = (d: MonsterDefinition) => boxRemaining(d, content.monsters, inPlay) > 0;
-  // Le chef est un vilain (Minotaur ou Troll) ; à défaut un Orc Captain, puis le premier monstre de niveau 1.
+  // Le chef est un vilain (Minotaur ou Troll) ; à défaut un Orc Captain, puis le premier monstre du niveau.
   const villains = roster.filter((d) => d.kind === 'villain');
-  const chiefDef = villains.length > 0 ? pick(rng, villains) : (roster.find((d) => d.id === 'OC') ?? roster[0]);
+  // `avoidChiefs` : des chefs à éviter quand c'est possible (une campagne varie ses vilains d'un chapitre à l'autre).
+  const fresh = villains.filter((d) => !avoidChiefs.includes(d.id));
+  const chiefDef = villains.length > 0 ? pick(rng, fresh.length > 0 ? fresh : villains) : (roster.find((d) => d.id === 'OC') ?? roster[0]);
   if (!chiefDef) return null;
   take(chiefDef);
   // Les autres : surtout des Orc Marauder, avec des Orc Captain et des Beastmen, tant que les boîtes le permettent.
-  const WEIGHT: Record<string, number> = { OM: 4, OC: 2, SB: 1, HB: 1 };
+  const WEIGHT: Record<string, number> = { OM: 4, OC: 2, GA: 2, SB: 1, HB: 1 };
   const crew: MonsterDefinition[] = [];
   while (crew.length < total - 1) {
     const pool = roster.filter((d) => d.kind !== 'villain' && available(d));
@@ -216,8 +219,8 @@ function attempt(rng: RandomSource, count: number, seed: number, content: Pick<C
   const chiefId = monsters[monsters.length - 1]!.id;
   const chiefTitle = `Abattre le ${chiefDef.name}`;
   const script: Rule[] = [
-    { id: 'objectif-atteint', when: [{ type: 'hero-on', at: objectiveAt }], then: [{ type: 'complete-quest', questId: 'objectif', text: objective.text }] },
-    { id: 'chef-tombe', when: [{ type: 'monster-down', monsterId: chiefId }], then: [{ type: 'complete-quest', questId: 'chef', text: `Le ${chiefDef.name} s’effondre : sa bande perd courage.` }] },
+    { id: 'objectif-atteint', when: [{ type: 'hero-on', at: objectiveAt }], then: [...(objective.icon === 'chest' ? [{ type: 'reward' as const, card: RANDOM_REWARD }] : []), { type: 'complete-quest', questId: 'objectif', text: objective.text }] },
+    { id: 'chef-tombe', when: [{ type: 'monster-down', monsterId: chiefId }], then: [{ type: 'reward', card: RANDOM_REWARD, text: `Le ${chiefDef.name} laisse tomber son butin.` }, { type: 'complete-quest', questId: 'chef', text: `Le ${chiefDef.name} s’effondre : sa bande perd courage.` }] },
   ];
 
   const e = (a: Position, b: Position) => `${a.x},${a.y}-${b.x},${b.y}`;
@@ -228,8 +231,8 @@ function attempt(rng: RandomSource, count: number, seed: number, content: Pick<C
   ].join('\n');
 
   const def: ScenarioDefinition = {
-    id: `aleatoire-${seed}`,
-    title: `Scénario aléatoire · ${count} tuile${count > 1 ? 's' : ''}`,
+    id: level === '1' ? `aleatoire-${seed}` : `aleatoire-${level}-${seed}`,
+    title: `Scénario aléatoire · ${count} tuile${count > 1 ? 's' : ''}${level === '1' ? '' : ` · niveau ${level}`}`,
     tagline: `${objective.title}, puis abattez le ${chiefDef.name}.`,
     recommended: 'medium',
     generated: true,
@@ -247,7 +250,7 @@ function attempt(rng: RandomSource, count: number, seed: number, content: Pick<C
       { id: 'chef', icon: 'skull', title: chiefTitle, completion: `Le ${chiefDef.name} s’effondre : sa bande perd courage.`, at: chiefAt },
     ],
     script,
-    monsterCardSet: '1',
+    monsterCardSet: level,
     deck: { listedMonsterIds: [...new Set(monsters.map((m) => m.definitionId))] },
   };
 
@@ -272,8 +275,15 @@ function attempt(rng: RandomSource, count: number, seed: number, content: Pick<C
   return def;
 }
 
-/** Génère un scénario de `tileCount` tuiles (1 à 9). Même graine, même scénario ; lève une erreur lisible si aucun tirage ne convient. */
-export function generateScenario(opts: { tileCount: number; seed: number }, content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition {
+/** Niveaux de monstres proposés par le mode aléatoire : ceux dont les statistiques sont saisies dans `monsters.json`. */
+export const GENERATED_LEVELS = ['1', '2-3', '4-5', '6'] as const;
+export type GeneratedLevel = (typeof GENERATED_LEVELS)[number];
+
+/** Génère un scénario de `tileCount` tuiles (1 à 9) avec des monstres du niveau `level` (1 par défaut). Même graine et même niveau, même scénario ; lève une erreur lisible si aucun tirage ne convient. */
+export function generateScenario(opts: { tileCount: number; seed: number; level?: GeneratedLevel; avoidChiefs?: readonly string[] }, content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition {
+  const level = opts.level ?? '1';
+  if (!GENERATED_LEVELS.includes(level)) throw new Error(`Niveau « ${String(level)} » inconnu : choisissez ${GENERATED_LEVELS.join(' ou ')}.`);
+  if (!Object.values(content.monsters).some((d) => monsterStats(d, level))) throw new Error(`Aucun monstre n'a de statistiques au niveau ${level} : renseignez-les dans monsters.json.`);
   const count = Math.round(opts.tileCount);
   if (!Number.isFinite(count) || count < MIN_GENERATED_TILES || count > MAX_GENERATED_TILES) {
     throw new Error(`Le nombre de tuiles doit être compris entre ${MIN_GENERATED_TILES} et ${MAX_GENERATED_TILES}.`);
@@ -281,7 +291,7 @@ export function generateScenario(opts: { tileCount: number; seed: number }, cont
   if (!content.tiles || Object.keys(content.tiles).length === 0) throw new Error("Aucune tuile n'est définie : définissez les tuiles dans l'éditeur avant de générer un scénario.");
   const rng = createSeededRandom(opts.seed);
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
-    const def = attempt(rng, count, opts.seed, content);
+    const def = attempt(rng, count, opts.seed, level, opts.avoidChiefs ?? [], content);
     if (def) return def;
   }
   throw new Error(`Aucun scénario viable n'a été trouvé avec ${count} tuile${count > 1 ? 's' : ''} : essayez un autre nombre de tuiles.`);

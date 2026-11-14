@@ -122,7 +122,7 @@ spawn S5 4,6 bow+crit
     {
       id: 'seigneur-tombe',
       when: [{ type: 'monster-down', monsterId: 'M1' }],
-      then: [{ type: 'complete-quest', questId: 'seigneur', text: 'Le minotaure s’effondre en poussière grise : le seigneur ne tient plus la ville.' }],
+      then: [ { type: 'reward', card: 'random', text: 'Le Minotaur laisse tomber son butin.' }, { type: 'complete-quest', questId: 'seigneur', text: 'Le minotaure s’effondre en poussière grise : le seigneur ne tient plus la ville.' }],
     },
   ],
   monsterCardSet: '1',

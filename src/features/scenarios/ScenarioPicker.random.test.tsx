@@ -88,4 +88,52 @@ describe('mode aléatoire', () => {
     // Un identifiant inconnu sans définition gardée : pas de scénario.
     expect(scenarioOfGame({ scenarioId: 'inconnu' })).toBeUndefined();
   });
+
+  it('le niveau des monstres se choisit : 1 par défaut, ou 2-3 ; « Autre tirage » le garde', async () => {
+    const user = userEvent.setup();
+    const card = await openRandomMode(user);
+    const level = within(card).getByRole('group', { name: 'Niveau des monstres' });
+    expect(within(level).getByRole('button', { name: 'Niveau 1' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(level).getByRole('button', { name: 'Niveau 2-3' })).toHaveAttribute('aria-pressed', 'false');
+    await user.click(within(level).getByRole('button', { name: 'Niveau 2-3' }));
+    expect(within(level).getByRole('button', { name: 'Niveau 2-3' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(level).getByRole('button', { name: 'Niveau 1' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.change(within(card).getByLabelText('Nombre de tuiles'), { target: { value: '5' } });
+    await user.click(within(card).getByRole('button', { name: 'Générer un scénario' }));
+    expect(screen.getByRole('heading', { name: /Scénario aléatoire · 5 tuiles · niveau 2-3/ })).toBeInTheDocument();
+    // Un autre tirage garde le niveau.
+    await user.click(screen.getByRole('button', { name: /Autre tirage/ }));
+    expect(screen.getByRole('heading', { name: /5 tuiles · niveau 2-3/ })).toBeInTheDocument();
+    // La partie se joue au niveau 2-3 : les monstres ont leurs statistiques de ce niveau.
+    await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
+    const g = useGameStore.getState().game!;
+    expect(g.monsterCardSet).toBe('2-3');
+    expect(g.scenarioId).toMatch(/^aleatoire-2-3-\d+$/);
+    const chief = g.monsters.at(-1)!;
+    expect(chief.definitionId === 'M' ? 6 : 5).toBeGreaterThan(0);
+  });
+
+  it('les quatre niveaux se proposent, et 4-5 ou 6 donnent un scénario « aleatoire-<niveau>-<graine> »', async () => {
+    const user = userEvent.setup();
+    const card = await openRandomMode(user);
+    const level = within(card).getByRole('group', { name: 'Niveau des monstres' });
+    expect(within(level).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Niveau 1', 'Niveau 2-3', 'Niveau 4-5', 'Niveau 6']);
+    await user.click(within(level).getByRole('button', { name: 'Niveau 4-5' }));
+    await user.click(within(card).getByRole('button', { name: 'Générer un scénario' }));
+    expect(screen.getByRole('heading', { name: /niveau 4-5/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Autre tirage/ }));
+    expect(screen.getByRole('heading', { name: /niveau 4-5/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
+    expect(useGameStore.getState().game!.monsterCardSet).toBe('4-5');
+    expect(useGameStore.getState().game!.scenarioId).toMatch(/^aleatoire-4-5-\d+$/);
+  });
+
+  it('au niveau 1 (par défaut), le scénario généré reste au niveau 1', async () => {
+    const user = userEvent.setup();
+    const card = await openRandomMode(user);
+    await user.click(within(card).getByRole('button', { name: 'Générer un scénario' }));
+    expect(screen.queryByRole('heading', { name: /niveau 2-3/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
+    expect(useGameStore.getState().game!.monsterCardSet).toBe('1');
+  });
 });

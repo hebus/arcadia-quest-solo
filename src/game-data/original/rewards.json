@@ -1,0 +1,21 @@
+{
+  "aide": [
+    "Cartes Récompense (équipement) gagnées en abattant un vilain ou en ouvrant un coffre.",
+    "copies : nombre d'exemplaires dans la boîte (un scénario ne peut pas en distribuer davantage).",
+    "Les effets sont indicatifs : la carte physique fait foi, l'application ne les applique pas."
+  ],
+  "cards": [
+    { "id": "R-AD", "name": "Bombe", "nameVo": "Bomb", "scenario": "Le Quartier des Alchimistes", "copies": 2, "type": "Attaque à distance", "effect": "3 dés. Limite de 1 par guilde. En cas de touche, placez 1 jeton Guilde sur chaque case adjacente (explose et attaque tout héros ennemi entrant)." },
+    { "id": "R-BA", "name": "Bouclier des Âmes", "nameVo": "Shield of Souls", "scenario": "L'Arène de Soleil-Clair", "copies": 2, "type": "Permanent (Bouclier)", "effect": "+1 Défense. Épuisez ce héros pour ressusciter immédiatement un allié." },
+    { "id": "R-DH", "name": "Brise-Crâne", "nameVo": "Skullcracker", "scenario": "Le Quartier des Marteaux", "copies": 2, "type": "Attaque de mêlée", "effect": "3 dés. Si l'attaque inflige une blessure, la cible est Étourdie. +1 dé contre les Héros." },
+    { "id": "R-ED", "name": "Cape d'Assassin", "nameVo": "Assassin's Cloak", "scenario": "Le Quartier de l'Ombre Éternelle", "copies": 2, "type": "Permanent (Équipement)", "effect": "Lorsque ce héros se déplace, inflige 1 blessure à chaque ennemi adjacent (max. 1 par ennemi et par tour)." },
+    { "id": "R-MG", "name": "Lame du Capitaine", "nameVo": "Captain's Blade", "scenario": "La Porte de la Lune", "copies": 2, "type": "Attaque de mêlée", "effect": "4 dés, +1 Vie, +1 Relance." },
+    { "id": "R-OH", "name": "Fléau des Peaux-Vertes", "nameVo": "Greenskin Bane", "scenario": "La Ruche des Orques", "copies": 2, "type": "Attaque à distance (Magie)", "effect": "3 dés. +1 dé contre les Orques et les Gobelins." },
+    { "id": "R-RD", "name": "Couronne de Sang", "nameVo": "Blood Crown", "scenario": "La Place de l'Aube Rouge", "copies": 1, "type": "Permanent (Bijou)", "effect": "Inflige 2 blessures à un ennemi qui quitte une case adjacente à ce héros (1 fois par ennemi et par tour)." },
+    { "id": "R-S1", "name": "Sac d'Os", "nameVo": "Sack o' Bones", "scenario": "Schmetterling (scénario spécial)", "copies": 1, "type": "Permanent (Équipement)", "effect": "Soigne 2 blessures chaque fois que ce héros tue un ennemi." },
+    { "id": "R-S2", "name": "Hache de Schmetterling", "nameVo": "Schmetterling's Axe", "scenario": "Schmetterling (scénario spécial)", "copies": 1, "type": "Attaque de mêlée", "effect": "4 dés. Chaque Critique inflige 1 touche supplémentaire et soigne 1 blessure de ce héros." },
+    { "id": "R-TM", "name": "Cœur des Anges", "nameVo": "Heart of Angels", "scenario": "Le Manoir", "copies": 2, "type": "Permanent (Bijou)", "effect": "Chaque fois que ce héros subit des blessures, soigne 1 blessure à tous ses alliés." },
+    { "id": "R-TR", "name": "Lance d'Homme-Bête", "nameVo": "Beastman's Spear", "scenario": "La Volière", "copies": 2, "type": "Attaque de mêlée", "effect": "3 dés. Pour cette attaque, la première case en diagonale compte comme étant adjacente." },
+    { "id": "R-UP", "name": "Tome d'Illumination", "nameVo": "Tome of Enlightenment", "scenario": "La Place de l'Université", "copies": 2, "type": "Permanent (Équipement)", "effect": "+2 Relances. Ce héros dispose de 2 emplacements d'inventaire supplémentaires pour des cartes d'Attaque Magique." }
+  ]
+}

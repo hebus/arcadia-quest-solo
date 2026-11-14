@@ -42,7 +42,7 @@ export function cuesForEvents(events: readonly Pick<GameEvent, 'type'>[]): Cue[]
 }
 
 /** Récit : un danger a son propre son ; une quête accomplie est déjà annoncée par l'événement de quête. */
-export function cueForBeat(tone: 'story' | 'quest' | 'danger'): Cue | null {
+export function cueForBeat(tone: 'story' | 'quest' | 'danger' | 'reward'): Cue | null {
   return tone === 'danger' ? 'danger' : tone === 'story' ? 'story' : null;
 }
 

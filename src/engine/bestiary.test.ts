@@ -86,9 +86,9 @@ describe('boîtes de figurines : 8 Orcs partagés, 1 Minotaur, 1 Troll, 2 Spear 
     const at = (i: number) => ({ x: i % 9, y: 8 - Math.floor(i / 9) });
     const list = (ids: string[]) => ids.map((definitionId, i) => ({ id: `x${i}`, definitionId, at: at(i) }));
     const orcs = (om: number, oc: number) => [...Array(om).fill('OM'), ...Array(oc).fill('OC')] as string[];
-    expect(validateScenario({ ...CAVE_AUX_CENDRES, monsters: list(orcs(4, 4)) }, ORIGINAL_CONTENT).join()).not.toMatch(/Trop de figurines/);
-    expect(validateScenario({ ...CAVE_AUX_CENDRES, monsters: list(orcs(5, 4)) }, ORIGINAL_CONTENT).join()).toMatch(/Trop de figurines Orc Marauder et Orc Captain : 9 pour 8/);
-    expect(validateScenario({ ...CAVE_AUX_CENDRES, monsters: list(['M', 'M']) }, ORIGINAL_CONTENT).join()).toMatch(/Trop de figurines Minotaur : 2 pour 1/);
+    expect(validateScenario({ ...CAVE_AUX_CENDRES, script: [], monsters: list(orcs(4, 4)) }, ORIGINAL_CONTENT).join()).not.toMatch(/Trop de figurines/);
+    expect(validateScenario({ ...CAVE_AUX_CENDRES, script: [], monsters: list(orcs(5, 4)) }, ORIGINAL_CONTENT).join()).toMatch(/Trop de figurines Orc Marauder et Orc Captain : 9 pour 8/);
+    expect(validateScenario({ ...CAVE_AUX_CENDRES, script: [], monsters: list(['M', 'M']) }, ORIGINAL_CONTENT).join()).toMatch(/Trop de figurines Minotaur : 2 pour 1/);
   });
 
   it('la mise en place d’une partie contrôle aussi les boîtes partagées', () => {

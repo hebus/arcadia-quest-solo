@@ -84,6 +84,7 @@ spawn S4 4,5 sword+crit
       id: 'coffre-ouvert',
       when: [{ type: 'door-open', doorId: 'porte-coffre' }],
       then: [
+        { type: 'reward', card: 'R-ED', text: 'Sous le registre, une cape sombre pliée avec soin.' },
         { type: 'complete-quest', questId: 'coffre', text: 'Le sceau violet saute. Dans le coffre, un registre noirci : les noms de ceux qui ont vendu Port-Cendre.' },
         { type: 'narrate', title: 'L’alarme', tone: 'danger', text: 'Le sceau hurle en se brisant. Dans la rue, un maraudeur répond à l’appel.' },
         { type: 'spawn', monsterId: 'OM5', definitionId: 'OM', at: { x: 3, y: 4 } },
@@ -110,7 +111,7 @@ spawn S4 4,5 sword+crit
     {
       id: 'troll-tombe',
       when: [{ type: 'monster-down', monsterId: 'T1' }],
-      then: [{ type: 'complete-quest', questId: 'troll', text: 'Le troll s’affaisse dans un grondement : la maison de comptes n’a plus de maître.' }],
+      then: [ { type: 'reward', card: 'random', text: 'Le Troll gardait un trésor sous lui.' }, { type: 'complete-quest', questId: 'troll', text: 'Le troll s’affaisse dans un grondement : la maison de comptes n’a plus de maître.' }],
     },
   ],
   monsterCardSet: '1',
