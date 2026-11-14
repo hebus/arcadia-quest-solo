@@ -2,6 +2,8 @@
 
 Application web locale (React, TypeScript, Vite) servant d'arbitre et d'automate pour jouer en solo à *Arcadia Quest* avec le matériel physique. Hors ligne (PWA), données sur l'appareil.
 
+**Jouer : https://hebus.github.io/arcadia-quest-solo/** (déployé automatiquement à chaque push sur `main`). Pensé pour une tablette posée sur la table de jeu : toucher un héros pour voir où il peut aller, le toucher de nouveau pour choisir Mêlée ou Distance, glisser-déposer pour le déplacer.
+
 - Spécification : [docs/plan.md](docs/plan.md)
 - Guide d'utilisation : [docs/user-guide.md](docs/user-guide.md)
 - Limites connues : [docs/known-limits.md](docs/known-limits.md)
@@ -48,3 +50,7 @@ IndexedDB ┘
 | 12 Scénarios | catalogue de 53 changements intégré et testé ; aucune mise en place vérifiée (Campaign Book absent) |
 | 13 Qualité | tests automatiques, contrastes, étiquettes, clavier ; checklist tablette à dérouler |
 | 14 Livraison | build PWA et documentation ; pas de tag ni de publication |
+
+## Licence
+
+[MIT](LICENSE) pour le code. *Arcadia Quest* et ses règles appartiennent à leurs éditeurs ; les règles officielles ne sont pas incluses dans ce dépôt.
