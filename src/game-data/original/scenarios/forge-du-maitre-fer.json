@@ -391,6 +391,34 @@
           "text": "Le minotaure s’écroule sur son enclume : plus un marteau ne frappera."
         }
       ]
+    },
+    {
+      "id": "evenement-1",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 3
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
+    },
+    {
+      "id": "evenement-2",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 5
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
     }
   ],
   "monsterCardSet": "2-3",

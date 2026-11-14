@@ -265,6 +265,34 @@
           "text": "La porte de la ville est franchie."
         }
       ]
+    },
+    {
+      "id": "evenement-1",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 3
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
+    },
+    {
+      "id": "evenement-2",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 5
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
     }
   ],
   "monsterCardSet": "2-3",
@@ -280,13 +308,6 @@
   "difficulties": {
     "easy": {
       "monsterCardSet": "1",
-      "removeMonsters": [
-        "GA1",
-        "GA2"
-      ],
-      "removeListedMonsterIds": [
-        "GA"
-      ],
       "addMonsters": [
         {
           "id": "OM4",

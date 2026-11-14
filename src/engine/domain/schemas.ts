@@ -301,6 +301,8 @@ export const GameStateSchema = type({
   'scriptFired?': 'string[] | undefined',
   /** Cartes Récompense gagnées pendant la partie (vilain abattu, coffre ouvert) : identifiant de carte et règle qui l'a donnée. */
   'rewards?': type({ cardId: 'string', ruleId: 'string' }).array().or('undefined'),
+  /** Événements aléatoires déjà survenus pendant la partie (un même événement une seule fois). */
+  'eventsDone?': 'string[] | undefined',
 });
 export type GameState = typeof GameStateSchema.infer;
 

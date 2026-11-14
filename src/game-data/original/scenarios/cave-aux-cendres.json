@@ -348,6 +348,34 @@
           "text": "Le minotaure s’effondre en poussière grise : le seigneur ne tient plus la ville."
         }
       ]
+    },
+    {
+      "id": "evenement-1",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 3
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
+    },
+    {
+      "id": "evenement-2",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 5
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
     }
   ],
   "monsterCardSet": "1",

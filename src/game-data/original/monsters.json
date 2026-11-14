@@ -21,13 +21,13 @@
       "copies": 6,
       "levels": {
         "1": {
-          "rank": null,
-          "life": null,
-          "overkill": null,
-          "movement": null,
-          "reward": null,
-          "attackType": null,
-          "attackDice": null,
+          "rank": "minor",
+          "life": 2,
+          "overkill": 3,
+          "movement": 1,
+          "reward": 1,
+          "attackType": "ranged",
+          "attackDice": 2,
           "defense": null,
           "rerolls": null,
           "skills": []
@@ -246,7 +246,7 @@
           "reward": 3,
           "attackType": "melee",
           "attackDice": 5,
-          "defense": 1,
+          "defense": 2,
           "rerolls": null,
           "skills": [
             "crit-extra-wound"

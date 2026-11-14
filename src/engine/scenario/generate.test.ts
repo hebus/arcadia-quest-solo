@@ -81,7 +81,7 @@ describe('scénario aléatoire', () => {
   it('les monstres sont ceux du niveau 1, au plus un par case, et un chef gardien (vilain) porte la quête', () => {
     for (const seed of seeds) {
       const def = genClassic(5, seed);
-      expect(def.monsters.every((m) => ['OM', 'OC', 'M', 'T', 'SB', 'HB'].includes(m.definitionId))).toBe(true);
+      expect(def.monsters.every((m) => ['OM', 'OC', 'GA', 'M', 'T', 'SB', 'HB'].includes(m.definitionId))).toBe(true);
       expect(['M', 'T']).toContain(def.monsters.at(-1)!.definitionId); // le chef est un vilain
       expect(new Set(def.monsters.map((m) => `${m.at.x},${m.at.y}`)).size).toBe(def.monsters.length);
       const chef = def.monsters.at(-1)!;

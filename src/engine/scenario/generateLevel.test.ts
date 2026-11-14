@@ -47,8 +47,14 @@ describe('mode aléatoire : niveau des monstres (1, 2-3, 4-5 ou 6)', () => {
     expect(withArchers).toBeGreaterThan(3); // sur un grand terrain, les archers apparaissent souvent
   });
 
-  it('niveau 1 : jamais de Goblin Archer (sa fiche de niveau 1 n’est pas saisie)', () => {
-    for (const seed of seeds) expect(countOf(gen(9, seed, '1'), 'GA')).toBe(0);
+  it('niveau 1 : le Goblin Archer peut apparaître (même fiche qu’au niveau 2-3), dans la limite de sa boîte', () => {
+    let withArchers = 0;
+    for (const seed of seeds) {
+      const n = countOf(gen(9, seed, '1'), 'GA');
+      expect(n).toBeLessThanOrEqual(6);
+      if (n > 0) withArchers++;
+    }
+    expect(withArchers).toBeGreaterThan(3);
   });
 
   it('même graine et même niveau, même scénario ; le niveau change le scénario et son identifiant', () => {

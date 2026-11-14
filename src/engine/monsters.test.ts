@@ -14,7 +14,7 @@ describe('monstres : niveaux, rangs et figurines', () => {
     expect([...MONSTER_LEVELS]).toEqual(['1', '2-3', '4-5', '6']);
   });
 
-  it('les stats se lisent par niveau et par rang ; ce qui n’est pas saisi (le Goblin Archer au niveau 1) est absent', () => {
+  it('les stats se lisent par niveau et par rang ; ce qui n’existe pas (un niveau inconnu) est absent', () => {
     expect(monsterStats(OM, '1')).toMatchObject({ life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 });
     expect(monsterStats(OM, '1', 'minor')).toBe(monsterStats(OM, '1'));
     expect(monsterStats(GA, '2-3')).toMatchObject({ life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 });
@@ -22,7 +22,7 @@ describe('monstres : niveaux, rangs et figurines', () => {
     expect(monsterStats(OM, '4-5')).toMatchObject({ life: 4, overkill: 5, attackDice: 4 });
     expect(monsterStats(OM, '6')).toMatchObject({ life: 5, overkill: 6, attackDice: 4 });
     expect(monsterStats(OM, '7')).toBeUndefined(); // niveau qui n'existe pas
-    expect(monsterStats(GA, '1')).toBeUndefined();
+    expect(monsterStats(GA, '1')).toMatchObject({ life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 }); // comme au niveau 2-3
     expect(monsterStats(OM, '1', 'major')).toBeUndefined(); // les major ne sont pas saisis
   });
 
@@ -55,10 +55,10 @@ describe('monstres : niveaux, rangs et figurines', () => {
     expect(CAVE_AUX_CENDRES.monsters.filter((m) => orcs(m.definitionId)).length + reinforcements).toBeLessThanOrEqual(OM.copies!);
   });
 
-  it('pour les tests, le Goblin Archer de niveau 1 reprend les stats du niveau 2-3', () => {
-    const ga = TEST_ORIGINAL_CONTENT.monsters.GA!;
+  it('le Goblin Archer de niveau 1 a les mêmes caractéristiques que celui du niveau 2-3', () => {
+    const ga = ORIGINAL_CONTENT.monsters.GA!;
     expect(ga.levels['1']).toEqual(ga.levels['2-3']);
-    expect(ORIGINAL_CONTENT.monsters.GA!.levels['1']).toBeUndefined(); // l'application, elle, ne l'invente pas
+    expect(TEST_ORIGINAL_CONTENT.monsters.GA!.levels['1']).toEqual(ga.levels['1']);
   });
 
   it('le deck d’activation compte une carte par niveau autre que celui du scénario, même sans stats saisies', () => {

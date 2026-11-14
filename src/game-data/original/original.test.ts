@@ -24,8 +24,9 @@ describe('univers original : Port-Cendre', () => {
     const { GA, OM } = ORIGINAL_CONTENT.monsters;
     expect(GA).toMatchObject({ name: 'Goblin Archer', kind: 'minion', copies: 6 });
     expect(OM).toMatchObject({ name: 'Orc Marauder', kind: 'minion', copies: 8, group: 'orc' });
-    // Goblin Archer, minor, niveaux 2-3, 4-5 et 6 (pas de niveau 1 : il n'existe pas à ce niveau).
+    // Goblin Archer, minor, niveaux 1 à 6 (le niveau 1 reprend les valeurs du niveau 2-3).
     expect(GA!.levels).toEqual({
+      '1': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 },
       '2-3': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 },
       '4-5': { life: 3, overkill: 4, movement: 1, reward: 1, attackType: 'ranged', attackDice: 3 },
       '6': { life: 4, overkill: 5, movement: 1, reward: 1, attackType: 'ranged', attackDice: 3 },

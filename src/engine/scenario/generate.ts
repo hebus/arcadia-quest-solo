@@ -232,7 +232,12 @@ function attempt(rng: RandomSource, count: number, seed: number, level: Generate
     wantedObjective,
   );
   if (!objective) return null;
-  const script: Rule[] = objective.rules;
+  // Des événements aléatoires (tirés à chaque partie) : de la surprise quand on rejoue le même scénario.
+  const eventRounds = count <= 2 ? [3] : count <= 5 ? [2, 4] : [2, 4, 6];
+  const script: Rule[] = [
+    ...objective.rules,
+    ...eventRounds.map((round, i): Rule => ({ id: `evenement-${i + 1}`, when: [{ type: 'round-reached', round }], then: [{ type: 'random-event' }] })),
+  ];
   const objectiveCells = objective.quests.flatMap((q) => (q.at ? [q.at] : []));
 
   const e = (a: Position, b: Position) => `${a.x},${a.y}-${b.x},${b.y}`;

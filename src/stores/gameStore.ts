@@ -120,7 +120,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
   const commit = (label: string, next: GameState, extra: Partial<GameStore> = {}) => {
     const prev = get().game;
     // Le maître de jeu réagit à chaque transaction : récit, quêtes validées, renforts, portes.
-    const scripted = runScript(next, get().script, get().content.rewards);
+    const scripted = runScript(next, get().script, get().content.rewards, get().content.monsters);
     const final = scripted.state;
     set((s) => ({
       game: final,

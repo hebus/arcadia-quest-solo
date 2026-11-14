@@ -262,6 +262,34 @@
           "text": "Le chef de la bande s’écroule."
         }
       ]
+    },
+    {
+      "id": "evenement-1",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 3
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
+    },
+    {
+      "id": "evenement-2",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 5
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
     }
   ],
   "monsterCardSet": "2-3",
@@ -276,14 +304,7 @@
   },
   "difficulties": {
     "easy": {
-      "monsterCardSet": "1",
-      "removeMonsters": [
-        "GA1",
-        "GA2"
-      ],
-      "removeListedMonsterIds": [
-        "GA"
-      ]
+      "monsterCardSet": "1"
     },
     "medium": {
       "monsterCardSet": "2-3"

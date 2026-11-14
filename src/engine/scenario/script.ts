@@ -2,6 +2,8 @@ import { type } from 'arktype';
 import type { PhysicalInstruction } from '../activation/monsterTurn';
 import { PositionSchema, type GameState, type Position } from '../domain/schemas';
 import { CELL_CAPACITY } from '../movement/board';
+import { drawEvent, occupants } from './events';
+import type { MonsterDefinition } from '../domain/schemas';
 import { CountingRandom } from '../random';
 import { availableRewards, drawReward, rewardById, type RewardCard } from '../rewards';
 import { cloneState, completeQuest, isTerminal, log } from '../state';
@@ -30,7 +32,9 @@ export const EffectSchema = type({ type: "'narrate'", 'title?': 'string | undefi
   .or({ type: "'spawn'", monsterId: 'string', definitionId: 'string', at: PositionSchema })
   .or({ type: "'open-door'", doorId: 'string' })
   /** Carte Récompense : une carte précise (identifiant) ou « random » (tirée au hasard parmi celles qui restent dans la boîte). */
-  .or({ type: "'reward'", card: 'string', 'text?': 'string | undefined' });
+  .or({ type: "'reward'", card: 'string', 'text?': 'string | undefined' })
+  /** Événement aléatoire : un tirage parmi ceux qui peuvent se produire (renfort, alarme, bourse…), différent à chaque partie. */
+  .or({ type: "'random-event'" });
 export type Effect = typeof EffectSchema.infer;
 
 export const RuleSchema = type({
@@ -84,12 +88,7 @@ export function holds(c: Condition, s: GameState): boolean {
   }
 }
 
-const occupants = (s: GameState, at: Position): number =>
-  s.heroes.filter((h) => !h.dead && h.position && same(h.position, at)).length +
-  s.monsters.filter((m) => m.status === 'board' && m.position && same(m.position, at)).length +
-  s.pets.filter((p) => !p.dead && p.position && same(p.position, at)).length;
-
-function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; instructions: PhysicalInstruction[] }, n: number, rewards: readonly RewardCard[]): void {
+function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; instructions: PhysicalInstruction[] }, n: number, rewards: readonly RewardCard[], monsters: Record<string, MonsterDefinition>): void {
   const tag = `script-${rule.id}-${n}`;
   switch (e.type) {
     case 'narrate':
@@ -138,6 +137,18 @@ function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; i
       out.beats.push({ id: tag, title: `Récompense : ${card.name}`, text: `${e.text ? `${e.text} ` : ''}${card.type}. ${card.effect} Prenez la carte (${card.id}) et donnez-la à un héros.`, tone: 'reward' });
       break;
     }
+    case 'random-event': {
+      const rng = new CountingRandom(s.rngSeed, s.rngCounter);
+      const ev = drawEvent({ s, rng, monsters, rewards, tag, ruleId: rule.id });
+      s.rngCounter = rng.counter;
+      if (!ev) {
+        log(s, 'script-skipped', 'Événement : rien ne peut se produire.', { rule: rule.id });
+        break;
+      }
+      out.beats.push({ id: tag, title: ev.title, text: ev.text, tone: ev.tone });
+      out.instructions.push(...ev.instructions);
+      break;
+    }
     case 'open-door': {
       const d = s.board.doors.find((x) => x.id === e.doorId);
       if (!d || d.open) break;
@@ -154,7 +165,7 @@ function apply(rule: Rule, e: Effect, s: GameState, out: { beats: StoryBeat[]; i
  * de récit et les actions physiques à montrer. Les déclenchements en cascade (une quête validée qui en débloque une autre)
  * sont traités jusqu'à stabilité. Pur : la partie en cours n'est pas modifiée.
  */
-export function runScript(state: GameState, rules: readonly Rule[], rewards: readonly RewardCard[] = []): ScriptResult {
+export function runScript(state: GameState, rules: readonly Rule[], rewards: readonly RewardCard[] = [], monsters: Record<string, MonsterDefinition> = {}): ScriptResult {
   const none: ScriptResult = { state, beats: [], instructions: [] };
   if (rules.length === 0 || state.phase === 'SCENARIO_SETUP' || isTerminal(state.phase)) return none;
   let s = state;
@@ -174,7 +185,7 @@ export function runScript(state: GameState, rules: readonly Rule[], rewards: rea
       progressed = true;
       for (const e of rule.then) {
         if (isTerminal(s.phase)) break;
-        apply(rule, e, s, out, counter++, rewards);
+        apply(rule, e, s, out, counter++, rewards, monsters);
       }
       s.scriptFired = [...fired];
       if (isTerminal(s.phase)) break;

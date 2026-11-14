@@ -59,9 +59,10 @@ describe('monsters.json livré', () => {
     }
   });
 
-  it('les 7 monstres ont leur fiche « 2-3 » saisie ; seule celle du Goblin Archer au niveau 1 reste à saisir', () => {
+  it('les 7 monstres ont leurs fiches des niveaux 1 et 2-3 saisies', () => {
     for (const m of file.monsters) expect(m.levels['2-3']!.life, `${m.id} niveau 2-3`).not.toBeNull();
-    for (const m of file.monsters) expect(m.levels['1']!.life === null, `${m.id} niveau 1 vide`).toBe(m.id === 'GA');
+    for (const m of file.monsters) expect(m.levels['1']!.life, `${m.id} niveau 1`).not.toBeNull();
+    expect(file.monsters.find((m) => m.id === 'GA')!.levels['1']).toEqual(file.monsters.find((m) => m.id === 'GA')!.levels['2-3']); // même fiche
   });
 
   it('niveau 2-3 : les valeurs saisies sont lues, avec le rang, la défense et les compétences', () => {

@@ -327,6 +327,34 @@
           "text": "Brise-Os lâche sa masse : l’antre n’a plus de maître."
         }
       ]
+    },
+    {
+      "id": "evenement-1",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 3
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
+    },
+    {
+      "id": "evenement-2",
+      "when": [
+        {
+          "type": "round-reached",
+          "round": 5
+        }
+      ],
+      "then": [
+        {
+          "type": "random-event"
+        }
+      ]
     }
   ],
   "monsterCardSet": "4-5",

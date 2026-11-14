@@ -33,13 +33,12 @@ describe('scénarios one shot : difficulté au choix', () => {
     expect(DEFEAT_THRESHOLD).toEqual({ legendary: 1, hard: 2, medium: 3, easy: 4 });
   });
 
-  it.each(ONE_SHOT_SCENARIOS.map((s) => s.id))('%s : facile sans archers (pas de fiche de niveau 1), de plus en plus de monstres ensuite', (id) => {
+  it.each(ONE_SHOT_SCENARIOS.map((s) => s.id))('%s : les archers jouent à toutes les difficultés, de plus en plus de monstres ensuite', (id) => {
     const n = (d: Difficulty) => start(id, d).monsters.length;
-    expect(countOf(start(id, 'easy').monsters, 'GA')).toBe(0);
+    expect(countOf(start(id, 'easy').monsters, 'GA')).toBeGreaterThan(0); // le Goblin Archer a une fiche de niveau 1
     expect(countOf(start(id, 'medium').monsters, 'GA')).toBeGreaterThan(0);
     expect(n('hard')).toBeGreaterThanOrEqual(n('medium'));
     expect(n('legendary')).toBeGreaterThan(n('hard'));
-    expect(JSON.stringify(start(id, 'easy').deck)).not.toContain('GA');
   });
 
   it('un scénario sans variantes se joue tel quel, à toutes les difficultés', () => {
@@ -58,8 +57,8 @@ describe('scénarios one shot : difficulté au choix', () => {
 
   it('un monstre sans fiche au niveau choisi, ou une variante incohérente, est refusé avec un message clair', () => {
     const def = ONE_SHOT_SCENARIOS[0]!;
-    const noStats = { ...def, difficulties: { ...def.difficulties, easy: { monsterCardSet: '1' } } };
-    expect(validateScenario(noStats, ORIGINAL_CONTENT).some((p) => p.includes('[Facile]') && p.includes('GA') && p.includes('niveau 1'))).toBe(true);
+    const noStats = { ...def, difficulties: { ...def.difficulties, easy: { monsterCardSet: '7' } } };
+    expect(validateScenario(noStats, ORIGINAL_CONTENT).some((p) => p.includes('[Facile]') && p.includes('niveau 7'))).toBe(true);
     const unknown = { ...def, difficulties: { ...def.difficulties, hard: { monsterCardSet: '4-5', removeMonsters: ['X9'] } } };
     expect(validateScenario(unknown, ORIGINAL_CONTENT).some((p) => p.includes('Difficile') && p.includes('X9'))).toBe(true);
     const dup = { ...def, difficulties: { ...def.difficulties, hard: { monsterCardSet: '4-5', addMonsters: [{ id: 'OC1', definitionId: 'OM', at: { x: 0, y: 0 } }] } } };
