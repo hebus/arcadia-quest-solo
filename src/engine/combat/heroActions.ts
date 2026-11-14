@@ -6,7 +6,8 @@ import { planMonsterAction } from '../movement/plan';
 import { createOracle, type InputAnswer, type Oracle } from '../oracle';
 import { CountingRandom } from '../random';
 import { cloneState, log } from '../state';
-import type { PhysicalInstruction } from '../activation/monsterTurn';
+import { spawnInstructions, type PhysicalInstruction } from '../activation/monsterTurn';
+import { resolveSpawnTile } from '../spawn/spawn';
 import { pruneEliminatedTypes } from '../activation/deck';
 import { canHeroTarget, ensureActivated } from './heroMove';
 
@@ -235,7 +236,13 @@ export function resolveHeroAttack(
       instructions.push({ id: `kill-${m.id}`, kind: 'info', text: `${m.id} est retiré du plateau.`, actorId: m.id, visual: { type: 'remove', actorId: m.id, at: { ...m.position } } });
     }
   }
-  for (const t of targeted) if (t.killed) finalizeMonsterKill(s, content, t.id, true, t.overkill);
+  for (const t of targeted) {
+    if (!t.killed) continue;
+    finalizeMonsterKill(s, content, t.id, true, t.overkill);
+    // Dès que la Spawn Tile est pleine, et à n'importe quel moment, les monstres qui s'y trouvent apparaissent.
+    const nameOf = (id: string): string => content.monsters[s.monsters.find((x) => x.id === id)?.definitionId ?? '']?.name ?? id;
+    instructions.push(...spawnInstructions(resolveSpawnTile(s, oracle, rng), nameOf));
+  }
 
   // Guard : l'attaque ne visait aucun monstre Close au héros → tous les monstres Close ripostent.
   const targetedIds = targets.map((t) => t.monsterId);

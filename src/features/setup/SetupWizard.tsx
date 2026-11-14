@@ -7,6 +7,7 @@ import { allScenarios } from '@/game-data/scenarios/catalog';
 import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
 import { BoardSetup, slug, type DefRow, type HeroRow, type InstRow } from './BoardSetup';
+import { tilePlacementProblems } from '@/engine/tileCatalog';
 import { BLANK_TILE, BUILTIN_TILES, DEMO_HOUSE_TILE } from './builtinTiles';
 
 const STEPS = ['Scénario', 'Héros et monstres', 'Plateau', 'Quêtes et deck', 'Vérification'];
@@ -111,11 +112,17 @@ export function SetupWizard({ onDone, openLibrary }: { onDone: () => void; openL
   const build = () => {
     const tileMap = Object.fromEntries([...BUILTIN_TILES, ...tiles].map((t) => [t.id, t]));
     if (layout.placements.length === 0) throw new Error('Posez au moins une tuile (étape Plateau).');
+    // Seules 9 tuiles doubles faces existent (A à I) : chacune une seule fois, sur une seule face.
+    const tileCheck = tilePlacementProblems(layout.placements.map((p) => p.tileId));
+    if (tileCheck.errors.length) throw new Error(tileCheck.errors.join(' '));
     const board = boardFromLayout(tileMap, layout, extras);
     const notPlaced = heroes.filter((h) => !h.pos).map((h) => h.name);
     if (notPlaced.length) throw new Error(`Placez les héros sur le plateau : ${notPlaced.join(', ')}.`);
     if (spawns.length === 0) throw new Error('Ajoutez au moins un jeton Spawn (outil « Jeton Spawn »).');
     const warnings: string[] = [];
+    if (tileCheck.notInGame.length) {
+      warnings.push(`Tuiles de test hors du jeu de base (${tileCheck.notInGame.map((id) => tileMap[id]?.name ?? id).join(', ')}) : ce plateau n'est pas réalisable avec le matériel, seules les 9 tuiles A à I (double face) existent.`);
+    }
     const monsterDefs: MonsterDefinition[] = defs.map((d) => {
       const s: MonsterStats = { life: d.life, overkill: d.overkill, reward: d.reward, attackType: d.type, attackDice: d.atk, movement: d.mv };
       // Seules les stats du niveau courant servent à l'activation ; 3 autres niveaux alimentent le deck (solo v1.3 p.1).

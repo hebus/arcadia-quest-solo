@@ -77,3 +77,26 @@ Il n'existe que 5 jetons Spawn, un de chaque : épée+épée, épée+arc, épée
 - **Dé de défense, blanc** : 2 boucliers, 1 critique, 3 faces vides. Un **bouclier** ou un **critique** annule une touche (valable pour un monstre qui aurait des dés de défense comme pour les héros, dont le joueur lance les dés).
 - Un critique est une réussite et ajoute un dé (règle du livret, inchangée).
 - Données dans `src/game-data/dice.ts`, réglables dans Paramètres.
+
+## Tuiles : 9 tuiles doubles faces
+
+- Le jeu de base compte **9 tuiles doubles faces** (A à I), soit 18 faces : A1/A2, B1/B2 … I1/I2 (`src/engine/tileCatalog.ts`). Sans elles, un plateau ne peut pas être reproduit.
+- Une tuile est une grille de **3×3 cases** (`TILE = 3`) et une case accueille **2 figurines** au maximum.
+- Chaque tuile n'existe qu'en un exemplaire : sur un plateau, **une seule face** d'une même tuile (pas A1 et A2 ensemble) et jamais deux fois la même. Un plateau compte donc 9 tuiles au plus.
+- Bibliothèque : chaque scan est une face (A1 à I2). Le code se lit dans le nom du fichier (« B2.png ») ; à défaut, la première face libre est attribuée, et la face se change dans l'éditeur de tuile. Ré-importer une face remplace son image.
+- Mise en place du plateau : le choix de tuile désactive toute tuile déjà posée (les deux faces) ; l'étape de vérification refuse un plateau qui en pose une deux fois.
+- Les tuiles de test (tuile de rue vierge, maison de démonstration) restent disponibles pour la démo, rangées à part ; la vérification signale que le plateau n'est pas réalisable avec le matériel.
+
+## Tuile d'apparition (Spawn Tile)
+
+- Elle compte **5 emplacements**. Un monstre tué quitte le plateau et prend le **premier emplacement libre**.
+- Dès qu'elle est **pleine, à n'importe quel moment** (sans attendre le tour des monstres), chaque monstre de la tuile, dans l'ordre des emplacements : on lance 2 dés d'attaque (ni relance ni dé supplémentaire) pour désigner un jeton Spawn.
+  - Pas de jeton correspondant sur le plateau : le monstre est **retiré définitivement du jeu**.
+  - Space du jeton **pleine** (2 figurines) : le monstre se place sur **une Space voisine** (orthogonale) qui a encore de la place, au choix du joueur ; s'il n'y en a aucune, il est retiré du jeu. (Le livret le remettait dans la boîte.)
+  - Sinon il se place sur la Space du jeton.
+- Au début du Monster Turn, la tuile est de toute façon résolue si elle était pleine (garde-fou, ce qui ne devrait plus arriver).
+- Code : `resolveSpawnTile` dans `src/engine/spawn/spawn.ts`, déclenché après chaque monstre tué par un héros.
+
+## Repos
+
+Un joueur qui se repose **passe son tour** : toutes ses cartes équipement redeviennent disponibles et peuvent être réorganisées (les joueurs gèrent leurs cartes, l'application n'en suit aucune), et les **héros tués sont ressuscités** (position choisie sur le plateau). Aucun héros ne doit avoir été activé ce tour-là.

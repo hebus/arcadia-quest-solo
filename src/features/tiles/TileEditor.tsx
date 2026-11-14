@@ -16,6 +16,7 @@ import {
   type Rotation,
   type TileDef,
 } from '@/engine/tiles';
+import { CATALOG_TILE_IDS, isCatalogTile, parseTileCode } from '@/engine/tileCatalog';
 import { BoardView } from '@/rendering/board/BoardView';
 import { useTileStore } from '@/stores/tileStore';
 import { readScan } from './imageImport';
@@ -48,13 +49,23 @@ export function TileEditor() {
   const importFiles = async (files: FileList | null) => {
     if (!files) return;
     try {
+      // Une tuile du jeu = une face (A1 à I2). Le code se lit dans le nom du fichier (« B2.png ») ; à défaut, première face libre.
+      const known = new Map(tiles.map((t) => [t.id, t]));
       for (const f of Array.from(files)) {
         const image = await readScan(f);
-        const def = parse(TileDefSchema, {
-          id: `tile-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          name: f.name.replace(/\.[^.]+$/, ''),
-          image,
-        });
+        const code = parseTileCode(f.name);
+        const existing = code ? known.get(code) : undefined;
+        if (existing) {
+          const updated = { ...existing, image };
+          known.set(existing.id, updated);
+          save(updated);
+          setSelectedId(existing.id);
+          continue;
+        }
+        const id = code ?? CATALOG_TILE_IDS.find((x) => !known.has(x));
+        if (!id) throw new Error('Les 18 faces de tuile (A1 à I2) sont déjà importées.');
+        const def = parse(TileDefSchema, { id, name: id, image });
+        known.set(id, def);
         save(def);
         setSelectedId(def.id);
       }
@@ -62,6 +73,14 @@ export function TileEditor() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
+  };
+
+  /** Change la face représentée par le scan (A1 à I2) ; une face déjà prise par une autre tuile n'est pas proposée. */
+  const changeFace = (id: string) => {
+    if (!selected || id === selected.id || tiles.some((t) => t.id === id)) return;
+    remove(selected.id);
+    save({ ...selected, id, name: selected.name === selected.id ? id : selected.name });
+    setSelectedId(id);
   };
 
   const update = (patch: Partial<TileDef>) => selected && save(pruneTile({ ...selected, ...patch }));
@@ -131,8 +150,10 @@ export function TileEditor() {
           </p>
         )}
         {tiles.length === 0 ? (
-          <p className="text-stone-400">Aucune tuile. Importez le scan de chaque face de tuile (une image par face, vue de dessus). Une tuile est une tuile de rue par défaut.</p>
+          <p className="text-stone-400">Aucune tuile. Le jeu compte 9 tuiles doubles faces (A à I), soit 18 faces : A1, A2 … I1, I2. Importez le scan de chaque face (une image par face, vue de dessus, de préférence nommée d’après sa face : « A1.png »). Une tuile est une tuile de rue par défaut.</p>
         ) : (
+          <>
+          <p className="mb-2 text-sm text-stone-400">{tiles.filter((t) => isCatalogTile(t.id)).length} / {CATALOG_TILE_IDS.length} faces de tuile importées (9 tuiles doubles faces, A à I).</p>
           <ul className="flex flex-wrap gap-2">
             {tiles.map((t) => (
               <li key={t.id}>
@@ -142,6 +163,7 @@ export function TileEditor() {
               </li>
             ))}
           </ul>
+          </>
         )}
       </Panel>
 
@@ -186,7 +208,18 @@ export function TileEditor() {
             </div>
             <div className="space-y-3">
               <label className="block">
-                Nom (code de la tuile et face)
+                Face de la tuile (A1 à I2)
+                <select aria-label="Face de la tuile" className={inputClass} value={selected.id} onChange={(e) => changeFace(e.target.value)}>
+                  {!isCatalogTile(selected.id) && <option value={selected.id}>{selected.name} (hors du jeu)</option>}
+                  {CATALOG_TILE_IDS.filter((id) => id === selected.id || !tiles.some((t) => t.id === id)).map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                Nom
                 <input className={inputClass} value={selected.name} onChange={(e) => update({ name: e.target.value })} />
               </label>
               <div>

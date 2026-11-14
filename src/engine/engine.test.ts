@@ -227,13 +227,14 @@ describe('actions de héros', () => {
     expect(attacks[0]!.id).toContain('o1');
   });
 
-  it('mort d un monstre : Spawn Tile ; au-delà de la capacité : boîte ; pièces versées', () => {
-    const s = startScenario(demoGame({ settings: physical, spawnTileCapacity: 1 }));
+  it('mort d un monstre : premier emplacement libre de la Spawn Tile ; pièces versées', () => {
+    const s = startScenario(demoGame({ settings: physical }));
     s.monsters.find((m) => m.id === 'g1')!.position = { x: 2, y: 3 };
     s.monsters.find((m) => m.id === 'o1')!.position = { x: 1, y: 2 };
     const r = resolveHeroAttack(s, testContent, 'h3', [{ monsterId: 'g1', wounds: 5 }, { monsterId: 'o1', wounds: 9 }]);
     expect(r.state.monsters.find((m) => m.id === 'g1')!.status).toBe('spawn-tile');
-    expect(r.state.monsters.find((m) => m.id === 'o1')!.status).toBe('box');
+    expect(r.state.monsters.find((m) => m.id === 'o1')!.status).toBe('spawn-tile');
+    expect(r.state.spawnTile).toEqual(['g1', 'o1']); // ordre des emplacements
     expect(r.state.coins).toBe(3);
     expect(r.instructions.filter((i) => i.id.startsWith('Payback'))).toHaveLength(0);
   });

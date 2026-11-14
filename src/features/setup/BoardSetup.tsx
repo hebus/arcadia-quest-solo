@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button, Panel, inputClass } from '@/components/ui';
 import { SPAWN_TOKEN_TYPES, samePair, spawnTokenLabel } from '@/engine/spawn/tokens';
+import { freeTileFaces, isCatalogTile, tileLetter } from '@/engine/tileCatalog';
 import type { Door, Portal, Position, SpawnPoint } from '@/engine/domain/schemas';
 import {
   boardFromLayout,
@@ -98,6 +99,7 @@ export function BoardSetup(p: Props) {
   const removedDoors = tileDoors.filter((d) => p.extras.doorStates[d.id] === 'none').map((d): [Position, Position] => [d.a, d.b]);
   const placed = p.layout.placements.flatMap((pl) => (byId[pl.tileId] ? [{ def: byId[pl.tileId]!, placement: pl }] : []));
   const current = slot ? p.layout.placements.find((x) => x.tx === slot.tx && x.ty === slot.ty) : undefined;
+  const freeFaces = freeTileFaces(p.layout.placements.map((x) => x.tileId), current?.tileId);
 
   const setPlacement = (tx: number, ty: number, tileId: string | null, rotation: Rotation = 0) => {
     const others = p.layout.placements.filter((x) => !(x.tx === tx && x.ty === ty));
@@ -225,11 +227,25 @@ export function BoardSetup(p: Props) {
                 Tuile pour l&apos;emplacement {slot.tx + 1},{slot.ty + 1}
                 <select aria-label="Tuile" className={inputClass} value={current?.tileId ?? ''} onChange={(e) => setPlacement(slot.tx, slot.ty, e.target.value || null, current?.rotation ?? 0)}>
                   <option value="">(vide)</option>
-                  {library.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
+                  {/* Les 9 tuiles du jeu, doubles faces : une tuile déjà posée (sur l'une ou l'autre face) n'est plus disponible. */}
+                  <optgroup label="Tuiles du jeu (A à I, double face)">
+                    {library
+                      .filter((t) => isCatalogTile(t.id))
+                      .map((t) => (
+                        <option key={t.id} value={t.id} disabled={!freeFaces.includes(t.id)}>
+                          {t.id}{t.name !== t.id ? ` · ${t.name}` : ''}{freeFaces.includes(t.id) ? '' : ` (tuile ${tileLetter(t.id)} déjà posée)`}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Tuiles de test (hors du jeu)">
+                    {library
+                      .filter((t) => !isCatalogTile(t.id))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </optgroup>
                 </select>
               </label>
               {current && (

@@ -5,7 +5,7 @@ import { selectionDistance } from '../movement/board';
 import { planMonsterAction, type ActionPlan } from '../movement/plan';
 import { createOracle, NeedInput, type InputAnswer, type InputRequest, type Oracle } from '../oracle';
 import { CountingRandom, type RandomSource } from '../random';
-import { resolveSpawnPhase, rollSpawnPoint } from '../spawn/spawn';
+import { resolveSpawnPhase, rollSpawnPoint, type SpawnReport } from '../spawn/spawn';
 import { cloneState, isTerminal, log } from '../state';
 import type { VisualAction } from '../visual';
 import { discardCard, drawCard, pruneEliminatedTypes, recycleDiscard } from './deck';
@@ -45,6 +45,30 @@ function describePlan(plan: ActionPlan, name: string): string[] {
     else out.push(`Avancer en (${st.to.x},${st.to.y}) (1 PM)`);
   }
   return out.length ? [`${name} :`, ...out] : [`${name} ne bouge pas.`];
+}
+
+/** Étapes à jouer sur la table pour une apparition depuis la Spawn Tile : poser les monstres, retirer les autres du jeu. */
+export function spawnInstructions(report: SpawnReport, nameOf: (id: string) => string): PhysicalInstruction[] {
+  return [
+    ...report.placed.map((p): PhysicalInstruction => ({
+      id: `spawn-${p.monsterId}`,
+      kind: 'spawn',
+      group: 'Apparition des monstres',
+      label: `${nameOf(p.monsterId)} apparaît`,
+      text: `Placer ${p.monsterId} en (${p.at.x},${p.at.y})${p.adjacent ? ` (Space voisine du jeton ${p.tokenId}, sa Space étant pleine)` : ''}.`,
+      actorId: p.monsterId,
+      visual: { type: 'place', actorId: p.monsterId, at: p.at },
+    })),
+    ...report.boxed.map((b): PhysicalInstruction => ({
+      id: `box-${b.monsterId}`,
+      kind: 'spawn',
+      group: 'Apparition des monstres',
+      label: `${nameOf(b.monsterId)} est retiré du jeu`,
+      text: `Retirer ${b.monsterId} définitivement du jeu (${b.reason}).`,
+      actorId: b.monsterId,
+      visual: { type: 'remove', actorId: b.monsterId },
+    })),
+  ];
 }
 
 function activateOne(
@@ -244,12 +268,7 @@ export function runMonsterTurn(state: GameState, content: Content, answers: read
 
   try {
     const report = resolveSpawnPhase(s, oracle, rng);
-    for (const p of report.placed) {
-      out.instructions.push({ id: `spawn-${p.monsterId}`, kind: 'spawn', group: 'Apparition des monstres', label: `${nameOf(p.monsterId)} apparaît`, text: `Placer ${p.monsterId} en (${p.at.x},${p.at.y}).`, actorId: p.monsterId, visual: { type: 'place', actorId: p.monsterId, at: p.at } });
-    }
-    for (const b of report.boxed) {
-      out.instructions.push({ id: `box-${b.monsterId}`, kind: 'spawn', group: 'Apparition des monstres', label: `${nameOf(b.monsterId)} retourne dans la boîte`, text: `Remettre ${b.monsterId} dans la boîte (${b.reason}).`, actorId: b.monsterId, visual: { type: 'remove', actorId: b.monsterId } });
-    }
+    out.instructions.push(...spawnInstructions(report, nameOf));
 
     for (const n of [1, 2] as const) {
       s.phase = n === 1 ? 'MONSTER_TURN_ACTIVATION_1' : 'MONSTER_TURN_ACTIVATION_2';

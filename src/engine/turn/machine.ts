@@ -109,8 +109,9 @@ export function finishHeroActivations(state: GameState): GameState {
 }
 
 /**
- * Repos : aucun héros activé, jetons de guilde retirés (physique), héros morts ressuscités sans blessure sur
- * la zone de départ ou Close d'un allié (positions fournies par le joueur), puis Monster Turn (rulebook p.18).
+ * Repos : le joueur passe son tour (aucun héros activé), toutes ses cartes équipement redeviennent disponibles et peuvent être
+ * réorganisées (les joueurs gèrent leurs cartes), les héros tués sont ressuscités sans blessure sur la zone de départ ou
+ * Close d'un allié (positions fournies par le joueur), puis Monster Turn (rulebook p.18).
  */
 export function restGuild(state: GameState, resurrectAt: Record<string, Position> = {}): GameState {
   const s = cloneState(state);
@@ -127,7 +128,7 @@ export function restGuild(state: GameState, resurrectAt: Record<string, Position
     log(s, 'hero-resurrected', `${h.name} est ressuscité en (${at.x},${at.y}).`, { heroId: h.id });
   }
   for (const h of s.heroes) for (const w of h.weapons ?? []) w.exhausted = false;
-  log(s, 'guild-rest', 'La guilde se repose : jetons retirés des cartes, cartes réorganisables.');
+  log(s, 'guild-rest', 'La guilde se repose : le tour est passé, toutes les cartes équipement redeviennent disponibles et peuvent être réorganisées (les joueurs les gèrent), les héros tués sont ressuscités.');
   endGuildTurn(s);
   return s;
 }

@@ -1,5 +1,5 @@
-import type { GameState, SpawnPoint } from '../domain/schemas';
-import { CELL_CAPACITY, occupancy } from '../movement/board';
+import type { GameState, Position, SpawnPoint } from '../domain/schemas';
+import { CELL_CAPACITY, key, neighbors, occupancy } from '../movement/board';
 import type { Oracle } from '../oracle';
 import { log } from '../state';
 import { releaseDelayedCards } from '../activation/deck';
@@ -21,24 +21,32 @@ export function rollSpawnPoint(s: GameState, oracle: Oracle, purpose: string): {
 }
 
 export interface SpawnReport {
-  placed: { monsterId: string; at: { x: number; y: number } }[];
+  placed: { monsterId: string; at: { x: number; y: number }; tokenId: string; /** Posé sur une case voisine du jeton, parce que sa Space était pleine. */ adjacent: boolean }[];
   boxed: { monsterId: string; reason: string }[];
 }
 
+/** Nombre d'emplacements de la tuile d'apparition. */
+export const SPAWN_TILE_SLOTS = 5;
+
 /**
- * Phase Spawn (rulebook p.23, solo v1.3 p.2) : si la Spawn Tile est pleine, chaque monstre, dans l'ordre des
- * emplacements, est placé sur le jeton Spawn tiré s'il existe et que sa Space n'est pas pleine ; sinon il sort
- * définitivement du jeu (boîte), y compris quand le jeton tiré n'est pas sur le plateau.
- * Le jet de spawn n'utilise ni relance ni dé supplémentaire.
+ * Tuile d'apparition : un monstre tué se place sur son premier emplacement libre (5 en tout). Dès que la tuile est pleine,
+ * et à n'importe quel moment, chaque monstre de la tuile, dans l'ordre des emplacements, apparaît :
+ * - 2 dés d'attaque désignent un jeton Spawn (sans relance ni dé supplémentaire) ;
+ * - pas de jeton correspondant sur le plateau : le monstre est retiré définitivement du jeu ;
+ * - Space du jeton pleine : le monstre se place sur l'une des Spaces voisines, au choix du joueur ;
+ * - sinon, il se place sur la Space du jeton.
+ * Ne fait rien tant que la tuile n'est pas pleine.
  */
-export function resolveSpawnPhase(s: GameState, oracle: Oracle, rng: RandomSource): SpawnReport {
+export function resolveSpawnTile(s: GameState, oracle: Oracle, rng: RandomSource): SpawnReport {
   const report: SpawnReport = { placed: [], boxed: [] };
-  if (s.spawnTile.length < s.spawnTileCapacity) {
-    log(s, 'spawn-skipped', 'Spawn Tile non pleine : pas de spawn.');
-    return report;
-  }
+  if (s.spawnTile.length < s.spawnTileCapacity) return report;
   const queue = [...s.spawnTile];
   s.spawnTile = [];
+  log(s, 'spawn-start', `Spawn Tile pleine : ${queue.join(', ')} apparaissent.`);
+  const free = (p: Position) => {
+    const o = occupancy(s, p);
+    return o.heroes + o.monsters + o.pets < CELL_CAPACITY;
+  };
   for (const id of queue) {
     const m = s.monsters.find((x) => x.id === id)!;
     const a = oracle.spawnDie(`Spawn de ${id} (dé 1)`);
@@ -47,22 +55,34 @@ export function resolveSpawnPhase(s: GameState, oracle: Oracle, rng: RandomSourc
     if (!sp) {
       m.status = 'box';
       report.boxed.push({ monsterId: id, reason: `aucun jeton Spawn ${a}/${b} sur le plateau` });
-      log(s, 'spawn-box', `${id} : aucun jeton Spawn ${a}/${b} sur le plateau → sorti définitivement du jeu.`, { monsterId: id });
+      log(s, 'spawn-box', `${id} : aucun jeton Spawn ${a}/${b} sur le plateau → retiré définitivement du jeu.`, { monsterId: id });
       continue;
     }
-    const occ = occupancy(s, sp.at);
-    if (occ.heroes + occ.monsters + occ.pets >= CELL_CAPACITY) {
-      m.status = 'box';
-      report.boxed.push({ monsterId: id, reason: `Space du jeton ${sp.id} pleine` });
-      log(s, 'spawn-box', `${id} : Space ${sp.id} pleine → boîte.`, { monsterId: id });
-      continue;
+    let at: Position = sp.at;
+    let adjacent = false;
+    if (!free(sp.at)) {
+      // Space du jeton pleine : une des Spaces voisines (orthogonales) qui a encore de la place.
+      const options = neighbors(s.board, sp.at).filter(free).map((q) => key(q));
+      if (options.length === 0) {
+        m.status = 'box';
+        report.boxed.push({ monsterId: id, reason: `Space du jeton ${sp.id} pleine et aucune Space voisine libre` });
+        log(s, 'spawn-box', `${id} : Space ${sp.id} pleine, aucune Space voisine libre → retiré définitivement du jeu.`, { monsterId: id });
+        continue;
+      }
+      const chosen = oracle.choose(`Space voisine du jeton ${sp.id} pour ${id}`, options);
+      const [x, y] = chosen.split(',').map(Number);
+      at = { x: x!, y: y! };
+      adjacent = true;
     }
     m.status = 'board';
-    m.position = { ...sp.at };
+    m.position = { ...at };
     m.isGuard = false;
-    report.placed.push({ monsterId: id, at: { ...sp.at } });
-    log(s, 'spawn-place', `${id} apparaît sur le jeton ${sp.id}.`, { monsterId: id, at: sp.at });
+    report.placed.push({ monsterId: id, at: { ...at }, tokenId: sp.id, adjacent });
+    log(s, 'spawn-place', `${id} apparaît ${adjacent ? 'près du' : 'sur le'} jeton ${sp.id}.`, { monsterId: id, at });
     releaseDelayedCards(s, m.definitionId, rng);
   }
   return report;
 }
+
+/** Début du Monster Turn : par précaution, résout la Spawn Tile si elle était pleine (normalement déjà fait dès qu'elle l'est). */
+export const resolveSpawnPhase = resolveSpawnTile;
