@@ -1,0 +1,681 @@
+[
+  {
+    "id": "RULE-SOLO-001",
+    "title": "Guilde de 3 héros, 5 objets de départ",
+    "source": {
+      "document": "solo-1.3",
+      "page": 1,
+      "section": "Getting Started"
+    },
+    "scope": "solo",
+    "description": "3 héros, un Guild Dashboard, 5 objets de départ répartis librement. Zone de départ : Player 1 Starting Area.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-002",
+    "title": "Campagne 3 Outer + 2 Inner + Final Showdown",
+    "source": {
+      "document": "solo-1.3",
+      "page": 1,
+      "section": "Getting Started"
+    },
+    "scope": "solo",
+    "description": "Chaque scénario a 2 issues (victoire ou défaite du jeu) ; on continue dans les deux cas.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-003",
+    "title": "Préparation des cartes Monster et du deck d'activation",
+    "source": {
+      "document": "solo-1.3",
+      "page": 1,
+      "section": "Scenario Setup"
+    },
+    "scope": "solo",
+    "description": "Cartes de niveau courant posées normalement ; cartes des 3 autres niveaux des monstres listés mélangées en Monster Activation deck face cachée. PvP Quest cards non utilisées.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-004",
+    "title": "Monstres gardes",
+    "source": {
+      "document": "solo-1.3",
+      "page": 1,
+      "section": "Scenario Setup"
+    },
+    "scope": "solo",
+    "description": "Les gardes ne se déplacent pas ; ils conservent Guard et Payback. Jeton de guilde inutilisée en rappel.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-005",
+    "title": "Victoire et seuil de défaite",
+    "source": {
+      "document": "solo-1.3",
+      "page": 1,
+      "section": "Objective"
+    },
+    "scope": "solo",
+    "description": "Victoire : toutes les PvE Quests. Défaite quand le nombre de morts de héros égale la difficulté : Legendary 1, Hard 2, Medium 3, Easy 4.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-006",
+    "title": "Manche = Guild Turn puis Monster Turn",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Gameplay"
+    },
+    "scope": "solo",
+    "description": "Le Monster Turn a lieu après chaque Guild Turn, que la guilde ait activé ses héros ou se soit reposée.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-007",
+    "title": "Guild Turn : activer tous les héros ou se reposer",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Guild Turn"
+    },
+    "scope": "solo",
+    "description": "Chaque héros activé une fois, ordre libre, 3 PM, attaque avant ou après le déplacement. Repos : retirer tous les jetons, ressusciter les morts, réorganiser.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-008",
+    "title": "Spawn au début du Monster Turn",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Monster Turn / Spawn"
+    },
+    "scope": "solo",
+    "description": "Si la Spawn Tile est pleine, faire apparaître les monstres selon les règles normales.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-009",
+    "title": "Jet de 2 dés d'attaque pour le Spawn Point de référence",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Activate 1"
+    },
+    "scope": "solo",
+    "description": "Relancer tant que la combinaison ne correspond à aucun jeton Spawn présent.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-010",
+    "title": "Distance de sélection du monstre",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Activate 2"
+    },
+    "scope": "solo",
+    "description": "Compter les Spaces orthogonales entre le jeton Spawn et chaque figurine de monstre comme s'il n'y avait aucun terrain : portes, murs, portails ignorés. Méthode utilisée uniquement pour choisir le monstre ; son activation suit les règles normales. Égalité : le joueur choisit.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-011",
+    "title": "La carte révélée ne sert qu'à choisir le type de monstre",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Activate 2 (Note)"
+    },
+    "scope": "solo",
+    "description": "Ignorer les stats de la carte d'activation ; utiliser la carte Monster du niveau du scénario, sauf le Mouvement.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-012",
+    "title": "Activation d'un monstre : 3 PM, héros le plus proche, attaque",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Activate 3"
+    },
+    "scope": "solo",
+    "description": "3 PM ; ouvrir une porte = 1 PM ; portail = 1 PM ; PM minimum nécessaire pour attaquer ; si plusieurs héros éligibles, celui avec le plus de blessures ; sinon le joueur choisit. Les 3 PM ne s'appliquent pas à Payback ni à Guard.",
+    "status": "ambiguous",
+    "openQuestions": [
+      "B2",
+      "B5"
+    ]
+  },
+  {
+    "id": "RULE-SOLO-013",
+    "title": "Deuxième activation",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Activate 4"
+    },
+    "scope": "solo",
+    "description": "Défausser la carte, répéter les étapes 2 et 3. Le second monstre peut être du même type.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-014",
+    "title": "Gardes ignorés à l'activation",
+    "source": {
+      "document": "solo-1.3",
+      "page": 2,
+      "section": "Guard Monsters"
+    },
+    "scope": "solo",
+    "description": "Un garde ne s'active pas : prendre le prochain monstre le plus proche. Un garde tué n'est plus garde : placé sur la Spawn Tile normalement, jeton retiré ; une fois réapparu il peut être activé.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-015",
+    "title": "Recyclage du deck d'activation",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "General Notes"
+    },
+    "scope": "solo",
+    "description": "Deck vide : mélanger la défausse pour former un nouveau deck face cachée.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-016",
+    "title": "Monstres activés au mieux de leurs capacités",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "General Notes"
+    },
+    "scope": "solo",
+    "description": "Relances, crits, capacités, portails, portes et effets utilisés au maximum ; déplacement optimal, portails compris.",
+    "status": "ambiguous",
+    "openQuestions": [
+      "B11"
+    ]
+  },
+  {
+    "id": "RULE-SOLO-017",
+    "title": "Cartes d'activation d'un type éliminé : contradiction interne",
+    "source": {
+      "document": "solo-1.3",
+      "page": 6,
+      "section": "General Notes vs FAQ p.20"
+    },
+    "scope": "solo",
+    "description": "Notes générales p.6 : retirer les cartes d'un type totalement retiré du jeu (Spawn Tile comprise). FAQ p.20 : ne pas retirer les cartes, les monstres peuvent réapparaître (gardes compris). La FAQ, plus récente et plus précise, est retenue provisoirement.",
+    "status": "ambiguous",
+    "openQuestions": [
+      "B13"
+    ]
+  },
+  {
+    "id": "RULE-SOLO-018",
+    "title": "Aucune figurine du type sur le plateau",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "General Notes"
+    },
+    "scope": "solo",
+    "description": "Si toutes les figurines du type sont sur la Spawn Tile, rien ne se passe pour cette carte.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-019",
+    "title": "First Bonus ignoré, Titres non utilisés, potions normales",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "General Notes"
+    },
+    "scope": "solo",
+    "description": "La pièce de la quête reste acquise ; les Titres ne sont ni attribués ni utilisés ; les potions n'affectent que le héros qui les utilise.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-020",
+    "title": "Composants retirés ou déconseillés",
+    "source": {
+      "document": "solo-1.3",
+      "page": 6,
+      "section": "Removed Components"
+    },
+    "scope": "solo",
+    "description": "Héros retirés : Haldor, Hellen, Izzy, Jack-Jack, King of Thieves, Mamba, Papa Ruk, Queen of Beggars, Tyrek, Wisp. Familiers retirés : Bumble, Moonpie, Cookie, Neville, Gadget, Scrag. Montures retirées : Luda, Phantom. Améliorations déconseillées listées par extension (Classic, Beyond the Grave, Inferno, Pets, Riders) : voir le livret p.6.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-021",
+    "title": "Phase d'amélioration après victoire",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "Solo Upgrade Phase"
+    },
+    "scope": "solo",
+    "description": "Révéler 8 cartes + 3 par tranche de 5 pièces gagnées ; acheter jusqu'à 3 cartes ; garder 1 pièce ; puis scénario suivant.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-022",
+    "title": "Phase d'amélioration après défaite",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "Solo Upgrade Phase"
+    },
+    "scope": "solo",
+    "description": "Révéler 6 cartes ; acheter jusqu'à 3 ; garder 1 pièce. Death Curses appliquées normalement dans les deux cas.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-023",
+    "title": "Héros disponibles",
+    "source": {
+      "document": "solo-1.3",
+      "page": 7,
+      "section": "Available Heroes"
+    },
+    "scope": "solo",
+    "description": "Liste de héros, familiers (19) et montures (8) disponibles : voir rule-inventory.md.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-001",
+    "title": "Case et capacité",
+    "source": {
+      "document": "rulebook",
+      "page": 13,
+      "section": "The Game Board"
+    },
+    "scope": "base",
+    "description": "Une Space contient au plus 2 personnages. Les murs bloquent déplacement et ligne de vue.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-002",
+    "title": "Close",
+    "source": {
+      "document": "rulebook",
+      "page": 13,
+      "section": "Close"
+    },
+    "scope": "base",
+    "description": "Même Space ou les 4 Spaces orthogonales partageant un bord ouvert. Pas de diagonale ; un mur ou une porte fermée annule Close.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-010",
+    "title": "Mouvement",
+    "source": {
+      "document": "rulebook",
+      "page": 14,
+      "section": "Movement"
+    },
+    "scope": "base",
+    "description": "1 PM = 1 Space orthogonale, ou 1 portail, ou ouvrir/fermer une porte du bord de sa Space. Pas de diagonale. Les PM restants ne se reportent pas.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-011",
+    "title": "Portails",
+    "source": {
+      "document": "rulebook",
+      "page": 14,
+      "section": "Portals"
+    },
+    "scope": "base",
+    "description": "1 PM pour se téléporter vers un autre portail de même couleur ; impossible si la destination est Blocked ; si elle est Full, il faut pouvoir finir son mouvement sur une Space libre. Ne déclenche pas Guard.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-012",
+    "title": "Portes",
+    "source": {
+      "document": "rulebook",
+      "page": 14,
+      "section": "Doors"
+    },
+    "scope": "base",
+    "description": "Fermée = mur (bloque mouvement et LOS). Ouverte = passage. Basculer coûte 1 PM.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-013",
+    "title": "Full et Blocked",
+    "source": {
+      "document": "rulebook",
+      "page": 15,
+      "section": "Full or Blocked Spaces"
+    },
+    "scope": "base",
+    "description": "Full : 2 personnages, on ne peut y finir son mouvement ; traversable si l'un est allié. Blocked : 2 ennemis ; infranchissable et bloque la LOS.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-020",
+    "title": "Attaque",
+    "source": {
+      "document": "rulebook",
+      "page": 15,
+      "section": "Attack"
+    },
+    "scope": "base",
+    "description": "Choisir une carte d'attaque non épuisée, confirmer la cible (mêlée = Close, distance = ligne de vue), épuiser la carte, constituer les pools d'attaque et de défense.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-021",
+    "title": "Ligne de vue",
+    "source": {
+      "document": "rulebook",
+      "page": 16,
+      "section": "Line of Sight"
+    },
+    "scope": "base",
+    "description": "Ligne du centre de la Space de l'attaquant à celle de la cible ; bloquée par mur, porte fermée, Space Blocked ou sortie du plateau ; non bloquée si elle effleure un coin où un seul côté est bloqué.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-022",
+    "title": "Jets de dés et CRIT",
+    "source": {
+      "document": "rulebook",
+      "page": 17,
+      "section": "Rolling Dice"
+    },
+    "scope": "base",
+    "description": "Un CRIT est toujours une réussite et fait lancer un dé supplémentaire, récursivement. Chaque sauvegarde annule un coup ; les coups restants sont des blessures.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-023",
+    "title": "Mort et récompenses",
+    "source": {
+      "document": "rulebook",
+      "page": 18,
+      "section": "Kills and Rewards"
+    },
+    "scope": "base",
+    "description": "Blessures = Life : mort. Monstre tué : placé dans le premier emplacement libre de la Spawn Tile ; pièces de la carte. Héros tué : sur sa carte, jeton Death. Les jetons d'exploration tombent sur sa Space.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-024",
+    "title": "Repos",
+    "source": {
+      "document": "rulebook",
+      "page": 18,
+      "section": "Rest"
+    },
+    "scope": "base",
+    "description": "Retirer les jetons de toutes les cartes, réorganiser (cartes Death Curse et jetons Quest non déplaçables), ressusciter les héros morts : retirer leurs blessures, les placer sur la zone de départ ou Close d'un allié déjà sur le plateau.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-025",
+    "title": "Réaction Guard",
+    "source": {
+      "document": "rulebook",
+      "page": 19,
+      "section": "Guard Reaction"
+    },
+    "scope": "base",
+    "description": "Tout monstre garde les Spaces Close. Quitter une Space Close à un monstre déclenche son attaque (sans mouvement), résolue avant le déplacement. Entrer dans une Space Close ne déclenche pas. Un portail ne déclenche pas. Une attaque qui ne vise aucun monstre Close déclenche Guard de tous les monstres Close.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-026",
+    "title": "Réaction Payback",
+    "source": {
+      "document": "rulebook + solo-1.3",
+      "page": 20,
+      "section": "Payback / FAQ"
+    },
+    "scope": "base",
+    "description": "Attaquer un monstre l'active : il peut bouger jusqu'à son Mouvement puis attaquer l'attaquant. FAQ solo p.20 : si l'attaque vise plusieurs monstres, un seul est activé, celui du tier le plus élevé parmi les cibles ; égalité : le joueur choisit.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-027",
+    "title": "Attaque de monstre",
+    "source": {
+      "document": "rulebook",
+      "page": 20,
+      "section": "Monster Attack"
+    },
+    "scope": "base",
+    "description": "Les monstres n'épuisent pas de carte ; mêmes règles de proximité et de ligne de vue que les héros.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-028",
+    "title": "Overkill",
+    "source": {
+      "document": "rulebook",
+      "page": 21,
+      "section": "Overkill"
+    },
+    "scope": "base",
+    "description": "Une attaque infligeant au moins le nombre de blessures d'Overkill élimine le monstre immédiatement, sans Payback ; sinon un monstre tué attaque quand même avant de partir.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-029",
+    "title": "Vilains",
+    "source": {
+      "document": "rulebook",
+      "page": 22,
+      "section": "Villains"
+    },
+    "scope": "base",
+    "description": "Une guilde qui blesse un Vilain pose un jeton sur sa carte ; à sa mort, toutes les guildes ayant un jeton gagnent la récompense complète. Seul le tueur obtient la quête associée.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-030",
+    "title": "Spawn",
+    "source": {
+      "document": "rulebook",
+      "page": 23,
+      "section": "Spawning Monsters"
+    },
+    "scope": "base",
+    "description": "Spawn Tile pleine (5 monstres) : pour chaque monstre dans l'ordre des emplacements, lancer 2 dés d'attaque (sans relance ni dé supplémentaire) et chercher le jeton Spawn correspondant. Pas de jeton ou Space Full : monstre remis dans la boîte. Space libre : monstre placé. Les monstres tués au-delà des 5 emplacements retournent dans la boîte. FAQ solo p.20 : les monstres tués au-delà des emplacements libres de la Spawn Tile retournent immédiatement dans la boîte.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-031",
+    "title": "Quêtes",
+    "source": {
+      "document": "rulebook",
+      "page": 23,
+      "section": "Quests"
+    },
+    "scope": "base",
+    "description": "Chaque quête ne peut être accomplie qu'une fois par guilde et par scénario ; jeton de guilde posé sur la carte. Cartes Reward : récompense immédiate dans l'inventaire d'un héros si disponible.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-032",
+    "title": "Pièces",
+    "source": {
+      "document": "rulebook",
+      "page": 23,
+      "section": "Coin Rewards"
+    },
+    "scope": "base",
+    "description": "Pièces pour monstres tués, pour une mort de héros causée par un monstre ou un élément neutre (les autres guildes, donc aucune en solo), pour chaque quête en fin de scénario, et pour les coffres en fin de scénario.",
+    "status": "to-verify",
+    "openQuestions": [
+      "B12"
+    ]
+  },
+  {
+    "id": "RULE-BASE-040",
+    "title": "Death Curses",
+    "source": {
+      "document": "rulebook",
+      "page": 24,
+      "section": "Death Curses"
+    },
+    "scope": "base",
+    "description": "Au début de la phase d'amélioration, rendre les anciennes malédictions, mélanger, piocher autant de cartes que de jetons Death, garder la plus haute valeur et défausser le reste.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-041",
+    "title": "Améliorations normales",
+    "source": {
+      "document": "rulebook",
+      "page": 24,
+      "section": "Upgrades"
+    },
+    "scope": "base",
+    "description": "Deck du niveau du scénario terminé ; achat max 3 cartes ; 1 pièce économisable ; maximum 12 cartes par guilde ; remplacé en solo par RULE-SOLO-021/022 pour la distribution des cartes.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-042",
+    "title": "Jetons d'exploration",
+    "source": {
+      "document": "rulebook",
+      "page": 25,
+      "section": "Exploration Tokens"
+    },
+    "scope": "base",
+    "description": "Collecte automatique sans PM si le héros actif est dans la Space sans ennemi. Types : Quest, Healing Potion, Refreshing Potion, Extra Turn Potion, Treasure Chest, Trap.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-043",
+    "title": "Cartes d'amélioration et effets spéciaux",
+    "source": {
+      "document": "rulebook",
+      "page": 26,
+      "section": "Upgrade Cards"
+    },
+    "scope": "base",
+    "description": "Attaque, Boost, Permanent ; Extra Defense, Extra Life, Reroll Pool, Daze, Bombs, Exhaust Hero, Self Sacrifice, effet Critical.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-BASE-050",
+    "title": "Progression de campagne",
+    "source": {
+      "document": "rulebook",
+      "page": 9,
+      "section": "Campaign for Arcadia"
+    },
+    "scope": "base",
+    "description": "6 scénarios sur 11 : 3 Outer Circle parmi 6, 2 Inner Circle parmi 4, puis Final Showdown. Le niveau des monstres est égal au rang du scénario dans la campagne (cartes « Level 2-3 » au 3e).",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-024",
+    "title": "Inferno et Beyond the Grave : cartes Brimstone / Tombstone",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "Inferno & Beyond the Grave"
+    },
+    "scope": "expansion",
+    "description": "Utiliser les nouveaux jeux Brimstone et Tombstone. L'effet d'une carte révélée peut être appliqué immédiatement si possible. Le joueur peut défausser la carte sans effet après avoir dépensé 1 PM d'un héros pour la révéler. Certaines cartes activent un monstre d'un tier donné choisi par le joueur (stats normales) ; il ne compte pas comme héros et ne peut pas accomplir de quête ; jamais un garde. Ivan utilise de nouvelles cartes solo (à télécharger).",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-025",
+    "title": "Huge Characters",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "Huge Characters Shove You"
+    },
+    "scope": "expansion",
+    "description": "Lors de l'activation d'un Huge Character, utiliser tout son mouvement pour pousser les héros autant que possible.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-026",
+    "title": "Pets : activation et Wild Pet",
+    "source": {
+      "document": "solo-1.3",
+      "page": 4,
+      "section": "Arcadia Quest: Pets"
+    },
+    "scope": "expansion",
+    "description": "Pendant le Guild Turn, quand on active les héros, on active aussi chaque familier une fois (jamais pendant le repos). Un nombre de cartes Wild Pet propre au scénario est ajouté au deck d'activation : une Wild Pet ne fait rien agir ; on révèle une autre carte et ce monstre cible le familier de guilde le plus proche. Deux Wild Pet d'affilée : remélanger la défausse avec le deck et repiocher. Les morts de familiers ne comptent pas pour la défaite. Les Korillas utilisent de nouvelles cartes solo.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-027",
+    "title": "Riders : activation de la monture",
+    "source": {
+      "document": "solo-1.3",
+      "page": 5,
+      "section": "Arcadia Quest: Riders"
+    },
+    "scope": "expansion",
+    "description": "Quand on active les héros, on peut activer la monture une fois (3 PM : déplacement, portes, portails, monter, descendre). Si un héros descend, un autre héros ne peut la rappeler qu'ensuite ou au prochain Guild Turn. La mort d'une monture compte comme une mort de héros pour la défaite ; pas de carte Malédiction pour la monture.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-028",
+    "title": "Dragons Partie 1",
+    "source": {
+      "document": "solo-1.3",
+      "page": 5,
+      "section": "Arcadia Quest: Dragons"
+    },
+    "scope": "expansion",
+    "description": "Règles solo normales ; quête PvE « Ground the Dragon » ; deck de monstres et activations après le Guild Turn ; le dragon n'est jamais activé pendant le Monster Turn ; cartes Relic selon le scénario ; carte Dragon Power en grounding le dragon ; nouvelles cartes Dragonstone (effet appliqué à volonté, ou défaussée après 1 PM d'un héros). Pas de pièces bonus de médailles lors de la phase d'amélioration précédant la Partie 1.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-029",
+    "title": "Dragons Partie 2",
+    "source": {
+      "document": "solo-1.3",
+      "page": 5,
+      "section": "Arcadia Quest: Dragons"
+    },
+    "scope": "expansion",
+    "description": "Conditions de victoire et de défaite propres au dragon. Manche = Dragon Turn (piocher une carte Dragon Turn, l'exécuter, la défausser) puis Guild Turn. Pas de Monster Turn. Activer ou se reposer : un seul héros est activé. Les règles de chaque dragon viennent de leur livret, non fourni.",
+    "status": "to-verify",
+    "openQuestions": [
+      "B14"
+    ]
+  },
+  {
+    "id": "RULE-SOLO-030",
+    "title": "FAQ : une quête ne s'accomplit qu'une fois par scénario",
+    "source": {
+      "document": "solo-1.3",
+      "page": 20,
+      "section": "FAQ"
+    },
+    "scope": "expansion",
+    "description": "Impossible d'obtenir deux fois les cartes Reward d'une même quête.",
+    "status": "verified"
+  },
+  {
+    "id": "RULE-SOLO-031",
+    "title": "Catalogue des changements de scénario (53)",
+    "source": {
+      "document": "solo-1.3",
+      "page": 8,
+      "section": "Scenario Changes"
+    },
+    "scope": "scenario",
+    "description": "Voir src/game-data/scenarios/solo-scenario-changes.json : gardes, cartes exclues ou limitées ou retardées, nombre de Wild Pet, quêtes à 2 sur 3, règles spéciales.",
+    "status": "to-verify",
+    "openQuestions": [
+      "B8"
+    ]
+  }
+]

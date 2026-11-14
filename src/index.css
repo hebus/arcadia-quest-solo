@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+/* Animations du plateau : instructions visuelles (fantômes, flèches, portes). */
+@keyframes aq-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.12); }
+}
+@keyframes aq-march {
+  to { stroke-dashoffset: -16; }
+}
+@keyframes aq-snap {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.aq-pulse { animation: aq-pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.aq-march { animation: aq-march 0.9s linear infinite; }
+.aq-shake { animation: aq-snap 0.3s ease-in-out 2; }
+@media (prefers-reduced-motion: reduce) {
+  .aq-pulse, .aq-march, .aq-shake { animation: none; }
+}

@@ -1,0 +1,978 @@
+{
+  "source": {
+    "document": "AQ-Solo_Mode-1.3.pdf",
+    "version": "1.3"
+  },
+  "scenarios": [
+    {
+      "id": "SCN-DISTRICT-OF-HAMMERS",
+      "family": "classic",
+      "page": 8,
+      "name": "District of Hammers",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-BRIGHTSUN-ARENA",
+      "family": "classic",
+      "page": 8,
+      "name": "Brightsun Arena",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [],
+      "limitedCards": {
+        "Minotaur": 3
+      },
+      "delayedCards": [],
+      "notes": [
+        "Quête PvE « King of the Arena » : finir 1 tour sur chaque jeton Quest",
+        "Scénario déconseillé en premier"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-MOON-GATE",
+      "family": "classic",
+      "page": 8,
+      "name": "The Moon Gate",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hammer Beastman"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-ROOKERY",
+      "family": "classic",
+      "page": 9,
+      "name": "The Rookery",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-MANOR",
+      "family": "classic",
+      "page": 9,
+      "name": "The Manor",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {
+        "Troll": 3
+      },
+      "delayedCards": [],
+      "notes": [
+        "Scénario déconseillé en premier"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-ORC-S-HIVE",
+      "family": "classic",
+      "page": 9,
+      "name": "The Orc's Hive",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hammer Beastman",
+        "Spear Beastman"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-ALCHEMIST-S-DISTRICT",
+      "family": "classic",
+      "page": 9,
+      "name": "Alchemist's District",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Retirer 3 icônes Guard (v1.3 : « Removed 3 Guard icons », sens à confirmer)"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-RED-DAWN-SQUARE",
+      "family": "classic",
+      "page": 10,
+      "name": "Red Dawn Square",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "Sister of Pleasure",
+        "Sister of Pain"
+      ],
+      "limitedCards": {},
+      "delayedCards": [
+        "Lord Fang"
+      ],
+      "notes": [
+        "Quête « Kill Lord Fang » : relancer 2 dés jusqu'à un jeton Spawn disponible avant de placer Fang"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-UNIVERSITY-PLAZA",
+      "family": "classic",
+      "page": 10,
+      "name": "The University Plaza",
+      "guards": false,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Victoire : 2 quêtes PvE sur 3 (Find the Tomes, Kill the Troll, Kill the Minotaur)"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-EVERSHADOW-DISTRICT",
+      "family": "classic",
+      "page": 10,
+      "name": "Evershadow District",
+      "guards": false,
+      "wildPets": 3,
+      "excludedCards": [
+        "Sister of Pleasure"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-TEMPLE-OF-DAWNING-TWILIGHT",
+      "family": "classic",
+      "page": 10,
+      "name": "Temple of Dawning Twilight",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "Lord Fang",
+        "Troll",
+        "Minotaur",
+        "Sister of Pleasure",
+        "Sister of Pain"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Ajouter des jetons Spawn aux zones indiquées ; pas de réapparition ; jetons Spawn utilisés seulement pendant le Monster Turn"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-BEYOND-THE-GATES-OF-HELL",
+      "family": "inferno",
+      "page": 11,
+      "name": "Beyond the Gates of Hell",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Cerberus"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-BARGE-OF-THE-DEAD",
+      "family": "inferno",
+      "page": 11,
+      "name": "Barge of the Dead",
+      "guards": false,
+      "wildPets": 1,
+      "excludedCards": [
+        "Demon Pitcher"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-LOST-IN-THE-DARK",
+      "family": "inferno",
+      "page": 11,
+      "name": "Lost in the Dark",
+      "guards": false,
+      "wildPets": 1,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-PRISONER",
+      "family": "inferno",
+      "page": 11,
+      "name": "The Prisoner",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "Bellya'al"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-PARADE",
+      "family": "inferno",
+      "page": 11,
+      "name": "The Parade",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "The Judge"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-TAINTED-FOUNTAIN",
+      "family": "inferno",
+      "page": 11,
+      "name": "The Tainted Fountain",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-DAMNED-PONY",
+      "family": "inferno",
+      "page": 12,
+      "name": "The Damned Pony",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "The Judge"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-HELL-S-KITCHEN",
+      "family": "inferno",
+      "page": 12,
+      "name": "Hell's Kitchen",
+      "guards": false,
+      "wildPets": 2,
+      "excludedCards": [
+        "Bellya'al",
+        "The Judge"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-MINISTRY-OF-INFERNAL-AFFAIRS",
+      "family": "inferno",
+      "page": 12,
+      "name": "Ministry of Infernal Affairs",
+      "guards": false,
+      "wildPets": 3,
+      "excludedCards": [
+        "The Underlord"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Anges A1/A2 selon le cercle précédent : West = Leah et The Wanderer ; East = Angel Eyes et Benjamin ; leurs cartes restantes vont dans le deck"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-WELL-OF-TORMENTED-SOULS",
+      "family": "inferno",
+      "page": 12,
+      "name": "Well of Tormented Souls",
+      "guards": false,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Victoire : 2 quêtes PvE sur 3 (Retrieve a Soul, Kill Bellya'al, Kill The Judge)",
+        "Anges A1/A2 selon le cercle précédent"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-FALLEN-TEMPLE",
+      "family": "inferno",
+      "page": 12,
+      "name": "The Fallen Temple",
+      "guards": false,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Victoire : 2 quêtes PvE sur 3 (Recover the Amulet, Kill The Judge, Kill The Underlord)",
+        "Anges A1/A2 selon le cercle précédent"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-HIT-ROCK-BOTTOM",
+      "family": "inferno",
+      "page": 13,
+      "name": "Hit Rock Bottom",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "The Underlord"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Anges A1/A2 selon le cercle précédent",
+        "Si « Ministry of Infernal Affairs » non joué : le Justicar est un monstre, ses cartes restantes vont dans le deck"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-HOW-DEEP-IS-YOUR-LAVA",
+      "family": "whole-lotta-lava",
+      "page": 13,
+      "name": "How Deep is Your Lava?",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-IN-THE-NAME-OF-LAVA",
+      "family": "whole-lotta-lava",
+      "page": 13,
+      "name": "In the Name of Lava",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-HAUNTED-BARRACKS",
+      "family": "beyond-the-grave",
+      "page": 14,
+      "name": "Haunted Barracks",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-SLAUGHTER-HOUSE",
+      "family": "beyond-the-grave",
+      "page": 14,
+      "name": "Slaughter House",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [
+        "Ghost"
+      ],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-CRYPTS",
+      "family": "beyond-the-grave",
+      "page": 14,
+      "name": "Crypts",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [
+        "Slasher Zombie"
+      ],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-BRIDGE-OF-THE-DAMNED",
+      "family": "beyond-the-grave",
+      "page": 14,
+      "name": "Bridge of The Damned",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [
+        "Ghost"
+      ],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-GRAVEYARD",
+      "family": "beyond-the-grave",
+      "page": 15,
+      "name": "The Graveyard",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "Dr. Spider"
+      ],
+      "limitedCards": {},
+      "delayedCards": [
+        "Necromancer",
+        "Ghost"
+      ],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-BLACK-SHRINE",
+      "family": "beyond-the-grave",
+      "page": 15,
+      "name": "Black Shrine",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [
+        "Ghost"
+      ],
+      "notes": [
+        "Victoire : 2 quêtes PvE sur 3 (Rescue the Militia, Kill Frank, Kill Ivan)"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-MILL-OF-SOULS",
+      "family": "beyond-the-grave",
+      "page": 15,
+      "name": "Mill of Souls",
+      "guards": false,
+      "wildPets": 2,
+      "excludedCards": [
+        "Skelebone"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-SECRET-LABORATORY",
+      "family": "beyond-the-grave",
+      "page": 15,
+      "name": "Secret Laboratory",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-UNHOLY-MAUSOLEUM",
+      "family": "beyond-the-grave",
+      "page": 15,
+      "name": "The Unholy Mausoleum",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "Dread King"
+      ],
+      "limitedCards": {},
+      "delayedCards": [
+        "Ghost"
+      ],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-ENTER-THE-MAGICAL-GARDENS",
+      "family": "pets",
+      "page": 16,
+      "name": "Enter the Magical Gardens",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hedgehornet"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-TRACKING-THE-BUNNY",
+      "family": "pets",
+      "page": 16,
+      "name": "Tracking the Bunny",
+      "guards": false,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-FOLLOW-THE-DARK-ROAD",
+      "family": "pets",
+      "page": 16,
+      "name": "Follow the Dark Road",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "Hammer Beastman (jeu de base) / Cerberus (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-HUT-IN-THE-WOODS",
+      "family": "pets",
+      "page": 16,
+      "name": "The Hut in the Woods",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-CAGED-PETS",
+      "family": "pets",
+      "page": 16,
+      "name": "The Caged Pets",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "Spear Beastman (jeu de base) / Demon Pitcher (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-REVENGE-OF-THE-WITCH",
+      "family": "pets",
+      "page": 17,
+      "name": "Revenge of the Witch",
+      "guards": false,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Ne pas utiliser la règle du Campaign Book : à la mort d'un Hedgehornet, Korilla ou Owlbunny, déplacer un familier ennemi de 3 cases et infliger 1 blessure aux héros ennemis"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-DAWN-OF-THE-JACKLOLS",
+      "family": "riders",
+      "page": 17,
+      "name": "Dawn of the Jacklols",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Goblin Archer (jeu de base) / Harpy (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-DOWN-BOY",
+      "family": "riders",
+      "page": 17,
+      "name": "Down, Boy!",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-RUN-AND-BONES",
+      "family": "riders",
+      "page": 18,
+      "name": "Run and Bones",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "Jacklol"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-HUNTING-SEASON-IS-CLOSED",
+      "family": "riders",
+      "page": 18,
+      "name": "Hunting Season is Closed!",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-SMALL-GAME",
+      "family": "riders",
+      "page": 18,
+      "name": "Small Game",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-ARCADIA-MOUNTOR-SPEEDWAY",
+      "family": "riders",
+      "page": 18,
+      "name": "Arcadia Mountor Speedway",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "Hammer Beastman (jeu de base) / Cerberus (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-FURBALL",
+      "family": "riders",
+      "page": 18,
+      "name": "Furball",
+      "guards": true,
+      "wildPets": 2,
+      "excludedCards": [
+        "Axe Flinger Zombie",
+        "Ghost",
+        "Hedgehornet"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-THE-GAME-IS-AFOOT",
+      "family": "riders",
+      "page": 19,
+      "name": "The Game Is Afoot!",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "Troll (jeu de base) / Bellya'al (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-WHO-HUNTS-THE-HUNTER",
+      "family": "riders",
+      "page": 19,
+      "name": "Who Hunts The Hunter?",
+      "guards": true,
+      "wildPets": 3,
+      "excludedCards": [
+        "Orc Marauder (jeu de base) / Demoness (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-FROST-DRAGON-PART-1",
+      "family": "dragons",
+      "page": 19,
+      "name": "Frost Dragon Part 1",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hammer Beastman (jeu de base) / Cerberus (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Partie 2 : règles du dragon concerné, hors périmètre des changements de scénario du livret solo"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-FIRE-DRAGON-PART-1",
+      "family": "dragons",
+      "page": 19,
+      "name": "Fire Dragon Part 1",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hammer Beastman (jeu de base) / Cerberus (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Partie 2 : règles du dragon concerné, hors périmètre des changements de scénario du livret solo"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-CHAOS-DRAGON-PART-1",
+      "family": "dragons",
+      "page": 20,
+      "name": "Chaos Dragon Part 1",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hammer Beastman (jeu de base) / Cerberus (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Partie 2 : règles du dragon concerné, hors périmètre des changements de scénario du livret solo"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    },
+    {
+      "id": "SCN-POISON-DRAGON-PART-1",
+      "family": "dragons",
+      "page": 20,
+      "name": "Poison Dragon Part 1",
+      "guards": true,
+      "wildPets": 1,
+      "excludedCards": [
+        "Hammer Beastman (jeu de base) / Cerberus (Inferno)"
+      ],
+      "limitedCards": {},
+      "delayedCards": [],
+      "notes": [
+        "Partie 2 : règles du dragon concerné, hors périmètre des changements de scénario du livret solo"
+      ],
+      "status": "to-verify",
+      "blockedBy": [
+        "B8"
+      ]
+    }
+  ]
+}
