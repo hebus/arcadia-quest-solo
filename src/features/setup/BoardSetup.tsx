@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button, Panel, inputClass } from '@/components/ui';
+import { SPAWN_TOKEN_TYPES, samePair, spawnTokenLabel } from '@/engine/spawn/tokens';
 import type { Door, Portal, Position, SpawnPoint } from '@/engine/domain/schemas';
 import {
   boardFromLayout,
@@ -67,7 +68,6 @@ interface Props {
   defs: { id: string; name: string }[];
   insts: InstRow[];
   setInsts: (i: InstRow[]) => void;
-  faces: string[];
   onOpenLibrary: () => void;
 }
 
@@ -81,7 +81,10 @@ export function BoardSetup(p: Props) {
   const [slot, setSlot] = useState<{ tx: number; ty: number } | null>(null);
   const [heroIdx, setHeroIdx] = useState(0);
   const [defId, setDefId] = useState(p.defs[0]?.id ?? '');
-  const [dice, setDice] = useState<[string, string]>([p.faces[0] ?? 'A', p.faces[1] ?? p.faces[0] ?? 'B']);
+  const [tokenKey, setTokenKey] = useState('');
+  // Il n'existe que 5 jetons Spawn, un de chaque : on ne propose que ceux qui ne sont pas déjà sur le plateau.
+  const freeTokens = SPAWN_TOKEN_TYPES.filter(([a, b]) => !p.spawns.some((s) => samePair(s.dice, a, b)));
+  const token = freeTokens.find((t) => t.join('+') === tokenKey) ?? freeTokens[0];
 
   const library = useMemo(() => [...BUILTIN_TILES, ...p.tilesLib], [p.tilesLib]);
   const byId = useMemo(() => Object.fromEntries(library.map((t) => [t.id, t])), [library]);
@@ -142,7 +145,7 @@ export function BoardSetup(p: Props) {
     } else if (tool === 'spawn') {
       const cur = p.spawns.find((s) => same(s.at, q));
       if (cur) p.setSpawns(p.spawns.filter((s) => s !== cur));
-      else p.setSpawns([...p.spawns, { id: `S${p.spawns.length + 1}`, at: q, dice }]);
+      else if (token) p.setSpawns([...p.spawns, { id: `S-${token[0]}-${token[1]}`, at: q, dice: [token[0], token[1]] }]);
     } else if (tool === 'hero') {
       p.setHeroes(p.heroes.map((h, i) => (i === heroIdx ? { ...h, pos: q } : h)));
     } else if (tool === 'monster' && defId) {
@@ -243,14 +246,18 @@ export function BoardSetup(p: Props) {
 
       {tool === 'spawn' && (
         <div className="flex flex-wrap items-center gap-2">
-          <span>Paire de dés :</span>
-          {[0, 1].map((i) => (
-            <select key={i} aria-label={`Face ${i + 1} du jeton`} className={`${inputClass} w-32`} value={dice[i]} onChange={(e) => setDice(i === 0 ? [e.target.value, dice[1]] : [dice[0], e.target.value])}>
-              {p.faces.map((f) => (
-                <option key={f}>{f}</option>
+          <span>Jeton :</span>
+          {token ? (
+            <select aria-label="Jeton Spawn" className={`${inputClass} w-48`} value={token.join('+')} onChange={(e) => setTokenKey(e.target.value)}>
+              {freeTokens.map((t) => (
+                <option key={t.join('+')} value={t.join('+')}>
+                  {spawnTokenLabel(t)}
+                </option>
               ))}
             </select>
-          ))}
+          ) : (
+            <span className="text-stone-400">Les 5 jetons sont posés.</span>
+          )}
         </div>
       )}
       {tool === 'hero' && (

@@ -1,4 +1,5 @@
 import type { Content, DecisionTrace, GameState } from '../domain/schemas';
+import { monsterStats } from '../monsters';
 import { damageHero, damagePet } from '../combat/damage';
 import { selectionDistance } from '../movement/board';
 import { planMonsterAction, type ActionPlan } from '../movement/plan';
@@ -57,6 +58,18 @@ function activateOne(
   const tag = `R${s.round}-A${n}`;
   const group = `Activation ${n}`;
   const { point, dice } = rollSpawnPoint(s, oracle, `Activation ${n} : Spawn Point de référence`);
+  if (!point) {
+    // Jeton inexistant sur ce plateau : rien ne se passe (aucune relance, aucune carte piochée).
+    out.instructions.push({
+      id: `${tag}-nospawn`,
+      kind: 'info',
+      group,
+      label: 'Pas de jeton Spawn : rien ne se passe',
+      text: `Dés de référence : ${dice[0]} / ${dice[1]} → aucun jeton Spawn correspondant sur le plateau. Activation ${n} : rien ne se passe.`,
+    });
+    log(s, 'activation', `Activation ${n} : dés ${dice[0]}/${dice[1]}, aucun jeton Spawn correspondant : rien ne se passe.`);
+    return;
+  }
   out.instructions.push({
     id: `${tag}-dice`,
     kind: 'info',
@@ -170,7 +183,7 @@ function activateOne(
   }
 
   if (plan.canAttack && plan.targetId) {
-    const stats = def.levels[s.monsterCardSet]!;
+    const stats = monsterStats(def, s.monsterCardSet, s.monsters.find((x) => x.id === chosenId)?.rank)!;
     const targetHero = s.heroes.find((h) => h.id === plan.targetId);
     const targetPet = s.pets.find((p) => p.id === plan.targetId);
     const defenseDice = targetHero ? targetHero.defense : (targetPet?.defense ?? 0);

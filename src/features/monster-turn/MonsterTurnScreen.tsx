@@ -45,9 +45,9 @@ export function InputPrompt({ request }: { request: InputRequest }) {
       {request.kind === 'defense-result' && (
         <div className="space-y-3">
           <p className="text-lg">
-            Le monstre touche <strong>{request.targetName}</strong> {request.hits} fois. Lancez vos {request.defenseDice} dé{request.defenseDice > 1 ? 's' : ''} de défense : chaque bouclier obtenu annule une touche.
+            Le monstre touche <strong>{request.targetName}</strong> {request.hits} fois. Lancez vos {request.defenseDice} dé{request.defenseDice > 1 ? 's' : ''} de défense blanc{request.defenseDice > 1 ? 's' : ''} : chaque bouclier ou critique obtenu annule une touche.
           </p>
-          <p className="text-sm text-stone-400">Un critique ou une relance peut vous donner plus de boucliers que de dés : touchez-en autant que vous en avez obtenu, au plus une par touche.</p>
+          <p className="text-sm text-stone-400">Un critique compte comme un bouclier et ajoute un dé, une relance peut aussi en donner : vous pouvez avoir plus de boucliers que de dés. Touchez-en autant que vous en avez obtenu, au plus une par touche.</p>
           <div aria-label="Touches du monstre" role="img" className="flex flex-wrap gap-1 text-3xl">
             {Array.from({ length: request.hits }, (_, i) => (
               <span key={i} data-testid="monster-hit" data-cancelled={i < parried} className={i < parried ? 'text-stone-500 line-through opacity-40' : 'text-red-400'}>

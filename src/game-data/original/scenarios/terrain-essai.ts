@@ -41,13 +41,14 @@ spawn S5 4,8 crit+bow
     { x: 1, y: 8 },
   ],
   monsters: [
-    { id: 'rodeur1', definitionId: 'rodeur', at: { x: 4, y: 6 } },
-    { id: 'archer-os1', definitionId: 'archer-os', at: { x: 7, y: 7 } },
-    { id: 'brute1', definitionId: 'brute', at: { x: 6, y: 3 } },
-    { id: 'sorciere1', definitionId: 'sorciere', at: { x: 8, y: 2 } },
-    { id: 'seigneur-cendre1', definitionId: 'seigneur-cendre', at: { x: 2, y: 4 }, guard: true },
+    // Niveau 1 : seuls les Orc Marauder ont leurs statistiques.
+    { id: 'OM1', definitionId: 'OM', at: { x: 4, y: 6 } },
+    { id: 'OM2', definitionId: 'OM', at: { x: 7, y: 7 } },
+    { id: 'OM3', definitionId: 'OM', at: { x: 6, y: 3 } },
+    { id: 'OM4', definitionId: 'OM', at: { x: 8, y: 2 } },
+    { id: 'OM5', definitionId: 'OM', at: { x: 2, y: 4 }, guard: true },
   ],
   quests: [{ id: 'essai', icon: 'flag', title: 'Terrain d’essai (à valider à la main)', completion: 'Essai terminé.', at: { x: 4, y: 7 } }],
-  deck: { listedMonsterIds: ['rodeur', 'archer-os', 'brute', 'sorciere', 'seigneur-cendre'] },
+  deck: { listedMonsterIds: ['OM'] },
   monsterCardSet: '1',
 };

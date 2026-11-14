@@ -1,4 +1,5 @@
 import type { Board, Position, SpawnPoint } from './domain/schemas';
+import { spawnTokenProblems } from './spawn/tokens';
 
 export interface ParsedBoard {
   board: Board;
@@ -27,7 +28,7 @@ const pair = (s: string, line: number): [Position, Position] => {
  *   door d1 3,2-4,2 closed        (ou open)
  *   room 5,0 4x3                   (bâtiment : cases d'intérieur, contour muré automatiquement)
  *   portal p1 2,3 red
- *   spawn S1 0,0 A+B               (paire de symboles de dés)
+ *   spawn S1 0,0 sword+bow         (un des 5 jetons : sword+sword, sword+bow, sword+crit, bow+bow, bow+crit)
  * Les lignes vides et celles qui commencent par # sont ignorées.
  */
 export function parseBoardDsl(text: string): ParsedBoard {
@@ -84,6 +85,8 @@ export function parseBoardDsl(text: string): ParsedBoard {
         throw new Error(`Ligne ${line} : commande inconnue « ${cmd} »`);
     }
   });
+  const tokenProblems = spawnTokenProblems(spawnPoints);
+  if (tokenProblems.length) throw new Error(tokenProblems.join(' ; '));
   if (board.width <= 0 || board.height <= 0) throw new Error('Taille du plateau manquante (size LxH)');
   const inside = (p: Position) => p.x >= 0 && p.y >= 0 && p.x < board.width && p.y < board.height;
   const all = [

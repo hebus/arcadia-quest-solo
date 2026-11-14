@@ -3,12 +3,12 @@ import { activateHero, finishHeroActivations, startScenario } from '@/engine/tur
 import { demoGame } from './demo';
 
 /**
- * Début de Monster Turn avec défense physique : avec la graine 2, le Goblin est activé en premier, se déplace
+ * Début de Monster Turn avec défense physique : avec la graine 10 (dont le premier jet de spawn tombe sur un jeton : pas de relance), le Goblin est activé en premier, se déplace
  * puis attaque un héros : le moteur réclame le jet de défense du joueur après le jet de référence, l'activation et le déplacement.
  */
 export function attackTurn(): GameState {
   const s = demoGame({
-    seed: 2,
+    seed: 10,
     settings: { diceMode: 'digital', cardMode: 'digital', defenseRoll: 'physical' },
     heroes: [
       { id: 'h1', name: 'Grom', life: 4, defense: 2, position: { x: 1, y: 4 } },

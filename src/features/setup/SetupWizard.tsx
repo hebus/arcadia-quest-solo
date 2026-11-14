@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge, Button, ErrorBanner, Panel, inputClass } from '@/components/ui';
 import type { Difficulty, MonsterDefinition, MonsterStats, SpawnPoint } from '@/engine/domain/schemas';
 import type { DeckRules, SetupConfig } from '@/engine/setup';
@@ -43,7 +43,7 @@ const DEMO = {
   } as Required<BoardExtras>,
   spawns: [
     { id: 'S1', at: { x: 0, y: 0 }, dice: ['sword', 'bow'] },
-    { id: 'S2', at: { x: 8, y: 8 }, dice: ['crit', 'blank'] },
+    { id: 'S2', at: { x: 8, y: 8 }, dice: ['bow', 'bow'] },
   ] as SpawnPoint[],
   quests: "Tuer l'Orc garde\nAtteindre la porte",
 };
@@ -77,7 +77,6 @@ export function SetupWizard({ onDone, openLibrary }: { onDone: () => void; openL
   const [error, setError] = useState<string | null>(null);
 
   const scenario = allScenarios.find((s) => s.id === scenarioId);
-  const faces = useMemo(() => [...new Set(store.content.attackDie.map((f) => f.symbol))], [store.content.attackDie]);
   const defRefs = defs.map((d) => ({ id: slug(d.name), name: d.name }));
 
   const pickScenario = (id: string) => {
@@ -290,7 +289,6 @@ export function SetupWizard({ onDone, openLibrary }: { onDone: () => void; openL
           defs={defRefs}
           insts={insts}
           setInsts={setInsts}
-          faces={faces}
           onOpenLibrary={openLibrary ?? (() => undefined)}
         />
       )}

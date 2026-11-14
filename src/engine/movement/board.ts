@@ -1,7 +1,7 @@
 import type { Board, GameState, Position } from '../domain/schemas';
 
-/** Règle de la maison : une seule figurine par case (le livret en autorise deux). */
-export const CELL_CAPACITY = 1;
+/** Une Space accueille au maximum deux personnages, héros ou monstres (rulebook p.13). */
+export const CELL_CAPACITY = 2;
 
 export const key = (p: Position): string => `${p.x},${p.y}`;
 export const samePos = (a: Position, b: Position): boolean => a.x === b.x && a.y === b.y;

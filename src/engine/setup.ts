@@ -1,3 +1,4 @@
+import { MONSTER_LEVELS, monsterStats } from './monsters';
 import { safeParse } from './domain/validate';
 import {
   GameStateSchema,
@@ -33,6 +34,7 @@ export interface MonsterInit {
   definitionId: string;
   position: Position;
   isGuard?: boolean;
+  rank?: 'minor' | 'major';
 }
 
 export interface DeckRules {
@@ -75,7 +77,8 @@ export const DEFAULT_SETTINGS: Settings = {
   defenseRoll: 'physical',
   removeCardsOfEliminatedTypes: false,
   heroActivation: 'one',
-  lineOfSight: 'any-character',
+  // Règle du livret : seule une case contenant 2 ennemis bloque la ligne de vue (1 héros + 1 monstre ne la bloque pas).
+  lineOfSight: 'rulebook',
 };
 
 /**
@@ -95,7 +98,9 @@ export function buildActivationDeck(
   for (const defId of listed) {
     const def = content.monsters[defId];
     if (!def) throw new Error(`Monstre inconnu dans le deck : ${defId}`);
-    const levels = Object.keys(def.levels).filter((l) => l !== monsterCardSet);
+    // Un monstre a une carte par niveau autre que celui du scénario, même quand ses stats d'autres niveaux ne sont pas encore saisies.
+    const legacy = Object.keys(def.levels).some((l) => !(MONSTER_LEVELS as readonly string[]).includes(l));
+    const levels = (legacy ? Object.keys(def.levels) : [...MONSTER_LEVELS]).filter((l) => l !== monsterCardSet);
     const mk = (l: string): ActivationCard => ({ id: `${defId}:${l}`, kind: 'monster', monsterDefId: defId });
     let list = levels.map(mk);
     const cap = rules.limited?.[defId];
@@ -147,6 +152,7 @@ export function createGame(config: SetupConfig, content: Content): GameState {
       status: 'board',
       isGuard: m.isGuard ?? false,
       wounds: 0,
+      ...(m.rank ? { rank: m.rank } : {}),
     })),
     pets: [],
     mounts: [],
@@ -192,13 +198,22 @@ export function validateGameState(s: GameState, content?: Content): string[] {
   };
   s.heroes.filter((h) => !h.dead).forEach((h) => place(h.id, h.position));
   s.monsters.filter((m) => m.status === 'board').forEach((m) => place(m.id, m.position));
-  for (const [k, n] of counts) if (n > CELL_CAPACITY) problems.push(`Plus d'un personnage sur la Space ${k}`);
+  for (const [k, n] of counts) if (n > CELL_CAPACITY) problems.push(`Plus de ${CELL_CAPACITY} personnages sur la Space ${k}`);
   for (const m of s.monsters) {
     if (m.status === 'board' && !m.position) problems.push(`${m.id} sur le plateau sans position`);
     if (m.status !== 'board' && m.position) problems.push(`${m.id} a une position hors plateau`);
     if (content && !content.monsters[m.definitionId]) problems.push(`Monstre inconnu : ${m.definitionId}`);
-    if (content && !content.monsters[m.definitionId]?.levels[s.monsterCardSet]) {
-      problems.push(`Stats manquantes : ${m.definitionId} pour le jeu de cartes ${s.monsterCardSet}`);
+    if (content && !monsterStats(content.monsters[m.definitionId], s.monsterCardSet, m.rank)) {
+      problems.push(`Stats manquantes : ${m.definitionId} (${m.rank ?? 'minor'}) pour le niveau ${s.monsterCardSet}`);
+    }
+  }
+  if (content) {
+    // On ne pose pas plus de figurines que la boîte n'en contient (celles retirées du jeu ne comptent plus).
+    const used = new Map<string, number>();
+    for (const m of s.monsters) if (m.status !== 'box' && m.status !== 'removed') used.set(m.definitionId, (used.get(m.definitionId) ?? 0) + 1);
+    for (const [id, n] of used) {
+      const copies = content.monsters[id]?.copies;
+      if (copies !== undefined && n > copies) problems.push(`Trop de figurines ${content.monsters[id]!.name} : ${n} pour ${copies} dans la boîte`);
     }
   }
   for (const id of s.spawnTile) {

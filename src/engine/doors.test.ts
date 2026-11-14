@@ -16,7 +16,7 @@ function started(): GameState {
     ...g,
     settings: { ...g.settings, defenseRoll: 'digital' as const },
     heroes: g.heroes.map((h) => (h.id === 'h1' ? { ...h, position: { x: 2, y: 6 } } : h)),
-    monsters: g.monsters.map((m) => (m.id === 'rodeur1' ? { ...m, position: { x: 3, y: 6 } } : m)),
+    monsters: g.monsters.map((m) => (m.id === 'OM1' ? { ...m, position: { x: 3, y: 6 } } : m)),
   };
 }
 const door = (g: GameState) => g.board.doors.find((d) => d.id === DOOR)!;
@@ -48,7 +48,7 @@ describe('ouvrir une porte : 1 point de mouvement, pas une action', () => {
   it('ce n’est pas une action : l’attaque reste disponible', () => {
     const opened = open(started()).state;
     expect(opened.heroTurn.h1!.attacked).toBe(false);
-    const hit = resolveHeroAttack(opened, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'rodeur1', wounds: 1 }], [], { weaponId: 'lame' });
+    const hit = resolveHeroAttack(opened, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' });
     expect(hit.state.heroTurn.h1!.attacked).toBe(true);
   });
 
@@ -66,7 +66,7 @@ describe('ouvrir une porte : 1 point de mouvement, pas une action', () => {
   });
 
   it('attaque puis porte : permis tant que le mouvement n’avait pas commencé ; ensuite plus de déplacement', () => {
-    const attacked = resolveHeroAttack(started(), ORIGINAL_CONTENT, 'h1', [{ monsterId: 'rodeur1', wounds: 1 }], [], { weaponId: 'lame' }).state;
+    const attacked = resolveHeroAttack(started(), ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' }).state;
     const r = open(attacked);
     expect(door(r.state).open).toBe(true);
     expect(() => moveHeroTo(r.state, ORIGINAL_CONTENT, 'h1', { x: 2, y: 5 })).toThrow(/ne peut pas être repris/);
@@ -75,7 +75,7 @@ describe('ouvrir une porte : 1 point de mouvement, pas une action', () => {
   it('déplacement puis attaque puis porte : refusé, le mouvement ne se reprend pas après l’attaque', () => {
     const g0 = started();
     const moved = moveHeroTo({ ...g0, heroes: g0.heroes.map((h) => (h.id === 'h1' ? { ...h, position: { x: 2, y: 7 } } : h)) }, ORIGINAL_CONTENT, 'h1', { x: 2, y: 6 }).state;
-    const attacked = resolveHeroAttack(moved, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'rodeur1', wounds: 1 }], [], { weaponId: 'lame' }).state;
+    const attacked = resolveHeroAttack(moved, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' }).state;
     expect(() => open(attacked)).toThrow(/ne peut pas être repris/);
   });
 
@@ -124,16 +124,16 @@ describe('fermer une porte : 1 point de mouvement, pas une action', () => {
     const r = close(opened());
     expect(r.state.heroTurn.h1!.attacked).toBe(false);
     expect(r.instructions.map((i) => i.id).some((id) => id.startsWith('Réaction Guard'))).toBe(false);
-    const hit = resolveHeroAttack(r.state, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'rodeur1', wounds: 1 }], [], { weaponId: 'lame' });
+    const hit = resolveHeroAttack(r.state, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' });
     expect(hit.state.heroTurn.h1!.attacked).toBe(true);
   });
 
   it('une porte fermée coupe la ligne de vue et le mouvement, comme un mur', () => {
     const g = opened();
     // Brute 1 est dans la remise en (2,4) : visible à travers la porte ouverte, plus une fois refermée.
-    expect(canHeroTarget(g, 'h1', 'brute1', 'ranged')).toBe(true);
+    expect(canHeroTarget(g, 'h1', 'OM4', 'ranged')).toBe(true);
     const shut = close(g).state;
-    expect(canHeroTarget(shut, 'h1', 'brute1', 'ranged')).toBe(false);
+    expect(canHeroTarget(shut, 'h1', 'OM4', 'ranged')).toBe(false);
     expect(reachableCells(shut, 'h1', 1).some((r) => r.pos.x === 2 && r.pos.y === 5)).toBe(false);
   });
 
@@ -144,7 +144,7 @@ describe('fermer une porte : 1 point de mouvement, pas une action', () => {
     // Maya (h2), éloignée : porte ouverte mais pas au bord de sa case (tour neuf, pour ne pas être refusée par « un héros par tour »).
     const freshTurn = { ...opened(), activatedHeroIds: [], heroTurn: {} };
     expect(() => closeDoorAsHero(freshTurn, ORIGINAL_CONTENT, 'h2', DOOR)).toThrow(/pas au bord/);
-    const attacked = resolveHeroAttack(opened(), ORIGINAL_CONTENT, 'h1', [{ monsterId: 'rodeur1', wounds: 1 }], [], { weaponId: 'lame' }).state;
+    const attacked = resolveHeroAttack(opened(), ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' }).state;
     expect(() => close(attacked)).toThrow(/ne peut pas être repris/); // déjà déplacé (porte ouverte) puis attaqué
   });
 

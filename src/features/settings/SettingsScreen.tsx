@@ -85,13 +85,14 @@ export function SettingsScreen() {
           </div>
         </Panel>
       )}
-      <Panel title="Faces des dés" actions={<Badge tone={DICE_STATUS === 'to-verify' ? 'warn' : 'good'}>à vérifier</Badge>}>
+      <Panel title="Faces des dés" actions={<Badge tone={DICE_STATUS === 'verified' ? 'good' : 'warn'}>{DICE_STATUS === 'verified' ? 'vérifié' : 'à vérifier'}</Badge>}>
         <p className="mb-2 text-amber-300">
-          Les livrets ne décrivent pas les faces des dés. Les valeurs ci-dessous sont un point de départ : comparez-les à vos dés avant une partie réelle. Les symboles servent aussi aux jetons Spawn.
+          Dé de combat noir : 3 épées, 2 arcs, 1 critique. Dé de défense blanc : 2 boucliers, 1 critique, 3 faces vides. Les symboles du dé noir servent aussi aux jetons Spawn.
+
         </p>
         <div className="grid gap-4 md:grid-cols-2">
-          <DiceEditor title="Dé d'attaque" faces={content.attackDie} onChange={(f) => setDice(f, content.defenseDie)} />
-          <DiceEditor title="Dé de défense" faces={content.defenseDie} onChange={(f) => setDice(content.attackDie, f)} defense />
+          <DiceEditor title="⬛ Dé de combat (noir)" faces={content.attackDie} onChange={(f) => setDice(f, content.defenseDie)} />
+          <DiceEditor title="⬜ Dé de défense (blanc)" faces={content.defenseDie} onChange={(f) => setDice(content.attackDie, f)} defense />
         </div>
         <div className="mt-2">
           <Button onClick={() => setDice(DEFAULT_ATTACK_DIE, DEFAULT_DEFENSE_DIE)}>Valeurs par défaut</Button>

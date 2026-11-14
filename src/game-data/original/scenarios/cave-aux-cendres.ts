@@ -12,7 +12,7 @@ export const CAVE_AUX_CENDRES: ScenarioDefinition = {
   story: {
     intro: [
       'Port-Cendre brûle depuis trois nuits. Des flammes sans fumée lèchent les toits, et les cloches de la chapelle sonnent toutes seules.',
-      'Le Seigneur Cendre s’est retranché dans la chapelle ruinée avec la Clé de Braise, qui garde ses braseros allumés. Votre guilde est la dernière à tenir la rue.',
+      'Le Seigneur Cendre, un chef maraudeur, s’est retranché dans la chapelle ruinée avec la Clé de Braise, qui garde ses braseros allumés. Votre guilde est la dernière à tenir la rue.',
       'Reprenez la clé dans la remise, éteignez le brasero maudit, puis abattez le seigneur avant que la ville ne tombe.',
     ],
     win: ['Le brasero s’éteint dans un sifflement. Au matin, Port-Cendre n’est plus que de la pluie noire sur des pavés froids : la guilde a tenu.'],
@@ -40,13 +40,13 @@ spawn S5 8,8 crit+bow
     { x: 0, y: 7 },
   ],
   monsters: [
-    { id: 'rodeur1', definitionId: 'rodeur', at: { x: 3, y: 1 } },
-    { id: 'rodeur2', definitionId: 'rodeur', at: { x: 7, y: 6 } },
-    { id: 'archer1', definitionId: 'archer-os', at: { x: 8, y: 3 } },
-    { id: 'archer2', definitionId: 'archer-os', at: { x: 5, y: 4 } },
-    { id: 'brute1', definitionId: 'brute', at: { x: 2, y: 4 }, guard: true },
-    { id: 'sorciere1', definitionId: 'sorciere', at: { x: 6, y: 1 }, guard: true },
-    { id: 'seigneur1', definitionId: 'seigneur-cendre', at: { x: 7, y: 1 }, guard: true },
+    // Seuls les Orc Marauder (niveau 1) ont leurs statistiques : le scénario n'en utilise pas d'autre. La boîte en contient 8.
+    { id: 'OM1', definitionId: 'OM', at: { x: 3, y: 1 } },
+    { id: 'OM2', definitionId: 'OM', at: { x: 7, y: 6 } },
+    { id: 'OM3', definitionId: 'OM', at: { x: 5, y: 4 } },
+    { id: 'OM4', definitionId: 'OM', at: { x: 2, y: 4 }, guard: true },
+    { id: 'OM5', definitionId: 'OM', at: { x: 6, y: 1 }, guard: true },
+    { id: 'OM6', definitionId: 'OM', at: { x: 7, y: 1 }, guard: true },
   ],
   quests: [
     { id: 'cle', icon: 'key', title: 'Reprendre la Clé de Braise', completion: 'La clé est encore tiède. Elle ouvre le brasero de la chapelle.', at: { x: 1, y: 3 } },
@@ -68,8 +68,8 @@ spawn S5 8,8 crit+bow
       id: 'chapelle-ouverte',
       when: [{ type: 'door-open', doorId: 'porte-chapelle' }],
       then: [
-        { type: 'narrate', title: 'La chapelle', tone: 'danger', text: 'Les cloches s’arrêtent net. Dans la nef, la sorcière relève la tête, et un rôdeur surgit dans votre dos.' },
-        { type: 'spawn', monsterId: 'rodeur3', definitionId: 'rodeur', at: { x: 4, y: 2 } },
+        { type: 'narrate', title: 'La chapelle', tone: 'danger', text: 'Les cloches s’arrêtent net. Dans la nef, un garde relève la tête, et un maraudeur surgit dans votre dos.' },
+        { type: 'spawn', monsterId: 'OM7', definitionId: 'OM', at: { x: 4, y: 2 } },
       ],
     },
     {
@@ -77,7 +77,7 @@ spawn S5 8,8 crit+bow
       when: [{ type: 'hero-on', at: { x: 8, y: 0 } }, { type: 'quest-done', questId: 'cle' }],
       then: [
         { type: 'complete-quest', questId: 'brasero', text: 'Le brasero crache une dernière étincelle puis s’éteint. La forge enchantée se réveille.' },
-        { type: 'spawn', monsterId: 'brute2', definitionId: 'brute', at: { x: 6, y: 2 } },
+        { type: 'spawn', monsterId: 'OM8', definitionId: 'OM', at: { x: 6, y: 2 } },
       ],
     },
     {
@@ -85,12 +85,11 @@ spawn S5 8,8 crit+bow
       when: [{ type: 'round-reached', round: 3 }],
       then: [
         { type: 'narrate', title: 'La cendre tombe', tone: 'danger', text: 'Une pluie grise couvre la rue. Là où elle se pose, des ombres se redressent.' },
-        { type: 'spawn', monsterId: 'rodeur4', definitionId: 'rodeur', at: { x: 0, y: 0 } },
       ],
     },
     {
       id: 'seigneur-tombe',
-      when: [{ type: 'monster-down', monsterId: 'seigneur1' }],
+      when: [{ type: 'monster-down', monsterId: 'OM6' }],
       then: [{ type: 'complete-quest', questId: 'seigneur', text: 'Le seigneur s’effondre en poussière grise.' }],
     },
   ],

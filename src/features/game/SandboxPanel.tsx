@@ -1,3 +1,4 @@
+import { monsterStats, statsOfMonster } from '@/engine/monsters';
 import { MiniPawn } from '@/components/MiniPawn';
 import { Stepper } from '@/components/Tally';
 import { Button, Panel } from '@/components/ui';
@@ -49,7 +50,7 @@ export function SandboxPanel({ onPlace }: { onPlace?: () => void }) {
       <Panel title="Ajouter un monstre">
         <p className="mb-2 text-sm text-stone-400">Choisissez un type, puis touchez une case libre du plateau.</p>
         <div className="flex flex-wrap gap-2">
-          {Object.values(content.monsters).map((m) => (
+          {Object.values(content.monsters).filter((m) => monsterStats(m, g.monsterCardSet)).map((m) => (
             <Button key={m.id} onClick={() => { add(m.id); onPlace?.(); }}>
               + {m.name}
             </Button>
@@ -61,7 +62,7 @@ export function SandboxPanel({ onPlace }: { onPlace?: () => void }) {
         {onBoard.length === 0 && <p className="text-stone-400">Aucun monstre sur le plateau.</p>}
         <ul className="space-y-2">
           {onBoard.map((m) => {
-            const stats = content.monsters[m.definitionId]?.levels[g.monsterCardSet];
+            const stats = statsOfMonster(content, g, m);
             return (
               <li key={m.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-stone-800 p-2">
                 <MiniPawn kind="monster" label={actorInfo(g, m.id).label} size={32} />

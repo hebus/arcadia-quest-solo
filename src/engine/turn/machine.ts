@@ -120,7 +120,7 @@ export function restGuild(state: GameState, resurrectAt: Record<string, Position
     const at = resurrectAt[h.id];
     if (!at) throw new Error(`Position de résurrection requise pour ${h.name}`);
     const o = occupancy(s, at, h.id);
-    if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case choisie pour ${h.name} est déjà occupée : une seule figurine par case`);
+    if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case choisie pour ${h.name} est déjà pleine : deux figurines au maximum par case`);
     h.dead = false;
     h.wounds = 0;
     h.position = { ...at };

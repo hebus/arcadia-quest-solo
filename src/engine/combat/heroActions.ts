@@ -1,4 +1,5 @@
 import type { Content, GameState, Position, WeaponCard } from '../domain/schemas';
+import { statsOfMonster } from '../monsters';
 import { applyMonsterWounds, damageHero, finalizeMonsterKill } from './damage';
 import { isClose } from '../movement/board';
 import { planMonsterAction } from '../movement/plan';
@@ -33,7 +34,7 @@ export function monsterAttacksHero(
   const m = s.monsters.find((x) => x.id === monsterId)!;
   const hero = s.heroes.find((h) => h.id === heroId)!;
   const def = content.monsters[m.definitionId]!;
-  const stats = def.levels[s.monsterCardSet]!;
+  const stats = statsOfMonster(content, s, m)!;
   const r = oracle.attack({
     attackDice: stats.attackDice,
     attackType: stats.attackType,
@@ -65,7 +66,7 @@ export function monsterAttacksHero(
  */
 export function monsterCanPayback(state: GameState, content: Content, monsterId: string, heroId: string): boolean {
   const m = state.monsters.find((x) => x.id === monsterId);
-  const stats = m && content.monsters[m.definitionId]?.levels[state.monsterCardSet];
+  const stats = m && statsOfMonster(content, state, m);
   if (!m?.position || m.status !== 'board' || !stats) return false;
   return planMonsterAction(state, content, monsterId, stats.movement, { targetKind: 'hero', onlyTargetId: heroId, choose: (_p, o) => o[0]! }).canAttack;
 }
@@ -198,7 +199,7 @@ export function resolveHeroAttack(
       .map((t) => t.id);
     const chosen = oracle.choose('Quel monstre riposte (Payback) ?', top.sort());
     const m = s.monsters.find((x) => x.id === chosen)!;
-    const stats = content.monsters[m.definitionId]!.levels[s.monsterCardSet]!;
+    const stats = statsOfMonster(content, s, m)!;
     const plan = planMonsterAction(s, content, chosen, stats.movement, {
       targetKind: 'hero',
       onlyTargetId: heroId,

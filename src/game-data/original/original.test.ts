@@ -18,10 +18,17 @@ describe('univers original : Port-Cendre', () => {
     expect(g.deck.draw.length).toBeGreaterThan(0);
   });
 
-  it('chaque monstre a des statistiques pour tous les jeux de cartes', () => {
-    for (const m of Object.values(ORIGINAL_CONTENT.monsters)) {
-      expect(Object.keys(m.levels).sort()).toEqual(['1', '2-3', '4', '5-6']);
-    }
+  it('le bestiaire ne contient que deux minions, avec les statistiques communiquées', () => {
+    expect(Object.keys(ORIGINAL_CONTENT.monsters).sort()).toEqual(['GA', 'OM']);
+    const { GA, OM } = ORIGINAL_CONTENT.monsters;
+    expect(GA).toMatchObject({ name: 'Goblin Archer', kind: 'minion', copies: 6 });
+    expect(OM).toMatchObject({ name: 'Orc Marauder', kind: 'minion', copies: 8 });
+    // Goblin Archer, minor, niveau 2-3 : 2 de vie, overkill 3, mouvement 1, 1 PO, 2 dés à distance.
+    expect(GA!.levels).toEqual({ '2-3': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'ranged', attackDice: 2 } });
+    // Orc Marauder, minor, niveau 1 : 2 de vie, overkill 3, mouvement 1, 1 PO, 3 dés de mêlée.
+    expect(OM!.levels).toEqual({ '1': { life: 2, overkill: 3, movement: 1, reward: 1, attackType: 'melee', attackDice: 3 } });
+    expect(GA!.majorLevels).toBeUndefined();
+    expect(OM!.majorLevels).toBeUndefined();
   });
 
   it('un scénario avec un monstre inconnu ou hors plateau est refusé avec un message clair', () => {
@@ -40,7 +47,7 @@ describe('univers original : Port-Cendre', () => {
 
 describe('DSL : commande room', () => {
   it('muré le contour d’une pièce, sauf à l’emplacement d’une porte', () => {
-    const { board } = parseBoardDsl('size 5x4\nroom 1,1 2x2\ndoor d 0,1-1,1 closed\nspawn S 0,0 a+b');
+    const { board } = parseBoardDsl('size 5x4\nroom 1,1 2x2\ndoor d 0,1-1,1 closed\nspawn S 0,0 sword+bow');
     expect(board.interior).toHaveLength(4);
     // Contour d'une pièce 2×2 : 8 arêtes, moins la porte.
     expect(board.walls).toHaveLength(7);
@@ -48,7 +55,7 @@ describe('DSL : commande room', () => {
   });
 
   it('une pièce au bord du plateau n’ajoute pas de mur hors plateau', () => {
-    const { board } = parseBoardDsl('size 3x3\nroom 0,0 3x1\nspawn S 0,2 a+b');
+    const { board } = parseBoardDsl('size 3x3\nroom 0,0 3x1\nspawn S 0,2 sword+bow');
     expect(board.walls).toHaveLength(3);
   });
 });

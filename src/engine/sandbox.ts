@@ -1,5 +1,6 @@
 import type { Content, DieFaceDef, GameState, Position } from './domain/schemas';
 import { CELL_CAPACITY, inBoard, occupancy } from './movement/board';
+import { monsterStats } from './monsters';
 import { cloneState, log } from './state';
 
 /**
@@ -9,10 +10,14 @@ import { cloneState, log } from './state';
 
 /** Pose un nouveau monstre d'un type donné sur une case libre du plateau. */
 export function addMonster(state: GameState, content: Pick<Content, 'monsters'>, definitionId: string, at: Position): GameState {
-  if (!content.monsters[definitionId]) throw new Error(`Monstre inconnu : ${definitionId}`);
+  const def = content.monsters[definitionId];
+  if (!def) throw new Error(`Monstre inconnu : ${definitionId}`);
+  if (!monsterStats(def, state.monsterCardSet)) throw new Error(`${def.name} n'a pas de statistiques pour le niveau ${state.monsterCardSet}`);
+  const inPlay = state.monsters.filter((m) => m.definitionId === definitionId && m.status !== 'box' && m.status !== 'removed').length;
+  if (def.copies !== undefined && inPlay >= def.copies) throw new Error(`Plus de figurine ${def.name} disponible (${def.copies} dans la boîte)`);
   if (!inBoard(state.board, at)) throw new Error(`La case (${at.x},${at.y}) n'est pas sur le plateau`);
   const o = occupancy(state, at);
-  if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case (${at.x},${at.y}) est déjà occupée : une seule figurine par case`);
+  if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case (${at.x},${at.y}) est déjà pleine : deux figurines au maximum par case`);
   const s = cloneState(state);
   let n = s.monsters.filter((m) => m.definitionId === definitionId).length + 1;
   while (s.monsters.some((m) => m.id === `${definitionId}${n}`)) n++;

@@ -32,11 +32,11 @@ export function applyCorrection(state: GameState, c: Correction, reason = 'corre
     if (!m) throw new Error(`Monstre inconnu : ${id}`);
     return m;
   };
-  /** Une seule figurine par case : la correction est refusée si la case est déjà occupée par une autre. */
+  /** Deux figurines au maximum par case : la correction est refusée si la case est déjà pleine. */
   const free = (p: Position | null | undefined, exceptId: string) => {
     if (!p) return;
     const o = occupancy(s, p, exceptId);
-    if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case (${p.x},${p.y}) est déjà occupée : une seule figurine par case`);
+    if (o.heroes + o.monsters + o.pets >= CELL_CAPACITY) throw new Error(`La case (${p.x},${p.y}) est déjà pleine : deux figurines au maximum par case`);
   };
   switch (c.kind) {
     case 'hero-position':

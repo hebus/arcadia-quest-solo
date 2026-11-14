@@ -36,13 +36,44 @@ Les questions de cadrage du plan (§19) n'ont pas reçu de réponse. Pour avance
 
 Capacités spéciales des monstres et des héros, cartes d'amélioration, Huge Characters (poussée), cartes Brimstone, Tombstone et Dragonstone, règles de montée des Riders, règles propres de chaque dragon, Death Curses (hors tirage de la plus haute valeur). Ces points sont à appliquer à la main ; l'application l'affiche.
 
-## Une seule figurine par case (décision de l'utilisateur)
+## Deux figurines au maximum par case (décision de l'utilisateur, conforme au livret)
 
-Le livret autorise deux figurines par case ; l'application n'en admet qu'une (`CELL_CAPACITY = 1` dans `src/engine/movement/board.ts`).
+Une Space accueille au maximum deux personnages, héros ou monstres (`CELL_CAPACITY = 2` dans `src/engine/movement/board.ts`). Cela remplace la règle de la maison « une seule figurine par case ».
 
-- Un personnage ne peut pas s'arrêter sur une case occupée (déplacements des héros et des monstres, ouverture d'une porte sans effet).
-- Un ennemi remplit sa case : on ne la traverse pas. Un allié se traverse mais on ne s'y arrête pas. (Généralisation de la règle « Blocked Space » du livret, qui exigeait deux ennemis.)
-- Apparitions (jeton Spawn) et renforts du script sur une case occupée : le monstre retourne dans la boîte, le renfort est annulé.
-- Corrections manuelles, résurrection au repos et pose sur le plateau : refusées sur une case occupée.
-- Mise en place et scénarios : validation « plus d'une figurine sur la case ».
-- À vérifier avec l'utilisateur : traversée d'un allié autorisée (hypothèse).
+- Une case contenant **2 ennemis** de l'acteur (Blocked Space) bloque le déplacement et la ligne de vue : on ne peut ni s'y arrêter ni la traverser.
+- Une case pleine mais **mixte** (par exemple 1 héros + 1 monstre), ou contenant 2 alliés, se traverse mais on ne peut pas s'y arrêter ; elle ne bloque pas la ligne de vue.
+- Une case avec une seule figurine permet de s'y arrêter (y compris en la partageant avec un ennemi).
+- Ligne de vue par défaut : règle du livret (`lineOfSight: 'rulebook'`). Le réglage « tout personnage bloque » reste disponible dans les Paramètres.
+- Apparitions (jeton Spawn) et renforts du script sur une case pleine : le monstre sort du jeu, le renfort est annulé.
+- Corrections manuelles, résurrection au repos et pose sur le plateau : refusées sur une case pleine.
+- Mise en place et scénarios : validation « plus de 2 figurines sur la case ».
+- Affichage : une figurine seule est centrée ; à deux, l'une en haut à gauche et l'autre en bas à droite (chevauchement toléré).
+
+## Jetons Spawn
+
+Il n'existe que 5 jetons Spawn, un de chaque : épée+épée, épée+arc, épée+critique, arc+arc, arc+critique (`src/engine/spawn/tokens.ts`). Le DSL des scénarios et l'éditeur de plateau refusent tout autre jeton ou un doublon.
+
+- Jet de référence d'une activation sans jeton correspondant sur le plateau : rien ne se passe (pas de relance, aucune carte piochée). Ceci remplace la relance de solo v1.3 p.2.
+- Phase Spawn : un monstre de la Spawn Tile dont le jeton tiré n'est pas sur le plateau sort définitivement du jeu.
+
+## Monstres : minions et vilains, niveaux et rangs
+
+- Deux catégories : **minions** et **vilains** (`kind` dans la définition). Quatre niveaux : **1, 2-3, 4-5, 6**. À chaque niveau, une version **minor** et une version **major** (`levels` = minor, `majorLevels` = major ; `rank` sur la figurine, minor par défaut). Accès aux stats : `src/engine/monsters.ts`.
+- Pour l'instant, seuls deux minions sont utilisés, avec les statistiques communiquées (toutes deux minor) :
+
+| Monstre | Boîte | Niveau | Vie | Overkill | Mouvement | Récompense | Dés d'attaque |
+|---|---|---|---|---|---|---|---|
+| Goblin Archer (GA) | 6 | 2-3 | 2 | 3 | 1 | 1 PO | 2 (distance) |
+| Orc Marauder (OM) | 8 | 1 | 2 | 3 | 1 | 1 PO | 3 (mêlée) |
+
+- Les autres niveaux et les versions major ne sont pas encore saisis : l'application signale « Stats manquantes » plutôt que d'inventer des valeurs. Un scénario ne peut donc, pour l'instant, utiliser que les monstres dont le niveau du scénario est saisi (Orc Marauder au niveau 1, Goblin Archer au niveau 2-3).
+- Le deck d'activation compte une carte par niveau autre que celui du scénario, même quand les stats de ces niveaux ne sont pas saisies.
+- Nombre de figurines : on ne pose pas plus de monstres d'un type que la boîte n'en contient (validation de la mise en place, des scénarios et du terrain d'essai).
+- Les deux scénarios fournis (« Les Braises de Port-Cendre » et le terrain d'essai) n'utilisent que des Orc Marauder, niveau 1. L'ancien bestiaire de test (Rôdeur, Archer d'os, Brute, Sorcière, Seigneur Cendre) est supprimé.
+
+## Dés de combat (noirs) et de défense (blancs)
+
+- **Dé de combat, noir** : 3 épées, 2 arcs, 1 critique. Une attaque de **mêlée** touche avec une épée ou un critique ; une attaque **à distance** touche avec un arc ou un critique ; sinon c'est un échec. Il n'y a pas de face vide : un jet de spawn tombe donc toujours sur épée, arc ou critique.
+- **Dé de défense, blanc** : 2 boucliers, 1 critique, 3 faces vides. Un **bouclier** ou un **critique** annule une touche (valable pour un monstre qui aurait des dés de défense comme pour les héros, dont le joueur lance les dés).
+- Un critique est une réussite et ajoute un dé (règle du livret, inchangée).
+- Données dans `src/game-data/dice.ts`, réglables dans Paramètres.

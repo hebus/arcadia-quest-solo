@@ -249,7 +249,7 @@ Deux monstres sont activés l'un après l'autre.
 Pour chaque activation :
 
 1. Lancer deux dés d'attaque pour déterminer le Spawn Point de référence.
-2. Si la combinaison obtenue ne correspond à aucun jeton Spawn présent, relancer jusqu'à obtenir une combinaison valide.
+2. Si la combinaison obtenue ne correspond à aucun jeton Spawn présent sur le plateau, rien ne se passe (décision de l'utilisateur : pas de relance, pas de carte piochée).
 3. Révéler la carte supérieure du Monster Activation deck.
 4. Identifier le monstre du type indiqué qui est le plus proche du Spawn Point désigné.
 5. Pour cette seule recherche de proximité, compter les cases orthogonales sans tenir compte des portes, murs, portails ou autres éléments de terrain.

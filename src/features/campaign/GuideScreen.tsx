@@ -14,7 +14,7 @@ export function GuideScreen() {
       </Panel>
       <Panel title="Règles appliquées par l'automate (livret solo v1.3)">
         <ul className="list-disc space-y-1 pl-5">
-          <li>Deux dés d&apos;attaque désignent un jeton Spawn ; sans jeton correspondant, on relance.</li>
+          <li>Deux dés d&apos;attaque désignent un jeton Spawn (il n&apos;en existe que 5 : épée+épée, épée+arc, épée+critique, arc+arc, arc+critique). Sans jeton correspondant sur le plateau, rien ne se passe ; un monstre de la Spawn Tile qui devrait apparaître sur un jeton absent sort définitivement du jeu.</li>
           <li>La carte révélée désigne le type de monstre ; le plus proche du jeton (distance orthogonale, terrain ignoré) est activé ; les gardes sont ignorés.</li>
           <li>Le monstre a 3 PM (porte = 1, portail = 1), va vers le héros le plus proche et n&apos;utilise que les PM nécessaires pour attaquer ; à égalité, le héros le plus blessé.</li>
           <li>Payback : un seul monstre riposte, du tier le plus élevé parmi les cibles. Un garde tué n&apos;est plus garde.</li>

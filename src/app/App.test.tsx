@@ -1,5 +1,5 @@
 import { parse } from '@/engine/domain/validate';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TileDefSchema } from '@/engine/tiles';
@@ -59,6 +59,8 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /Terminer le tour : place aux monstres/ }));
     expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Monster Turn : Spawn');
 
+    // Un jet de spawn sans jeton correspondant ne fait rien (pas de relance) : la graine est fixée pour que les dés tombent sur un jeton.
+    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, rngSeed: 1 } })));
     await user.click(screen.getByRole('button', { name: 'Lancer le Monster Turn' }));
     expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Manche 2');
     // Les décisions de l'agent ne s'affichent plus en permanence : un dialogue les montre à la demande.

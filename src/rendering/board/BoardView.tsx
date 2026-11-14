@@ -166,6 +166,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
   const W = board.width * C;
   const H = board.height * C;
   const stack = new Map<string, number>();
+  const inCell = new Map<string, number>();
   const isHole = (x: number, y: number) => board.holes.some((h) => h.x === x && h.y === y);
   const inBoard = (p: Position) => p.x >= 0 && p.y >= 0 && p.x < board.width && p.y < board.height && !isHole(p.x, p.y);
 
@@ -229,6 +230,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
   const shown = tokens
     .filter((t) => !hide.has(t.id) || overlay?.tokenAt[t.id])
     .map((t) => ({ ...t, at: overlay?.tokenAt[t.id] ?? t.at }));
+  for (const t of shown) inCell.set(`${t.at.x},${t.at.y}`, (inCell.get(`${t.at.x},${t.at.y}`) ?? 0) + 1);
   const doorGlow = new Set([...(overlay?.doorIds ?? []), ...doorHints]);
 
   return (
@@ -514,9 +516,10 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
         const k = `${t.at.x},${t.at.y}`;
         const n = stack.get(k) ?? 0;
         stack.set(k, n + 1);
-        // Une figurine par case : le pion est centré. Un éventuel second pion (état incohérent) est décalé pour rester visible.
-        const cx = t.at.x * C + C * (n === 0 ? 0.5 : 0.75);
-        const cy = t.at.y * C + C * (n === 0 ? 0.5 : 0.75);
+        // Une figurine seule est centrée ; à deux (maximum par case), l'une en haut à gauche et l'autre en bas à droite (chevauchement toléré).
+        const shared = (inCell.get(k) ?? 1) > 1;
+        const cx = t.at.x * C + C * (shared ? (n === 0 ? 0.3 : 0.7) : 0.5);
+        const cy = t.at.y * C + C * (shared ? (n === 0 ? 0.3 : 0.7) : 0.5);
         const draggable = !!canDrag?.(t.id);
         return (
           <g

@@ -58,6 +58,7 @@ export const ScenarioDefinitionSchema = type({
     definitionId: 'string',
     at: PositionSchema,
     'guard?': 'boolean | undefined',
+    'rank?': "'minor' | 'major' | undefined",
   }).array(),
   quests: ScenarioQuestSchema.array(),
   /** Terrain d'essai : outils de placement et de réglage des dés, pas une aventure. */
@@ -108,7 +109,13 @@ export function validateScenario(def: ScenarioDefinition, content: Pick<Content,
     const k = `${m.at.x},${m.at.y}`;
     used.set(k, (used.get(k) ?? 0) + 1);
   }
-  for (const [k, n] of used) if (n > CELL_CAPACITY) problems.push(`Plus d'une figurine sur la case ${k}`);
+  const perType = new Map<string, number>();
+  for (const m of def.monsters) perType.set(m.definitionId, (perType.get(m.definitionId) ?? 0) + 1);
+  for (const [id, n] of perType) {
+    const copies = content.monsters[id]?.copies;
+    if (copies !== undefined && n > copies) problems.push(`Trop de figurines ${content.monsters[id]!.name} : ${n} pour ${copies} dans la boîte`);
+  }
+  for (const [k, n] of used) if (n > CELL_CAPACITY) problems.push(`Plus de ${CELL_CAPACITY} figurines sur la case ${k}`);
   for (const q of def.quests) if (q.at && !playable(q.at)) problems.push(`Objectif « ${q.title} » hors du plateau ${where(q.at)}`);
   if (def.heroStarts.length < 1) problems.push('Aucune case de départ pour les héros');
   if (spawnPoints.length === 0) problems.push('Aucun jeton Spawn');
@@ -155,7 +162,7 @@ export function scenarioToSetup(def: ScenarioDefinition, opts: StartOptions, con
       ...(h.weapons?.length ? { weapons: h.weapons } : {}),
       position: def.heroStarts[i]!,
     })),
-    monsters: def.monsters.map((m) => ({ id: m.id, definitionId: m.definitionId, position: m.at, isGuard: m.guard ?? false })),
+    monsters: def.monsters.map((m) => ({ id: m.id, definitionId: m.definitionId, position: m.at, isGuard: m.guard ?? false, ...(m.rank ? { rank: m.rank } : {}) })),
     deck,
     quests: def.quests.map((q) => ({ id: q.id, title: q.title, ...(q.at ? { at: q.at } : {}), ...(q.icon ? { icon: q.icon } : {}) })),
     ...(def.questsRequired ? { questsRequired: def.questsRequired } : {}),

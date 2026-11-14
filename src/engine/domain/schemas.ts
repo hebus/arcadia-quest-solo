@@ -75,13 +75,21 @@ export const MonsterStatsSchema = type({
 });
 export type MonsterStats = typeof MonsterStatsSchema.infer;
 
-/** Définition statique d'un monstre ; les stats sont indexées par jeu de cartes (« 1 », « 2-3 »…). */
+/**
+ * Définition statique d'un monstre. Deux catégories : minions et vilains. Les stats sont indexées par niveau
+ * (« 1 », « 2-3 », « 4-5 », « 6 ») ; `levels` porte celles des minor (ou de la version unique), `majorLevels` celles des major.
+ */
 export const MonsterDefinitionSchema = type({
   id: 'string',
   name: 'string',
+  /** Abréviation affichée sur le pion (ex. GA). */
+  'abbr?': 'string | undefined',
   tier: 'number.integer > 0',
-  'villain?': 'boolean | undefined',
+  'kind?': "'minion' | 'villain' | undefined",
+  /** Nombre de figurines dans la boîte : on n'en pose pas davantage. */
+  'copies?': 'number.integer > 0 | undefined',
   levels: { '[string]': MonsterStatsSchema },
+  'majorLevels?': { '[string]': MonsterStatsSchema },
 });
 export type MonsterDefinition = typeof MonsterDefinitionSchema.infer;
 
@@ -92,6 +100,8 @@ export const MonsterInstanceSchema = type({
   status: "'board' | 'spawn-tile' | 'box' | 'removed'",
   isGuard: 'boolean',
   wounds: 'number.integer >= 0',
+  /** Version de la figurine ; minor par défaut. */
+  'rank?': "'minor' | 'major' | undefined",
 });
 export type MonsterInstance = typeof MonsterInstanceSchema.infer;
 
@@ -285,7 +295,7 @@ export interface DieFaceDef {
 export interface Content {
   version: string;
   monsters: Record<string, MonsterDefinition>;
-  /** Faces du dé d'attaque et du dé de défense (à vérifier avec les dés physiques : question B17). */
+  /** Faces du dé de combat (noir) et du dé de défense (blanc). */
   attackDie: DieFaceDef[];
   defenseDie: DieFaceDef[];
 }

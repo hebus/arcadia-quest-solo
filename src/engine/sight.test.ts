@@ -4,7 +4,7 @@ import { demoGame } from '@/tests/fixtures/demo';
 import { startScenario } from './turn/machine';
 
 /** Héros h1 en (0,2) ; cible g1 en (4,2) ; un personnage éventuel entre les deux. */
-const game = (mode: 'any-character' | 'rulebook', blocker?: { x: number; y: number }, blockerKind: 'monster' | 'hero' = 'monster') =>
+const game = (mode: 'any-character' | 'rulebook', blocker?: { x: number; y: number }, blockerKind: 'monster' | 'hero' = 'monster', blockers = 1) =>
   startScenario(
     demoGame({
       settings: { lineOfSight: mode },
@@ -14,7 +14,7 @@ const game = (mode: 'any-character' | 'rulebook', blocker?: { x: number; y: numb
       ],
       monsters: [
         { id: 'g1', definitionId: 'goblin', position: { x: 4, y: 2 } },
-        ...(blocker && blockerKind === 'monster' ? [{ id: 'o1', definitionId: 'orc', position: blocker }] : []),
+        ...(blocker && blockerKind === 'monster' ? Array.from({ length: blockers }, (_, i) => ({ id: `o${i + 1}`, definitionId: 'orc', position: blocker })) : []),
       ],
     }),
   );
@@ -36,8 +36,9 @@ describe('ligne de vue : trait entre les centres des cases', () => {
     expect(canHeroTarget(game('any-character', { x: 2, y: 3 }), 'h1', 'g1', 'ranged')).toBe(true);
   });
 
-  it('règle du livret : seul un ennemi bloque (il remplit la case) ; un allié sur le trait ne bloque pas', () => {
-    expect(canHeroTarget(game('rulebook', { x: 2, y: 2 }), 'h1', 'g1', 'ranged')).toBe(false); // monstre : case remplie
+  it('règle du livret : seuls deux ennemis bloquent (Blocked Space) ; un seul, ou un allié, ne bloque pas', () => {
+    expect(canHeroTarget(game('rulebook', { x: 2, y: 2 }), 'h1', 'g1', 'ranged')).toBe(true); // un seul monstre : il reste une place
+    expect(canHeroTarget(game('rulebook', { x: 2, y: 2 }, 'monster', 2), 'h1', 'g1', 'ranged')).toBe(false); // deux monstres : case bloquée
     expect(canHeroTarget(game('rulebook', { x: 2, y: 2 }, 'hero'), 'h1', 'g1', 'ranged')).toBe(true); // héros allié
   });
 

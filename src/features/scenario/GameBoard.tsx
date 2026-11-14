@@ -1,10 +1,11 @@
+import { statsOfMonster } from '@/engine/monsters';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, Panel } from '@/components/ui';
 import { Modal } from '@/components/Modal';
 import { Stepper } from '@/components/Tally';
 import { monsterCanPayback } from '@/engine/combat/heroActions';
 import { adjacentDoors, canHeroTarget, mpLeft, reachableCells } from '@/engine/combat/heroMove';
-import { isClose } from '@/engine/movement/board';
+import { CELL_CAPACITY, isClose } from '@/engine/movement/board';
 import type { Position } from '@/engine/domain/schemas';
 import { BoardView, type BoardMenu, type BoardToken, type Highlight, type PlacedTile } from '@/rendering/board/BoardView';
 import { MiniPawn } from '@/components/MiniPawn';
@@ -52,7 +53,7 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
       <ul className="mb-3 space-y-2">
         {targets.map((t) => {
           const m = g.monsters.find((x) => x.id === t);
-          const stats = m ? content.monsters[m.definitionId]?.levels[g.monsterCardSet] : undefined;
+          const stats = m ? statsOfMonster(content, g, m) : undefined;
           const dealt = wounds[t] ?? 0;
           const total = (m?.wounds ?? 0) + dealt;
           const outright = !!stats && dealt >= stats.overkill;
@@ -145,11 +146,12 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   const nearDoors = hero && canMove && !correctionMode ? adjacentDoors(g, hero.id) : [];
 
   const reach = useMemo(() => (canMove && hero ? reachableCells(g, hero.id, mp) : []), [canMove, hero, g, mp]);
-  /** Une seule figurine par case : une case est occupée si un héros, un monstre ou un familier s'y tient (sauf `exceptId`). */
+  /** Une case est pleine quand deux personnages (héros, monstres ou familiers) s'y tiennent, sauf `exceptId`. */
   const occupied = (p: Position, exceptId?: string): boolean =>
-    g.heroes.some((h) => !h.dead && h.id !== exceptId && h.position && same(h.position, p)) ||
-    g.monsters.some((m) => m.status === 'board' && m.id !== exceptId && m.position && same(m.position, p)) ||
-    g.pets.some((x) => !x.dead && x.id !== exceptId && x.position && same(x.position, p));
+    g.heroes.filter((h) => !h.dead && h.id !== exceptId && h.position && same(h.position, p)).length +
+      g.monsters.filter((m) => m.status === 'board' && m.id !== exceptId && m.position && same(m.position, p)).length +
+      g.pets.filter((x) => !x.dead && x.id !== exceptId && x.position && same(x.position, p)).length >=
+    CELL_CAPACITY;
   const allCells: Position[] = Array.from({ length: g.board.width * g.board.height }, (_, i) => ({ x: i % g.board.width, y: Math.floor(i / g.board.width) })).filter((p) => !g.board.holes.some((h) => same(h, p)));
   const highlights: Highlight[] = [
     ...reach.map((r): Highlight => ({ pos: r.pos, kind: r.triggers > 0 ? 'danger' : 'reach', label: `${r.cost}${r.triggers > 0 ? '⚠' : ''}` })),
@@ -186,13 +188,13 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   const overlay = announcement ? overlayForAttackAnnouncement(announcement) : queueOverlay;
   const content = useGameStore((st) => st.content);
   /** Type d'attaque et dés du monstre pour le jeu de cartes courant, montrés sur son pion. */
-  const monsterAttack = (definitionId: string): BoardToken['attack'] => {
-    const stats = content.monsters[definitionId]?.levels[g.monsterCardSet];
+  const monsterAttack = (m: { definitionId: string; rank?: 'minor' | 'major' | undefined }): BoardToken['attack'] => {
+    const stats = statsOfMonster(content, g, m);
     return stats ? { type: stats.attackType, dice: stats.attackDice } : undefined;
   };
   const tokens: BoardToken[] = [
     ...g.heroes.filter((h) => !h.dead && h.position).map((h) => ({ id: h.id, kind: 'hero' as const, label: h.name.slice(0, 2).toUpperCase(), at: h.position!, wounded: h.wounds > 0, selected: h.id === selectedId, dimmed: (guildTurn && blockedByOtherHero(g, h.id)) || guildTurn && g.activatedHeroIds.includes(h.id) && (g.heroTurn[h.id]?.mpLeft ?? 3) === 0 && (g.heroTurn[h.id]?.attacked ?? false) })),
-    ...g.monsters.filter((m) => m.status === 'board' && m.position).map((m) => ({ id: m.id, kind: 'monster' as const, label: m.definitionId.slice(0, 2).toUpperCase(), at: m.position!, guard: m.isGuard, attack: monsterAttack(m.definitionId), wounded: m.wounds > 0, selected: m.id === selectedId || targets.includes(m.id), dimmed: !!activeType && !!hero && !validTargets.includes(m.id) })),
+    ...g.monsters.filter((m) => m.status === 'board' && m.position).map((m) => ({ id: m.id, kind: 'monster' as const, label: m.definitionId.slice(0, 2).toUpperCase(), at: m.position!, guard: m.isGuard, attack: monsterAttack(m), wounded: m.wounds > 0, selected: m.id === selectedId || targets.includes(m.id), dimmed: !!activeType && !!hero && !validTargets.includes(m.id) })),
   ];
 
   /** Toucher la case de l'étape en cours (arrivée, pose, retrait, cible) la valide, comme le bouton « Fait ». */
@@ -271,7 +273,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   const onCell = (p: Position) => {
     if (confirmAt(p)) return;
     if (placing) {
-      // Une seule figurine par case : on ne pose pas sur une case déjà occupée.
+      // Deux figurines au maximum par case : on ne pose pas sur une case déjà pleine.
       if (occupied(p)) return flashWrong(p);
       cancelPlacing();
       placing.onPlace(p);

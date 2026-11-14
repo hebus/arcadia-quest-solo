@@ -1,4 +1,5 @@
 import type { Content, GameState } from '../domain/schemas';
+import { monsterStats } from '../monsters';
 import { checkEnd, log } from '../state';
 
 /** Blessures sur un héros. À la mort : jeton Death, compteur de morts de la guilde (état mutable). */
@@ -73,7 +74,7 @@ export function applyMonsterWounds(
   const m = s.monsters.find((x) => x.id === monsterId);
   if (!m || m.status !== 'board' || wounds <= 0) return { killed: false, overkill: false };
   const def = content.monsters[m.definitionId];
-  const stats = def?.levels[s.monsterCardSet];
+  const stats = monsterStats(def, s.monsterCardSet, m.rank);
   if (!def || !stats) throw new Error(`Stats manquantes pour ${m.definitionId}`);
   m.wounds += wounds;
   const overkill = wounds >= stats.overkill;
@@ -90,7 +91,7 @@ export function finalizeMonsterKill(
 ): void {
   const m = s.monsters.find((x) => x.id === monsterId)!;
   const def = content.monsters[m.definitionId]!;
-  const stats = def.levels[s.monsterCardSet]!;
+  const stats = monsterStats(def, s.monsterCardSet, m.rank)!;
   m.position = null;
   m.wounds = 0;
   const wasGuard = m.isGuard;

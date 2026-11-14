@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCampaignStore } from '@/stores/campaignStore';
@@ -76,12 +76,13 @@ describe('synchronisation visuelle plateau / table', () => {
     expect(game().heroes[0]!.position).toEqual({ x: 4, y: 0 });
   });
 
-  it('mode correction : lâcher un pion sur une case déjà occupée est refusé (une seule figurine par case)', async () => {
+  it('mode correction : lâcher un pion sur une case pleine est refusé (deux figurines au maximum par case)', async () => {
     const user = userEvent.setup();
     await startDemo(user);
     useGameStore.getState().setCorrectionMode(true);
     const heroFrom = game().heroes[0]!.position!;
-    const occupiedBy = game().heroes[1]!.position!; // un autre héros
+    const occupiedBy = game().heroes[1]!.position!; // un autre héros, rejoint par le 3e : la case est pleine
+    useGameStore.setState((st) => ({ game: { ...st.game!, heroes: st.game!.heroes.map((h) => (h.id === 'h3' ? { ...h, position: { ...occupiedBy } } : h)) } }));
     const { svg, at } = mockBoardGeometry();
     at(heroFrom);
     fireEvent.pointerDown(await screen.findByTestId('token-h1'));
@@ -182,12 +183,12 @@ describe('synchronisation visuelle plateau / table', () => {
   it('arme choisie avant la cible : corps à corps = cases adjacentes, distance = trait visible entre les centres', async () => {
     const user = userEvent.setup();
     await startDemo(user);
-    const [a, b] = game().monsters.filter((m) => m.position);
-    // Zazu (h3) en (1,7) ; le monstre `a` en (1,4) ; le monstre `b` en (1,5) coupe le trait.
+    const [a, b, c] = game().monsters.filter((m) => m.position);
+    // Zazu (h3) en (1,7) ; le monstre `a` en (1,4) ; les monstres `b` et `c` en (1,5) : deux ennemis sur une case coupent le trait.
     useGameStore.setState((st) => ({
       game: {
         ...st.game!,
-        monsters: st.game!.monsters.map((m) => (m.id === a!.id ? { ...m, position: { x: 1, y: 4 } } : m.id === b!.id ? { ...m, position: { x: 1, y: 5 } } : m)),
+        monsters: st.game!.monsters.map((m) => (m.id === a!.id ? { ...m, position: { x: 1, y: 4 } } : m.id === b!.id || m.id === c!.id ? { ...m, position: { x: 1, y: 5 } } : m)),
       },
     }));
     fireEvent.click(screen.getByTestId('token-h3'));
@@ -237,14 +238,16 @@ describe('synchronisation visuelle plateau / table', () => {
     expect(screen.getByTestId('attack-badge-goblin1')).toHaveTextContent('⚔2'); // Goblin : mêlée, 2 dés
   });
 
-  it('pose : une case déjà occupée est refusée et la bannière reste ; une case libre est acceptée', async () => {
+  it('pose : une case pleine est refusée et la bannière reste ; une case avec une seule figurine ou libre est acceptée', async () => {
     const user = userEvent.setup();
     await startDemo(user);
     let placed: { x: number; y: number } | null = null;
     useGameStore.getState().startPlacing({ actorId: 'h1', onPlace: (to) => (placed = to) });
     expect(await screen.findByTestId('placing-banner')).toBeInTheDocument();
     const h2 = game().heroes[1]!.position!;
-    fireEvent.click(screen.getByTestId(`cell-${h2.x}-${h2.y}`)); // case d'un autre héros
+    // Le 3e héros rejoint le 2e : la case est pleine.
+    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, heroes: st.game!.heroes.map((h) => (h.id === 'h3' ? { ...h, position: { ...h2 } } : h)) } })));
+    fireEvent.click(screen.getByTestId(`cell-${h2.x}-${h2.y}`)); // case pleine
     expect(placed).toBeNull();
     expect(screen.getByTestId('placing-banner')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('cell-4-0')); // case libre

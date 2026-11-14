@@ -50,10 +50,10 @@ describe('moteur de scénario scripté', () => {
   it('une porte ouverte déclenche récit et renfort, montré comme un pion à poser', () => {
     const r = runScript(openDoor(g0, 'porte-chapelle'), rules);
     expect(r.beats[0]).toMatchObject({ tone: 'danger' });
-    const spawn = r.state.monsters.find((m) => m.id === 'rodeur3')!;
-    expect(spawn).toMatchObject({ status: 'board', definitionId: 'rodeur', position: { x: 4, y: 2 } });
+    const spawn = r.state.monsters.find((m) => m.id === 'OM7')!;
+    expect(spawn).toMatchObject({ status: 'board', definitionId: 'OM', position: { x: 4, y: 2 } });
     expect(r.instructions).toHaveLength(1);
-    expect(r.instructions[0]!.visual).toEqual({ type: 'place', actorId: 'rodeur3', at: { x: 4, y: 2 } });
+    expect(r.instructions[0]!.visual).toEqual({ type: 'place', actorId: 'OM7', at: { x: 4, y: 2 } });
   });
 
   it('le brasero exige la clé : sans elle rien ; avec elle, la quête et le renfort', () => {
@@ -61,7 +61,7 @@ describe('moteur de scénario scripté', () => {
     expect(noKey.state.quests.find((q) => q.id === 'brasero')!.done).toBe(false);
     const hasKey = runScript({ ...withHeroAt(g0, { x: 8, y: 0 }), quests: g0.quests.map((q) => (q.id === 'cle' ? { ...q, done: true } : q)) }, rules);
     expect(hasKey.state.quests.find((q) => q.id === 'brasero')!.done).toBe(true);
-    expect(hasKey.state.monsters.some((m) => m.id === 'brute2')).toBe(true);
+    expect(hasKey.state.monsters.some((m) => m.id === 'OM8')).toBe(true);
   });
 
   it('cascade : une seule évaluation enchaîne clé puis brasero si le héros est déjà sur place', () => {
@@ -72,7 +72,7 @@ describe('moteur de scénario scripté', () => {
   });
 
   it('un monstre tombé valide la quête associée, et la dernière quête donne la victoire', () => {
-    const almost: GameState = { ...g0, quests: g0.quests.map((q) => (q.id === 'seigneur' ? q : { ...q, done: true })), monsters: g0.monsters.map((m) => (m.id === 'seigneur1' ? { ...m, status: 'spawn-tile' as const } : m)) };
+    const almost: GameState = { ...g0, quests: g0.quests.map((q) => (q.id === 'seigneur' ? q : { ...q, done: true })), monsters: g0.monsters.map((m) => (m.id === 'OM6' ? { ...m, status: 'spawn-tile' as const } : m)) };
     const r = runScript(almost, rules);
     expect(r.state.phase).toBe('SCENARIO_WON');
   });
@@ -80,14 +80,15 @@ describe('moteur de scénario scripté', () => {
   it('un renfort sur une case pleine est annulé et journalisé, sans planter', () => {
     const crowded: GameState = { ...openDoor(g0, 'porte-chapelle'), heroes: g0.heroes.map((h, i) => (i < 2 ? { ...h, position: { x: 4, y: 2 } } : h)) };
     const r = runScript(crowded, rules);
-    expect(r.state.monsters.some((m) => m.id === 'rodeur3')).toBe(false);
+    expect(r.state.monsters.some((m) => m.id === 'OM7')).toBe(false);
     expect(r.state.events.some((e) => e.type === 'script-skipped')).toBe(true);
   });
 
   it('la manche 3 fait tomber la cendre', () => {
     const r = runScript({ ...g0, round: 3 }, rules);
     expect(r.beats[0]!.title).toBe('La cendre tombe');
-    expect(r.state.monsters.some((m) => m.id === 'rodeur4')).toBe(true);
+    // La boîte ne contient que 8 Orc Marauder : la cendre ne fait plus apparaître de monstre supplémentaire.
+    expect(r.state.monsters.filter((m) => m.definitionId === 'OM')).toHaveLength(g0.monsters.length);
   });
 
   it('rien ne se déclenche en mise en place ni après la fin de partie', () => {
@@ -118,7 +119,7 @@ describe('validation du script', () => {
   });
 
   it('un renfort ne peut pas réutiliser l’identifiant d’un monstre déjà placé', () => {
-    const p = problems([{ id: 'r', when: [{ type: 'round-reached', round: 2 }], then: [{ type: 'spawn', monsterId: 'rodeur1', definitionId: 'rodeur', at: { x: 0, y: 0 } }] }]);
+    const p = problems([{ id: 'r', when: [{ type: 'round-reached', round: 2 }], then: [{ type: 'spawn', monsterId: 'OM1', definitionId: 'OM', at: { x: 0, y: 0 } }] }]);
     expect(p.join('\n')).toMatch(/identifiant déjà pris/);
   });
 });

@@ -4,21 +4,20 @@ import type { Oracle } from '../oracle';
 import { log } from '../state';
 import { releaseDelayedCards } from '../activation/deck';
 import type { RandomSource } from '../random';
+import { samePair } from './tokens';
 
-export const sameSpawnPair = (sp: SpawnPoint, a: string, b: string): boolean =>
-  (sp.dice[0] === a && sp.dice[1] === b) || (sp.dice[0] === b && sp.dice[1] === a);
+export const sameSpawnPair = (sp: SpawnPoint, a: string, b: string): boolean => samePair(sp.dice, a, b);
 
-/** Lance 2 dés d'attaque ; sans jeton correspondant sur le plateau, on relance (solo v1.3 p.2 étape 1). */
-export function rollSpawnPoint(s: GameState, oracle: Oracle, purpose: string): { point: SpawnPoint; dice: [string, string] } {
-  if (s.spawnPoints.length === 0) throw new Error('Aucun jeton Spawn sur le plateau');
-  for (let i = 0; i < 500; i++) {
-    const a = oracle.spawnDie(`${purpose} (dé 1)`);
-    const b = oracle.spawnDie(`${purpose} (dé 2)`);
-    const point = s.spawnPoints.find((sp) => sameSpawnPair(sp, a, b));
-    if (point) return { point, dice: [a, b] };
-    log(s, 'spawn-reroll', `Combinaison ${a}/${b} sans jeton Spawn : relance.`);
-  }
-  throw new Error('Aucune combinaison de dés ne correspond à un jeton Spawn (jetons mal configurés ?)');
+/**
+ * Lance 2 dés d'attaque. Il n'existe que 5 jetons Spawn (voir `tokens.ts`) : si la combinaison ne correspond à aucun jeton
+ * présent sur le plateau, `point` vaut `null` et rien ne se passe (pas de relance).
+ */
+export function rollSpawnPoint(s: GameState, oracle: Oracle, purpose: string): { point: SpawnPoint | null; dice: [string, string] } {
+  const a = oracle.spawnDie(`${purpose} (dé 1)`);
+  const b = oracle.spawnDie(`${purpose} (dé 2)`);
+  const point = s.spawnPoints.find((sp) => sameSpawnPair(sp, a, b)) ?? null;
+  if (!point) log(s, 'spawn-none', `Combinaison ${a}/${b} : aucun jeton Spawn sur le plateau, rien ne se passe.`);
+  return { point, dice: [a, b] };
 }
 
 export interface SpawnReport {
@@ -28,7 +27,8 @@ export interface SpawnReport {
 
 /**
  * Phase Spawn (rulebook p.23, solo v1.3 p.2) : si la Spawn Tile est pleine, chaque monstre, dans l'ordre des
- * emplacements, est placé sur le jeton Spawn tiré s'il existe et que sa Space n'est pas pleine ; sinon boîte.
+ * emplacements, est placé sur le jeton Spawn tiré s'il existe et que sa Space n'est pas pleine ; sinon il sort
+ * définitivement du jeu (boîte), y compris quand le jeton tiré n'est pas sur le plateau.
  * Le jet de spawn n'utilise ni relance ni dé supplémentaire.
  */
 export function resolveSpawnPhase(s: GameState, oracle: Oracle, rng: RandomSource): SpawnReport {
@@ -46,8 +46,8 @@ export function resolveSpawnPhase(s: GameState, oracle: Oracle, rng: RandomSourc
     const sp = s.spawnPoints.find((p) => sameSpawnPair(p, a, b));
     if (!sp) {
       m.status = 'box';
-      report.boxed.push({ monsterId: id, reason: `aucun jeton Spawn ${a}/${b}` });
-      log(s, 'spawn-box', `${id} : aucun jeton Spawn ${a}/${b} → boîte.`, { monsterId: id });
+      report.boxed.push({ monsterId: id, reason: `aucun jeton Spawn ${a}/${b} sur le plateau` });
+      log(s, 'spawn-box', `${id} : aucun jeton Spawn ${a}/${b} sur le plateau → sorti définitivement du jeu.`, { monsterId: id });
       continue;
     }
     const occ = occupancy(s, sp.at);

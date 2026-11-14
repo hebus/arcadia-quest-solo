@@ -116,10 +116,29 @@ describe('Monster Turn', () => {
     expect(wounded[0]!.wounds).toBe(2);
   });
 
-  it('combinaison sans jeton Spawn : relance jusqu à une combinaison valide', () => {
+  it('jet de référence sans jeton Spawn sur le plateau : rien ne se passe, ni relance ni carte piochée', () => {
     const s = toMonsterTurn(demoGame({ settings: physical }));
-    const r = runMonsterTurn(s, testContent, [die('A'), die('D'), die('A'), die('B'), card('goblin'), atk(0, 0), die('C'), die('D'), card('goblin'), atk(0, 0)]);
-    expect(r.state.events.some((e) => e.type === 'spawn-reroll')).toBe(true);
+    // Activation 1 : A/D n'existe pas ; activation 2 : C/D existe.
+    const r = runMonsterTurn(s, testContent, [die('A'), die('D'), die('C'), die('D'), card('goblin'), atk(0, 0)]);
+    expect(r.state.events.some((e) => e.type === 'spawn-none')).toBe(true);
+    expect(r.state.events.some((e) => e.type === 'spawn-reroll')).toBe(false);
+    expect(r.traces).toHaveLength(1);
+    expect(r.state.deck.discard).toHaveLength(1);
+    expect(r.state.phase).toBe('GUILD_TURN');
+  });
+
+  it('Spawn Tile pleine et jeton tiré absent du plateau : le monstre sort définitivement du jeu', () => {
+    const s = toMonsterTurn(demoGame({ settings: physical, spawnTileCapacity: 1 }));
+    const g1 = s.monsters.find((m) => m.id === 'g1')!;
+    g1.status = 'spawn-tile';
+    g1.position = null;
+    s.spawnTile = ['g1'];
+    const r = runMonsterTurn(s, testContent, [die('A'), die('D'), die('A'), die('B'), card('orc'), die('A'), die('B'), card('orc'), atk(0, 0)]);
+    const after = r.state.monsters.find((m) => m.id === 'g1')!;
+    expect(after.status).toBe('box');
+    expect(after.position).toBeNull();
+    expect(r.state.spawnTile).toHaveLength(0);
+    expect(r.instructions.some((i) => i.id === 'box-g1')).toBe(true);
   });
 
   it('aucun monstre du type sur le plateau : rien ne se passe', () => {
@@ -261,10 +280,12 @@ describe('invariants', () => {
     s.heroes[0]!.position = { x: 99, y: 0 };
     expect(validateGameState(s, testContent).join()).toMatch(/hors du plateau/);
   });
-  it('refuse deux personnages sur une même Space : une seule figurine par case', () => {
+  it('accepte deux personnages sur une même Space, en refuse trois : deux figurines au maximum par case', () => {
     const s = demoGame();
     s.heroes[1]!.position = { ...s.heroes[0]!.position! };
-    expect(validateGameState(s, testContent).join()).toMatch(/Plus d'un personnage/);
+    expect(validateGameState(s, testContent).join()).not.toMatch(/Plus de 2/);
+    s.heroes[2]!.position = { ...s.heroes[0]!.position! };
+    expect(validateGameState(s, testContent).join()).toMatch(/Plus de 2 personnages/);
   });
 });
 

@@ -1,4 +1,5 @@
 import type { Content, GameState, Position } from '../domain/schemas';
+import { monsterStats } from '../monsters';
 import { hasLineOfSight, isClose, key, monsterView, neighbors, doorBetween, samePos, edgeBlocked, sightBlockedAt } from './board';
 
 export interface PathStep {
@@ -134,7 +135,7 @@ export function planMonsterAction(
   const monster = state.monsters.find((m) => m.id === monsterId);
   if (!monster || !monster.position) throw new Error(`Monstre ${monsterId} absent du plateau`);
   const def = content.monsters[monster.definitionId];
-  const stats = def?.levels[state.monsterCardSet];
+  const stats = monsterStats(def, state.monsterCardSet, monster.rank);
   if (!def || !stats) throw new Error(`Stats manquantes pour ${monster.definitionId} (jeu ${state.monsterCardSet})`);
   const start = monster.position;
   const explanation: string[] = [];

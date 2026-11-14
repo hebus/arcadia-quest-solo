@@ -3,7 +3,6 @@
 ## État de la validation
 
 - Les règles sont couvertes par des tests automatiques, mais **aucune n'a été validée en partie physique** : le plan l'exige avant de les déclarer officielles (§17, §18). Toute divergence observée sur la table doit être corrigée dans le moteur et ajoutée aux tests.
-- Les faces des dés sont un placeholder à régler (question B17).
 
 ## Contenu
 
