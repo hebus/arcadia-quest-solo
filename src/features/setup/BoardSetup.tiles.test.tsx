@@ -10,7 +10,7 @@ function setup(placed: string[]) {
   const setLayout = vi.fn();
   render(
     <BoardSetup
-      tilesLib={['A1', 'A2', 'B1', 'B2'].map(tile)}
+      tilesLib={['1A', '1B', '2A', '2B'].map(tile)}
       layout={{ tilesW: 2, tilesH: 1, placements: placed.map((tileId, i) => ({ tileId, tx: i, ty: 0, rotation: 0 as const })) }}
       setLayout={setLayout}
       extras={{ walls: [], doors: [], portals: [], doorStates: {} }}
@@ -30,22 +30,22 @@ function setup(placed: string[]) {
 
 describe('choix des tuiles : 9 tuiles doubles faces', () => {
   it('une tuile déjà posée n’est plus proposée, ni sur l’une ni sur l’autre de ses faces', () => {
-    setup(['A1']);
+    setup(['1A']);
     fireEvent.click(screen.getByRole('button', { name: 'Emplacement 2,1' }));
     const select = screen.getByRole('combobox', { name: 'Tuile' });
     const option = (name: RegExp) => within(select).getByRole('option', { name }) as HTMLOptionElement;
-    expect(option(/^A1/).disabled).toBe(true);
-    expect(option(/^A2/).disabled).toBe(true); // l'autre face de A
-    expect(option(/^B1/).disabled).toBe(false);
-    expect(option(/^B2/).disabled).toBe(false);
+    expect(option(/^1A/).disabled).toBe(true);
+    expect(option(/^1B/).disabled).toBe(true); // l'autre face de la tuile 1
+    expect(option(/^2A/).disabled).toBe(false);
+    expect(option(/^2B/).disabled).toBe(false);
   });
 
-  it('sur l’emplacement de A1, on peut retourner la tuile : A2 est proposée', () => {
-    const setLayout = setup(['A1']);
+  it('sur l’emplacement de 1A, on peut retourner la tuile : 1B est proposée', () => {
+    const setLayout = setup(['1A']);
     fireEvent.click(screen.getByRole('button', { name: 'Emplacement 1,1' }));
     const select = screen.getByRole('combobox', { name: 'Tuile' });
-    expect((within(select).getByRole('option', { name: /^A2/ }) as HTMLOptionElement).disabled).toBe(false);
-    fireEvent.change(select, { target: { value: 'A2' } });
-    expect(setLayout).toHaveBeenCalledWith(expect.objectContaining({ placements: [expect.objectContaining({ tileId: 'A2' })] }));
+    expect((within(select).getByRole('option', { name: /^1B/ }) as HTMLOptionElement).disabled).toBe(false);
+    fireEvent.change(select, { target: { value: '1B' } });
+    expect(setLayout).toHaveBeenCalledWith(expect.objectContaining({ placements: [expect.objectContaining({ tileId: '1B' })] }));
   });
 });

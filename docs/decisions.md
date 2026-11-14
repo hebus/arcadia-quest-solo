@@ -80,12 +80,17 @@ Il n'existe que 5 jetons Spawn, un de chaque : épée+épée, épée+arc, épée
 
 ## Tuiles : 9 tuiles doubles faces
 
-- Le jeu de base compte **9 tuiles doubles faces** (A à I), soit 18 faces : A1/A2, B1/B2 … I1/I2 (`src/engine/tileCatalog.ts`). Sans elles, un plateau ne peut pas être reproduit.
+- Le jeu de base compte **9 tuiles doubles faces**, numérotées de 1 à 9, chacune avec un recto **A** et un verso **B** : 18 faces, **1A/1B … 9A/9B** (`src/engine/tileCatalog.ts`). Sans elles, un plateau ne peut pas être reproduit.
 - Une tuile est une grille de **3×3 cases** (`TILE = 3`) et une case accueille **2 figurines** au maximum.
-- Chaque tuile n'existe qu'en un exemplaire : sur un plateau, **une seule face** d'une même tuile (pas A1 et A2 ensemble) et jamais deux fois la même. Un plateau compte donc 9 tuiles au plus.
-- Bibliothèque : chaque scan est une face (A1 à I2). Le code se lit dans le nom du fichier (« B2.png ») ; à défaut, la première face libre est attribuée, et la face se change dans l'éditeur de tuile. Ré-importer une face remplace son image.
-- Mise en place du plateau : le choix de tuile désactive toute tuile déjà posée (les deux faces) ; l'étape de vérification refuse un plateau qui en pose une deux fois.
+- Chaque tuile n'existe qu'en un exemplaire : sur un plateau, **une seule face** d'une même tuile (pas 1A et 1B ensemble) et jamais deux fois la même. Un plateau compte donc 9 tuiles au plus.
+- **Éditeur des tuiles** (Bibliothèque de tuiles) : un catalogue des 9 tuiles, recto/verso, où l'on définit chaque face une fois pour toutes :
+  - **zones de bâtiments** : cases d'intérieur, murées automatiquement (un bâtiment = des cases contiguës) ;
+  - **zone de départ des héros** : les cases de départ imprimées sur la face (`heroStart`) ;
+  - murs et portes ; scan de la face (facultatif, nommé d'après sa face : « 3B.png »).
+  Toucher une face vierge la crée comme tuile de rue. Les définitions s'exportent et s'importent en JSON (bouton Exporter / Importer un fichier) pour les conserver ou les partager.
+- Mise en place du plateau : le choix de tuile désactive toute tuile déjà posée (les deux faces) ; l'étape de vérification refuse un plateau qui en pose une deux fois. Les zones de départ des tuiles posées sont surlignées en jaune quand on place les héros.
 - Les tuiles de test (tuile de rue vierge, maison de démonstration) restent disponibles pour la démo, rangées à part ; la vérification signale que le plateau n'est pas réalisable avec le matériel.
+- Les anciens codes (A1 à I2) ne sont plus reconnus : les scans importés sous cet ancien nom sont des tuiles « hors du jeu » à redéfinir sous leur face (1A à 9B).
 
 ## Tuile d'apparition (Spawn Tile)
 

@@ -44,6 +44,8 @@ export const TileDefSchema = type({
   openedWalls: [EdgeSchema.array(), '=', () => []],
   /** Portes de la tuile (sur le contour d'un bâtiment) : fermées par défaut, état réglé à la mise en place. */
   doors: [EdgeSchema.array(), '=', () => []],
+  /** Cases de la zone de départ des héros imprimée sur cette face (vide si la face n'en a pas). */
+  heroStart: [PositionSchema.array(), '=', () => []],
 });
 export type TileDef = typeof TileDefSchema.infer;
 
@@ -164,6 +166,18 @@ const globalOf = (pl: TilePlacement, e: Edge): Edge => {
     { x: pl.tx * TILE + b.x, y: pl.ty * TILE + b.y },
   ];
 };
+
+/** Cases de départ des héros définies par les tuiles posées (zones tournées avec la tuile), en coordonnées du plateau. */
+export function layoutHeroStarts(tiles: Record<string, TileDef>, layout: TileLayout): Position[] {
+  const out: Position[] = [];
+  for (const pl of layout.placements) {
+    for (const c of tiles[pl.tileId]?.heroStart ?? []) {
+      const [g] = globalOf(pl, [c, c]);
+      out.push(g);
+    }
+  }
+  return out;
+}
 
 /** Toutes les portes définies par les tuiles posées, quel que soit leur état. */
 export function layoutDoors(tiles: Record<string, TileDef>, layout: TileLayout): LayoutDoor[] {

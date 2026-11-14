@@ -11,7 +11,7 @@ import { defaultContent, useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
 import { demoGame } from '@/tests/fixtures/demo';
 
-const TILE = { id: 't1', name: 'T1', crop: { l: 0, t: 0, r: 0, b: 0 }, imageRotation: 0 as const, interior: [], walls: [], openedWalls: [], doors: [] };
+const TILE = { id: 't1', name: 'T1', crop: { l: 0, t: 0, r: 0, b: 0 }, imageRotation: 0 as const, interior: [], walls: [], openedWalls: [], doors: [], heroStart: [] };
 
 beforeEach(async () => {
   const db = getDb();

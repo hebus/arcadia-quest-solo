@@ -2,7 +2,7 @@ import { parse } from '@/engine/domain/validate';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TileDefSchema } from '@/engine/tiles';
+import { TileDefSchema, effectiveWalls } from '@/engine/tiles';
 import { useCampaignStore } from '@/stores/campaignStore';
 import { defaultContent, useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
@@ -200,38 +200,89 @@ describe('App', () => {
 
   it('bibliothèque de tuiles : tracer un mur sur le scan', async () => {
     const user = userEvent.setup();
-    useTileStore.setState({ tiles: [parse(TileDefSchema, { id: 't1', name: 'T1-A', walls: [] })], loaded: true });
+    useTileStore.setState({ tiles: [parse(TileDefSchema, { id: '1A', name: '1A', walls: [] })], loaded: true });
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Bibliothèque de tuiles' }));
-    await user.click(screen.getByRole('button', { name: /T1-A/ }));
+    await user.click(screen.getByRole('button', { name: 'Face 1A' }));
     await user.click(screen.getByRole('button', { name: 'Murs' }));
     fireEvent.click(screen.getByTestId('edge-0,0-1,0'));
     expect(useTileStore.getState().tiles[0]!.walls).toHaveLength(1);
-    expect(screen.getByRole('button', { name: /1 mur\(s\)/ })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('edge-0,0-1,0'));
     expect(useTileStore.getState().tiles[0]!.walls).toHaveLength(0);
   });
 
   it("tuile de rue par défaut ; cases d'intérieur = bâtiment muré, portes et murs modifiables", async () => {
     const user = userEvent.setup();
-    useTileStore.setState({ tiles: [parse(TileDefSchema, { id: 't1', name: 'T1-A' })], loaded: true });
+    useTileStore.setState({ tiles: [parse(TileDefSchema, { id: '1A', name: '1A' })], loaded: true });
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Bibliothèque de tuiles' }));
-    await user.click(screen.getByRole('button', { name: /T1-A/ }));
-    expect(screen.getByText(/Aucun : toutes les cases sont des cases de rue/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Face 1A' }));
+    expect(screen.getByText(/aucun \(toutes les cases sont de la rue\)/)).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('cell-1-1'));
     fireEvent.click(screen.getByTestId('cell-1-2'));
-    expect(screen.getByText(/Bâtiment 1 : 2 case\(s\)/)).toBeInTheDocument();
+    expect(screen.getByText(/bâtiment 1 \(2 cases\)/)).toBeInTheDocument();
     expect(useTileStore.getState().tiles[0]!.interior).toHaveLength(2);
     // Contour muré automatiquement : 6 arêtes autour d'un bâtiment de 2 cases.
-    expect(screen.getByRole('button', { name: /1 bâtiment\(s\) · 6 mur\(s\) · 0 porte\(s\)/ })).toBeInTheDocument();
+    expect(effectiveWalls(useTileStore.getState().tiles[0]!)).toHaveLength(6);
+    expect(screen.getByRole('button', { name: 'Face 1A' })).toHaveTextContent('1 bât.');
     await user.click(screen.getByRole('button', { name: 'Portes' }));
     fireEvent.click(screen.getByTestId('edge-1,0-1,1'));
     expect(useTileStore.getState().tiles[0]!.doors).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Murs' }));
     fireEvent.click(screen.getByTestId('edge-0,2-1,2'));
     expect(useTileStore.getState().tiles[0]!.openedWalls).toHaveLength(1);
-    expect(screen.getByRole('button', { name: /5 mur\(s\)/ })).toBeInTheDocument();
+    expect(effectiveWalls(useTileStore.getState().tiles[0]!)).toHaveLength(5);
+  });
+
+  it('éditeur des 9 tuiles : une face se crée au toucher, zone de départ des héros et bâtiments se définissent', async () => {
+    const user = userEvent.setup();
+    useTileStore.setState({ tiles: [], loaded: true });
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Bibliothèque de tuiles' }));
+    // Le catalogue montre les 9 tuiles, recto (A) et verso (B).
+    const catalog = screen.getByRole('table', { name: 'Catalogue des tuiles' });
+    expect(within(catalog).getAllByRole('button')).toHaveLength(18);
+    expect(screen.getByText(/0 \/ 18 faces définies/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Face 3B' }));
+    expect(useTileStore.getState().tiles.map((t) => t.id)).toEqual(['3B']);
+    expect(screen.getByText(/Face 3B \(verso\)/)).toBeInTheDocument();
+    // Zone de départ des héros : trois cases.
+    await user.click(screen.getByRole('button', { name: 'Départ des héros' }));
+    for (const c of ['cell-0-2', 'cell-1-2', 'cell-2-2']) fireEvent.click(screen.getByTestId(c));
+    expect(useTileStore.getState().tiles[0]!.heroStart).toEqual([{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }]);
+    fireEvent.click(screen.getByTestId('cell-1-2')); // retouche : retirée
+    expect(useTileStore.getState().tiles[0]!.heroStart).toHaveLength(2);
+    // Bâtiment : cases d'intérieur.
+    await user.click(screen.getByRole('button', { name: 'Bâtiments' }));
+    fireEvent.click(screen.getByTestId('cell-1-0'));
+    expect(useTileStore.getState().tiles[0]!.interior).toEqual([{ x: 1, y: 0 }]);
+    expect(screen.getByRole('button', { name: 'Face 3B' })).toHaveTextContent('1 bât. · 2 dép.');
+    expect(screen.getByText(/1 \/ 18 faces définies/)).toBeInTheDocument();
+  });
+
+  it('éditeur des tuiles : exporter puis importer les définitions des faces', async () => {
+    const user = userEvent.setup();
+    const tiles = [parse(TileDefSchema, { id: '2A', name: '2A', interior: [{ x: 1, y: 1 }], heroStart: [{ x: 0, y: 2 }] })];
+    useTileStore.setState({ tiles, loaded: true });
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Bibliothèque de tuiles' }));
+    // Export : un fichier JSON avec toutes les tuiles.
+    let blob: Blob | null = null;
+    URL.createObjectURL = (b: Blob | MediaSource) => ((blob = b as Blob), 'blob:test');
+    URL.revokeObjectURL = () => undefined;
+    HTMLAnchorElement.prototype.click = () => undefined;
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+    const exported = JSON.parse(await blob!.text()) as { tiles: unknown[] };
+    expect(exported.tiles).toHaveLength(1);
+    // Import : les définitions du fichier remplacent / complètent la bibliothèque.
+    useTileStore.setState({ tiles: [], loaded: true });
+    const file = new File([JSON.stringify(exported)], 'tuiles.json', { type: 'application/json' });
+    fireEvent.change(screen.getByLabelText('Fichier de tuiles'), { target: { files: [file] } });
+    expect(await screen.findByText(/1 tuile\(s\) importée\(s\)/)).toBeInTheDocument();
+    expect(useTileStore.getState().tiles[0]).toMatchObject({ id: '2A', interior: [{ x: 1, y: 1 }], heroStart: [{ x: 0, y: 2 }] });
+    // Un fichier invalide est refusé avec un message.
+    fireEvent.change(screen.getByLabelText('Fichier de tuiles'), { target: { files: [new File(['{"tiles": 3}'], 'x.json')] } });
+    expect(await screen.findByRole('alert')).toHaveTextContent(/invalide/);
   });
 
   it('guide et paramètres sont accessibles', async () => {

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Button, Panel, inputClass } from '@/components/ui';
 import { SPAWN_TOKEN_TYPES, samePair, spawnTokenLabel } from '@/engine/spawn/tokens';
-import { freeTileFaces, isCatalogTile, tileLetter } from '@/engine/tileCatalog';
+import { freeTileFaces, isCatalogTile, tileNumber } from '@/engine/tileCatalog';
 import type { Door, Portal, Position, SpawnPoint } from '@/engine/domain/schemas';
 import {
   boardFromLayout,
   layoutDoors,
+  layoutHeroStarts,
   sameEdge,
   toggleEdge,
   type BoardExtras,
@@ -50,7 +51,7 @@ const TOOLS: { id: Tool; label: string; help: string }[] = [
   { id: 'door', label: 'Porte', help: 'Touchez une porte de tuile : fermée, puis ouverte, puis retirée (pointillé gris, le mur revient). Sur une arête sans porte de tuile, ajoute une porte du scénario.' },
   { id: 'portal', label: 'Portail', help: 'Touchez une case : portail rouge, puis bleu, puis retiré. Les portails de même couleur sont reliés.' },
   { id: 'spawn', label: 'Jeton Spawn', help: 'Choisissez la paire de dés, puis touchez une case. Retouchez pour retirer.' },
-  { id: 'hero', label: 'Héros', help: 'Choisissez un héros, puis touchez sa case de départ.' },
+  { id: 'hero', label: 'Héros', help: 'Choisissez un héros, puis touchez sa case de départ. Les cases jaunes sont les zones de départ des héros définies sur les tuiles.' },
   { id: 'monster', label: 'Monstre', help: 'Choisissez un type, puis touchez les cases où poser les figurines.' },
   { id: 'guard', label: 'Garde', help: 'Touchez un monstre pour le marquer ou le démarquer comme garde.' },
   { id: 'erase', label: 'Gomme', help: 'Touchez un pion, un jeton Spawn ou un portail pour le retirer.' },
@@ -96,6 +97,8 @@ export function BoardSetup(p: Props) {
   );
 
   const tileDoors = useMemo(() => layoutDoors(byId, p.layout), [byId, p.layout]);
+  /** Zones de départ des héros imprimées sur les tuiles posées (en jaune quand on place les héros). */
+  const startCells = useMemo(() => layoutHeroStarts(byId, p.layout), [byId, p.layout]);
   const removedDoors = tileDoors.filter((d) => p.extras.doorStates[d.id] === 'none').map((d): [Position, Position] => [d.a, d.b]);
   const placed = p.layout.placements.flatMap((pl) => (byId[pl.tileId] ? [{ def: byId[pl.tileId]!, placement: pl }] : []));
   const current = slot ? p.layout.placements.find((x) => x.tx === slot.tx && x.ty === slot.ty) : undefined;
@@ -228,12 +231,12 @@ export function BoardSetup(p: Props) {
                 <select aria-label="Tuile" className={inputClass} value={current?.tileId ?? ''} onChange={(e) => setPlacement(slot.tx, slot.ty, e.target.value || null, current?.rotation ?? 0)}>
                   <option value="">(vide)</option>
                   {/* Les 9 tuiles du jeu, doubles faces : une tuile déjà posée (sur l'une ou l'autre face) n'est plus disponible. */}
-                  <optgroup label="Tuiles du jeu (A à I, double face)">
+                  <optgroup label="Tuiles du jeu (1 à 9, recto/verso A et B)">
                     {library
                       .filter((t) => isCatalogTile(t.id))
                       .map((t) => (
                         <option key={t.id} value={t.id} disabled={!freeFaces.includes(t.id)}>
-                          {t.id}{t.name !== t.id ? ` · ${t.name}` : ''}{freeFaces.includes(t.id) ? '' : ` (tuile ${tileLetter(t.id)} déjà posée)`}
+                          {t.id}{t.name !== t.id ? ` · ${t.name}` : ''}{freeFaces.includes(t.id) ? '' : ` (tuile ${tileNumber(t.id)} déjà posée)`}
                         </option>
                       ))}
                   </optgroup>
@@ -307,6 +310,7 @@ export function BoardSetup(p: Props) {
           onToken={onToken}
           onEdge={tool === 'wall' || tool === 'door' ? onEdge : undefined}
           inactiveEdges={removedDoors}
+          highlights={tool === 'hero' ? startCells.map((pos) => ({ pos, kind: 'end' as const })) : []}
         />
       ) : (
         <p role="alert" className="text-red-300">Une tuile posée n&apos;existe plus dans la bibliothèque : retirez-la.</p>

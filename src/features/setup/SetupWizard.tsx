@@ -121,7 +121,7 @@ export function SetupWizard({ onDone, openLibrary }: { onDone: () => void; openL
     if (spawns.length === 0) throw new Error('Ajoutez au moins un jeton Spawn (outil « Jeton Spawn »).');
     const warnings: string[] = [];
     if (tileCheck.notInGame.length) {
-      warnings.push(`Tuiles de test hors du jeu de base (${tileCheck.notInGame.map((id) => tileMap[id]?.name ?? id).join(', ')}) : ce plateau n'est pas réalisable avec le matériel, seules les 9 tuiles A à I (double face) existent.`);
+      warnings.push(`Tuiles de test hors du jeu de base (${tileCheck.notInGame.map((id) => tileMap[id]?.name ?? id).join(', ')}) : ce plateau n'est pas réalisable avec le matériel, seules les 9 tuiles 1 à 9 (recto/verso A et B) existent.`);
     }
     const monsterDefs: MonsterDefinition[] = defs.map((d) => {
       const s: MonsterStats = { life: d.life, overkill: d.overkill, reward: d.reward, attackType: d.type, attackDice: d.atk, movement: d.mv };
