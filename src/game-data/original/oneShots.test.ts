@@ -81,3 +81,26 @@ describe('scénarios one shot : difficulté au choix', () => {
     expect(scenarioForGame({ scenarioId: 'inconnu', difficulty: 'easy' })).toBeUndefined();
   });
 });
+
+describe('scénarios en fichiers JSON modifiables', () => {
+  it('chaque scénario livré vient d’un fichier .json, plateau écrit en lignes, et se relit à l’identique', async () => {
+    const { parseScenario } = await import('@/engine/scenario/definition');
+    const files = import.meta.glob('./scenarios/*.json', { eager: true, import: 'default' }) as Record<string, Record<string, unknown>>;
+    expect(Object.keys(files)).toHaveLength(ORIGINAL_SCENARIOS.length);
+    for (const [path, raw] of Object.entries(files)) {
+      expect(Array.isArray(raw.board), path).toBe(true);
+      const def = parseScenario(raw);
+      expect(ORIGINAL_SCENARIOS.find((s) => s.id === def.id), path).toEqual(def);
+    }
+  });
+
+  it('une modification du fichier se lit : titre et ligne du plateau', async () => {
+    const { parseScenario } = await import('@/engine/scenario/definition');
+    const raw = JSON.parse(JSON.stringify(ORIGINAL_SCENARIOS.find((s) => s.id === 'caveau-des-brumes'))) as { title: string; board: string };
+    raw.title = 'Mon caveau';
+    raw.board = raw.board.split('\n').filter((l) => !l.startsWith('portal ')).join('\n');
+    const def = parseScenario(raw);
+    expect(def.title).toBe('Mon caveau');
+    expect(def.board).not.toContain('portal');
+  });
+});

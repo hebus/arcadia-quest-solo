@@ -1,0 +1,287 @@
+{
+  "id": "halle-aux-grains",
+  "commentaire": "Chapitre 2 de la campagne moyenne « Le Siège de Val-Noir » : la Halle aux Grains. Plateau de 6 tuiles (3 × 2, 9 × 6 cases). Repère (x → droite, y → bas) : les héros partent du bâtiment en bas à gauche (tuile 7A) ; la halle aux grains est le bâtiment en U de la tuile 2A (colonne (6,3) (6,4) (6,5) et rangée (7,5) (8,5)), dont la cour intérieure (7,1) (8,1) (7,2) (7,3) (7,4) (8,4) est murée de toutes parts : le pion violet, côté rue en (5,4), est l'unique entrée, et un pion posé « porte ouverte » en (6,4)-(7,4) supprime le mur entre la halle et sa cour. Population (niveau de cartes « 2-3 » : les Goblin Archer entrent en jeu) : le Troll Mâche-Grain (chef, en garde dans la halle), deux Orc Captain, deux Orc Marauder, trois Goblin Archer et un Hammer Beastman ; 2 renforts d'Orc Marauder (6 Orcs sur 8).",
+  "title": "La Halle aux Grains",
+  "tagline": "Forcez le grenier, rallions le convoi, abattez Mâche-Grain.",
+  "recommended": "medium",
+  "story": {
+    "intro": [
+      "Le pont est libre, mais Val-Noir a faim : les orcs ont pris la Halle aux Grains, où dormait toute la réserve de l’hiver. Un convoi de ravitaillement, resté dehors, attend que la route soit sûre.",
+      "Un troll nommé Mâche-Grain garde la halle ; des archers gobelins tirent depuis les ruelles, et l’on dit que le sceau violet du grenier ne s’ouvre qu’à la force.",
+      "Forcez le grenier, ralliez le convoi, puis abattez Mâche-Grain : sans lui, la halle est à vous."
+    ],
+    "win": [
+      "Mâche-Grain s’affaisse sur ses sacs éventrés. Dans la halle, une carte griffonnée marque les Remparts de Val-Noir : c’est là que se tient le seigneur de guerre."
+    ],
+    "lose": [
+      "Le grenier se referme sur vous. Dehors, le convoi fait demi-tour, et Val-Noir a un peu plus faim."
+    ]
+  },
+  "tiles": {
+    "tilesW": 3,
+    "tilesH": 2,
+    "placements": [
+      {
+        "tileId": "8B",
+        "tx": 0,
+        "ty": 0,
+        "rotation": 0
+      },
+      {
+        "tileId": "4B",
+        "tx": 1,
+        "ty": 0,
+        "rotation": 90
+      },
+      {
+        "tileId": "5B",
+        "tx": 2,
+        "ty": 0,
+        "rotation": 0
+      },
+      {
+        "tileId": "7A",
+        "tx": 0,
+        "ty": 1,
+        "rotation": 0
+      },
+      {
+        "tileId": "3B",
+        "tx": 1,
+        "ty": 1,
+        "rotation": 180
+      },
+      {
+        "tileId": "2A",
+        "tx": 2,
+        "ty": 1,
+        "rotation": 90
+      }
+    ]
+  },
+  "heroStarts": [
+    {
+      "x": 0,
+      "y": 5
+    },
+    {
+      "x": 1,
+      "y": 5
+    },
+    {
+      "x": 2,
+      "y": 5
+    }
+  ],
+  "monsters": [
+    {
+      "id": "T1",
+      "definitionId": "T",
+      "at": {
+        "x": 8,
+        "y": 5
+      },
+      "guard": true
+    },
+    {
+      "id": "OC1",
+      "definitionId": "OC",
+      "at": {
+        "x": 7,
+        "y": 4
+      },
+      "guard": true
+    },
+    {
+      "id": "OC2",
+      "definitionId": "OC",
+      "at": {
+        "x": 1,
+        "y": 2
+      },
+      "guard": true
+    },
+    {
+      "id": "OM1",
+      "definitionId": "OM",
+      "at": {
+        "x": 4,
+        "y": 4
+      }
+    },
+    {
+      "id": "OM2",
+      "definitionId": "OM",
+      "at": {
+        "x": 4,
+        "y": 2
+      }
+    },
+    {
+      "id": "GA1",
+      "definitionId": "GA",
+      "at": {
+        "x": 3,
+        "y": 3
+      }
+    },
+    {
+      "id": "GA2",
+      "definitionId": "GA",
+      "at": {
+        "x": 7,
+        "y": 1
+      }
+    },
+    {
+      "id": "GA3",
+      "definitionId": "GA",
+      "at": {
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "id": "HB1",
+      "definitionId": "HB",
+      "at": {
+        "x": 1,
+        "y": 0
+      }
+    }
+  ],
+  "quests": [
+    {
+      "id": "grenier",
+      "icon": "chest",
+      "title": "Forcer le grenier (porte violette)",
+      "completion": "Le sceau violet saute : le grenier déborde de sacs de grain, de quoi nourrir le bourg tout l’hiver.",
+      "at": {
+        "x": 6,
+        "y": 4
+      }
+    },
+    {
+      "id": "convoi",
+      "icon": "flag",
+      "title": "Rallier le convoi de ravitaillement",
+      "completion": "Le convoi se met en marche : les charrettes rouleront jusqu’à la halle dès qu’elle sera sûre.",
+      "at": {
+        "x": 4,
+        "y": 0
+      }
+    },
+    {
+      "id": "troll",
+      "icon": "skull",
+      "title": "Abattre Mâche-Grain",
+      "completion": "Le troll s’effondre dans un nuage de farine : la halle n’a plus de maître.",
+      "at": {
+        "x": 8,
+        "y": 5
+      }
+    }
+  ],
+  "script": [
+    {
+      "id": "grenier-ouvert",
+      "when": [
+        {
+          "type": "door-open",
+          "doorId": "porte-halle"
+        }
+      ],
+      "then": [
+        {
+          "type": "reward",
+          "card": "random",
+          "text": "Derrière les sacs, un coffret oublié."
+        },
+        {
+          "type": "complete-quest",
+          "questId": "grenier",
+          "text": "Le sceau violet saute : le grenier déborde de sacs de grain, de quoi nourrir le bourg tout l’hiver."
+        },
+        {
+          "type": "narrate",
+          "title": "Le grenier",
+          "tone": "danger",
+          "text": "Le sceau hurle en se brisant. Dans la halle, le troll lève la tête, et un maraudeur répond à l’appel."
+        },
+        {
+          "type": "spawn",
+          "monsterId": "OM3",
+          "definitionId": "OM",
+          "at": {
+            "x": 7,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "convoi-rallie",
+      "when": [
+        {
+          "type": "hero-on",
+          "at": {
+            "x": 4,
+            "y": 0
+          }
+        }
+      ],
+      "then": [
+        {
+          "type": "complete-quest",
+          "questId": "convoi",
+          "text": "Le convoi se met en marche : les charrettes rouleront jusqu’à la halle dès qu’elle sera sûre."
+        },
+        {
+          "type": "spawn",
+          "monsterId": "OM4",
+          "definitionId": "OM",
+          "at": {
+            "x": 4,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "troll-tombe",
+      "when": [
+        {
+          "type": "monster-down",
+          "monsterId": "T1"
+        }
+      ],
+      "then": [
+        {
+          "type": "complete-quest",
+          "questId": "troll",
+          "text": "Le troll s’effondre dans un nuage de farine : la halle n’a plus de maître."
+        }
+      ]
+    }
+  ],
+  "monsterCardSet": "2-3",
+  "deck": {
+    "listedMonsterIds": [
+      "T",
+      "OC",
+      "OM",
+      "GA",
+      "HB"
+    ]
+  },
+  "board": [
+    "size 9x6",
+    "door porte-depart 1,4-1,5 open",
+    "door porte-halle 5,4-6,4 closed special",
+    "door ouverture 6,4-7,4 open",
+    "spawn S1 2,2 sword+sword",
+    "spawn S2 7,3 bow+bow",
+    "spawn S3 5,1 sword+bow",
+    "spawn S4 4,5 sword+crit"
+  ]
+}

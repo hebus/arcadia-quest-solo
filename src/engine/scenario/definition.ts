@@ -58,6 +58,8 @@ export const ScenarioDefinitionSchema = type({
     win: 'string[]',
     lose: 'string[]',
   },
+  /** Court texte de présentation du scénario, pour qui édite le fichier (non affiché). */
+  'commentaire?': 'string | undefined',
   /** Plateau décrit avec le DSL de `boardDsl.ts` (taille, pièces, murs, portes, portails, jetons Spawn). */
   board: 'string',
   /**
@@ -270,4 +272,12 @@ export function createScenarioGame(def: ScenarioDefinition, opts: StartOptions, 
   return createGame(scenarioToSetup(def, opts, content), content);
 }
 
-export const parseScenario = (raw: unknown): ScenarioDefinition => parse(ScenarioDefinitionSchema, raw);
+/**
+ * Lit un scénario (fichier JSON ou scénario généré gardé dans une partie). Dans un fichier, le plateau s'écrit plus lisiblement en
+ * tableau de lignes (`"board": ["size 9x3", "door d1 …"]`) ; une chaîne multi-lignes est acceptée aussi.
+ */
+export function parseScenario(raw: unknown): ScenarioDefinition {
+  const obj = raw as { board?: unknown } | null;
+  const flat = obj && Array.isArray(obj.board) ? { ...obj, board: obj.board.join(String.fromCharCode(10)) } : raw;
+  return parse(ScenarioDefinitionSchema, flat);
+}

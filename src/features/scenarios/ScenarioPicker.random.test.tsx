@@ -78,13 +78,15 @@ describe('mode aléatoire', () => {
     expect(g.scenarioId).toMatch(/^aleatoire-\d+$/);
     expect(g.generatedScenario).toBeTruthy();
     expect(g.tileLayout!.placements).toHaveLength(4);
-    expect(useGameStore.getState().script.length).toBe(2);
+    // Le nombre de règles dépend de l'objectif tiré au hasard : on compare avant et après la reprise.
+    const ruleCount = useGameStore.getState().script.length;
+    expect(ruleCount).toBeGreaterThan(0);
     // Reprise : le scénario n'est pas dans les données livrées, il est relu depuis la partie.
     const def = scenarioOfGame(g)!;
     expect(def.generated).toBe(true);
     expect(def.story.win.length).toBeGreaterThan(0);
     act(() => useGameStore.getState().loadGame(g));
-    expect(useGameStore.getState().script).toHaveLength(2);
+    expect(useGameStore.getState().script).toHaveLength(ruleCount);
     // Un identifiant inconnu sans définition gardée : pas de scénario.
     expect(scenarioOfGame({ scenarioId: 'inconnu' })).toBeUndefined();
   });
