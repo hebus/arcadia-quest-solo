@@ -15,7 +15,11 @@ export const ConditionSchema = type({ type: "'hero-on'", at: PositionSchema })
   .or({ type: "'door-open'", doorId: 'string' })
   .or({ type: "'monster-down'", monsterId: 'string' })
   .or({ type: "'quest-done'", questId: 'string' })
-  .or({ type: "'round-reached'", round: 'number.integer > 0' });
+  .or({ type: "'round-reached'", round: 'number.integer > 0' })
+  /** Au moins `count` monstres hors du plateau (abattus), tous types ou d'un type donné. */
+  .or({ type: "'monsters-down'", count: 'number.integer > 0', 'definitionId?': 'string | undefined' })
+  /** Au moins `count` héros vivants (tous les héros vivants par défaut) sur les cases données : une zone de sortie, de ralliement. */
+  .or({ type: "'heroes-on'", cells: PositionSchema.array(), 'count?': 'number.integer > 0 | undefined' });
 export type Condition = typeof ConditionSchema.infer;
 
 const BeatToneSchema = type("'story' | 'quest' | 'danger' | 'reward'");
@@ -70,6 +74,13 @@ export function holds(c: Condition, s: GameState): boolean {
       return s.quests.some((q) => q.id === c.questId && q.done);
     case 'round-reached':
       return s.round >= c.round;
+    case 'monsters-down':
+      return s.monsters.filter((m) => (!c.definitionId || m.definitionId === c.definitionId) && m.status !== 'board').length >= c.count;
+    case 'heroes-on': {
+      const alive = s.heroes.filter((h) => !h.dead);
+      const there = alive.filter((h) => h.position !== null && c.cells.some((x) => same(h.position!, x))).length;
+      return alive.length > 0 && there >= Math.min(c.count ?? alive.length, alive.length);
+    }
   }
 }
 
@@ -192,6 +203,8 @@ export function validateScript(
   for (const r of rules) {
     for (const c of r.when) {
       if (c.type === 'hero-on' && !ctx.playable(c.at)) problems.push(`Script « ${r.id} » : case hors du plateau`);
+      if (c.type === 'monsters-down' && c.definitionId && !ctx.knownDefinitions(c.definitionId)) problems.push(`Script « ${r.id} » : monstre inconnu ${c.definitionId}`);
+      if (c.type === 'heroes-on' && (c.cells.length === 0 || c.cells.some((p) => !ctx.playable(p)))) problems.push(`Script « ${r.id} » : zone de ralliement vide ou hors du plateau`);
       if (c.type === 'door-open' && !ctx.doorIds.includes(c.doorId)) problems.push(`Script « ${r.id} » : porte inconnue ${c.doorId}`);
       if (c.type === 'monster-down' && !monsters.has(c.monsterId)) problems.push(`Script « ${r.id} » : monstre inconnu ${c.monsterId}`);
       if (c.type === 'quest-done' && !ctx.questIds.includes(c.questId)) problems.push(`Script « ${r.id} » : quête inconnue ${c.questId}`);

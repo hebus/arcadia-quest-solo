@@ -37,6 +37,10 @@ door porte-depart 2,3-3,3 open
 door porte-salle 2,1-3,1 closed
 door porte-cave 4,3-4,4 closed
 door porte-halle 5,3-6,3 closed special
+door porte-rempart-1 3,2-3,3 closed
+door porte-rempart-2 5,1-6,1 closed
+door porte-liaison-1 6,5-5,5 closed
+door porte-liaison-2 6,0-5,0 closed
 spawn S1 1,0 sword+sword
 spawn S2 7,2 bow+bow
 spawn S3 2,4 sword+bow
@@ -101,11 +105,11 @@ spawn S4 8,1 bow+crit
   difficulties: {
     easy: levelVariant('easy', { removeMonsters: ['GA1', 'GA2'], removeListedMonsterIds: ['GA'] }),
     medium: levelVariant('medium'),
-    hard: levelVariant('hard', { addMonsters: [{ id: 'OM5', definitionId: 'OM', at: { x: 6, y: 5 } }] }),
+    hard: levelVariant('hard', { addMonsters: [{ id: 'OM5', definitionId: 'OM', at: { x: 6, y: 4 } }] }),
     legendary: levelVariant('legendary', {
       addMonsters: [
-        { id: 'OM5', definitionId: 'OM', at: { x: 6, y: 5 } },
-        { id: 'SB2', definitionId: 'SB', at: { x: 2, y: 5 } },
+        { id: 'OM5', definitionId: 'OM', at: { x: 6, y: 4 } },
+        { id: 'SB2', definitionId: 'SB', at: { x: 3, y: 5 } },
         { id: 'HB2', definitionId: 'HB', at: { x: 0, y: 4 } },
       ],
     }),

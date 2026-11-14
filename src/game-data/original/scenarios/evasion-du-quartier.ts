@@ -37,6 +37,10 @@ size 9x6
 door porte-depart 1,4-1,5 open
 door porte-sceau 4,0-4,1 closed
 door porte-est 5,2-6,2 closed special
+door porte-quartier-1 3,2-3,1 closed
+door porte-quartier-2 6,0-7,0 closed
+door porte-liaison-1 6,3-6,2 closed
+door porte-liaison-2 8,0-7,0 closed
 spawn S1 8,2 sword+sword
 spawn S2 5,4 bow+bow
 spawn S3 3,3 sword+bow

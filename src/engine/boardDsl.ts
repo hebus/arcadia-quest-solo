@@ -27,7 +27,7 @@ const pair = (s: string, line: number): [Position, Position] => {
  *   wall 1,0-1,1
  *   door d1 3,2-4,2 closed        (ou open ; ajouter « special » pour la porte spéciale violette, une seule)
  *   room 5,0 4x3                   (bâtiment : cases d'intérieur, contour muré automatiquement)
- *   portal p1 2,3 red
+ *   portal p1 2,3 violet   (violet ou blue : 8 jetons au plus, reliés par couleur)
  *   spawn S1 0,0 sword+bow         (un des 5 jetons : sword+sword, sword+bow, sword+crit, bow+bow, bow+crit)
  * Les lignes vides et celles qui commencent par # sont ignorées.
  */

@@ -53,7 +53,7 @@ const TOOLS: { id: Tool; label: string; help: string }[] = [
   { id: 'wall', label: 'Mur', help: 'Touchez une arête entre deux cases pour ajouter ou retirer un mur supplémentaire.' },
   { id: 'door', label: 'Porte', help: 'Touchez une porte de tuile : fermée, puis ouverte, puis retirée (pointillé gris, le mur revient). Sur une arête sans porte de tuile, ajoute une porte du scénario.' },
   { id: 'special', label: 'Porte spéciale', help: 'Touchez une porte pour en faire la porte spéciale (pion violet : il n’y en a qu’un dans la boîte), touchez-la de nouveau pour retirer la marque.' },
-  { id: 'portal', label: 'Portail', help: 'Touchez une case : portail rouge, puis bleu, puis retiré. Les portails de même couleur sont reliés.' },
+  { id: 'portal', label: 'Portail', help: 'Touchez une case : portail violet, puis bleu, puis retiré (8 jetons au plus). Les portails de même couleur sont reliés.' },
   { id: 'spawn', label: 'Jeton Spawn', help: 'Choisissez la paire de dés, puis touchez une case. Retouchez pour retirer.' },
   { id: 'hero', label: 'Héros', help: 'Choisissez un héros, puis touchez sa case de départ. Les cases jaunes sont les zones de départ des héros définies sur les tuiles.' },
   { id: 'monster', label: 'Monstre', help: 'Choisissez un type, puis touchez les cases où poser les figurines.' },
@@ -167,7 +167,7 @@ export function BoardSetup(p: Props) {
   const onCell = (q: Position) => {
     if (tool === 'portal') {
       const cur = p.extras.portals.find((x) => same(x.at, q));
-      const next = !cur ? 'red' : cur.color === 'red' ? 'blue' : null;
+      const next = !cur ? 'violet' : cur.color === 'violet' ? 'blue' : null;
       const rest = p.extras.portals.filter((x) => x !== cur);
       const portals: Portal[] = next ? [...rest, { id: `p-${q.x}-${q.y}`, at: q, color: next }] : rest;
       p.setExtras({ ...p.extras, portals });

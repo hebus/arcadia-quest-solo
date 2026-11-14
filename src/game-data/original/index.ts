@@ -14,6 +14,7 @@ import { CORRIDOR_DES_OMBRES } from './scenarios/corridor-des-ombres';
 import { DERNIER_REMPART } from './scenarios/dernier-rempart';
 import { EVASION_DU_QUARTIER } from './scenarios/evasion-du-quartier';
 import { QUARTIER_DES_VOLEURS } from './scenarios/quartier-des-voleurs';
+import { CAVEAU_DES_BRUMES } from './scenarios/caveau-des-brumes';
 import { PONT_DU_GUET } from './scenarios/pont-du-guet';
 import { HALLE_AUX_GRAINS } from './scenarios/halle-aux-grains';
 import { REMPARTS_DE_VAL_NOIR } from './scenarios/remparts-de-val-noir';
@@ -21,7 +22,7 @@ import { FOSSE_AUX_CENDRES } from './scenarios/fosse-aux-cendres';
 import { TRONE_DE_VAL_NOIR } from './scenarios/trone-de-val-noir';
 
 /** Scénarios « one shot » : le joueur choisit la difficulté, qui décide du niveau des monstres (voir `difficulty.ts`). */
-export const ONE_SHOT_SCENARIOS: ScenarioDefinition[] = [QUARTIER_DES_VOLEURS, CORRIDOR_DES_OMBRES, EVASION_DU_QUARTIER, DERNIER_REMPART];
+export const ONE_SHOT_SCENARIOS: ScenarioDefinition[] = [QUARTIER_DES_VOLEURS, CORRIDOR_DES_OMBRES, EVASION_DU_QUARTIER, DERNIER_REMPART, CAVEAU_DES_BRUMES];
 
 export const ORIGINAL_SCENARIOS: ScenarioDefinition[] = [CAVE_AUX_CENDRES, TERRAIN_ESSAI, MARCHE_AUX_OMBRES, FORGE_DU_MAITRE_FER, PONT_DU_GUET, HALLE_AUX_GRAINS, REMPARTS_DE_VAL_NOIR, FOSSE_AUX_CENDRES, TRONE_DE_VAL_NOIR, ...ONE_SHOT_SCENARIOS];
 export { CHUTE_DES_BRAISES } from './campaigns/chute-des-braises';

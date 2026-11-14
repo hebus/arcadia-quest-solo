@@ -7,7 +7,9 @@ import { SPAWN_TOKEN_TYPES } from '../spawn/tokens';
 import { TILE_FACES, TILE_NUMBERS } from '../tileCatalog';
 import { boardFromLayout, layoutExtent, layoutHeroStarts, type TileDef, type TileLayout } from '../tiles';
 import { scenarioBoard, validateScenario, type ScenarioDefinition } from './definition';
-import { RANDOM_REWARD, type Rule } from './script';
+import { walkDistances } from './reachability';
+import { drawObjective, type ObjectiveKind } from './objectives';
+import type { Rule } from './script';
 
 /**
  * Générateur de scénarios aléatoires : on donne le nombre de tuiles du terrain, un scénario complet en sort — tuiles tirées
@@ -52,12 +54,9 @@ const INTRO_HOOK = [
   'Personne d’autre n’osera franchir ces portes cette nuit.',
   'Chaque heure qui passe renforce la bande : il faut agir vite.',
 ];
-const OBJECTIVES = [
-  { title: 'Reprendre la relique', icon: 'gem' as const, text: 'La relique est entre vos mains, froide et lourde.' },
-  { title: 'Retrouver la clé', icon: 'key' as const, text: 'La clé est encore tiède : la bande ne l’avait pas quittée.' },
-  { title: 'Éteindre le brasier maudit', icon: 'flame' as const, text: 'Le brasier crache une dernière étincelle puis s’éteint.' },
-  { title: 'Ouvrir le coffre du guet', icon: 'chest' as const, text: 'Le coffre cède : le butin des orcs est à vous.' },
-];
+/** Portails à partir de 5 tuiles (un couple violet) et de 7 tuiles (un couple bleu en plus). */
+export const MIN_PORTAL_TILES = 5;
+export const MIN_BLUE_PORTAL_TILES = 7;
 const WIN = ['Le chef est tombé et le quartier respire. Au matin, les ruelles de la ville sont de nouveau à vous.', 'La bande fuit dans la nuit : la guilde a tenu le terrain.'];
 const LOSE = ['Les orcs referment le quartier derrière vous. Cette nuit, la guilde n’a plus d’issue.', 'Trop de héros sont tombés : la bande garde la rue.'];
 
@@ -92,7 +91,7 @@ interface Door {
 }
 
 /** Une tentative de scénario ; renvoie `null` quand le tirage ne tient pas debout (trop peu de place, case inaccessible…). */
-function attempt(rng: RandomSource, count: number, seed: number, level: GeneratedLevel, avoidChiefs: readonly string[], content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition | null {
+function attempt(rng: RandomSource, count: number, seed: number, level: GeneratedLevel, avoidChiefs: readonly string[], content: Pick<Content, 'monsters' | 'tiles'>, wantedObjective?: ObjectiveKind): ScenarioDefinition | null {
   const tiles = content.tiles ?? {};
   const layout = drawLayout(rng, count, tiles);
   const bare = boardFromLayout(tiles, layout);
@@ -211,33 +210,46 @@ function attempt(rng: RandomSource, count: number, seed: number, level: Generate
     { id: idFor(chiefDef), definitionId: chiefDef.id, at: chiefAt, guard: true },
   ];
 
-  // Quêtes : atteindre un objectif (dans un bâtiment fermé si possible), abattre le chef.
-  const objPool = chiefPool.filter((p) => !samePos(p, chiefAt));
-  const objectiveAt = objPool.length > 0 ? pick(rng, objPool) : [...roomy].filter((p) => !samePos(p, chiefAt)).sort((a, b) => Math.min(...starts.map((s) => dist(s, b))) - Math.min(...starts.map((s) => dist(s, a))))[0];
-  if (!objectiveAt) return null;
-  const objective = pick(rng, OBJECTIVES);
+  // Objectif : un type tiré au hasard parmi la dizaine du catalogue (voir `objectives.ts`) ; le chef reste sur le plateau.
   const chiefId = monsters[monsters.length - 1]!.id;
-  const chiefTitle = `Abattre le ${chiefDef.name}`;
-  const script: Rule[] = [
-    { id: 'objectif-atteint', when: [{ type: 'hero-on', at: objectiveAt }], then: [...(objective.icon === 'chest' ? [{ type: 'reward' as const, card: RANDOM_REWARD }] : []), { type: 'complete-quest', questId: 'objectif', text: objective.text }] },
-    { id: 'chef-tombe', when: [{ type: 'monster-down', monsterId: chiefId }], then: [{ type: 'reward', card: RANDOM_REWARD, text: `Le ${chiefDef.name} laisse tomber son butin.` }, { type: 'complete-quest', questId: 'chef', text: `Le ${chiefDef.name} s’effondre : sa bande perd courage.` }] },
-  ];
+  const farFromStart = (p: Position) => starts.every((st) => dist(st, p) >= far);
+  const objective = drawObjective(
+    {
+      rng,
+      tileCount: count,
+      starts,
+      monsters,
+      chiefId,
+      chiefName: chiefDef.name,
+      chiefAt,
+      nameOf: (id) => content.monsters[id]?.name ?? id,
+      closed: closedGroups.flatMap((g) => g.cells).filter((p) => farFromStart(p) && !samePos(p, chiefAt)),
+      open: roomy.filter((p) => !samePos(p, chiefAt)),
+      streets,
+      doors,
+      far,
+    },
+    wantedObjective,
+  );
+  if (!objective) return null;
+  const script: Rule[] = objective.rules;
+  const objectiveCells = objective.quests.flatMap((q) => (q.at ? [q.at] : []));
 
   const e = (a: Position, b: Position) => `${a.x},${a.y}-${b.x},${b.y}`;
   const board = [
     `size ${width}x${height}`,
-    ...doors.map((d) => `door ${d.id} ${e(d.a, d.b)} ${d.open ? 'open' : 'closed'}`),
+    ...doors.map((d) => `door ${d.id} ${e(d.a, d.b)} ${d.open ? 'open' : 'closed'}${d.id === objective.specialDoorId ? ' special' : ''}`),
     ...spawnCells.map((c, i) => `spawn S${i + 1} ${c.x},${c.y} ${tokens[i]![0]}+${tokens[i]![1]}`),
   ].join('\n');
 
   const def: ScenarioDefinition = {
     id: level === '1' ? `aleatoire-${seed}` : `aleatoire-${level}-${seed}`,
     title: `Scénario aléatoire · ${count} tuile${count > 1 ? 's' : ''}${level === '1' ? '' : ` · niveau ${level}`}`,
-    tagline: `${objective.title}, puis abattez le ${chiefDef.name}.`,
+    tagline: objective.tagline,
     recommended: 'medium',
     generated: true,
     story: {
-      intro: [pick(rng, INTRO_OPENING), pick(rng, INTRO_HOOK), `${objective.title}, puis abattez le ${chiefDef.name} avant l’aube.`],
+      intro: [pick(rng, INTRO_OPENING), pick(rng, INTRO_HOOK), objective.intro],
       win: [pick(rng, WIN)],
       lose: [pick(rng, LOSE)],
     },
@@ -245,14 +257,38 @@ function attempt(rng: RandomSource, count: number, seed: number, level: Generate
     board,
     heroStarts: starts,
     monsters,
-    quests: [
-      { id: 'objectif', icon: objective.icon, title: objective.title, completion: objective.text, at: objectiveAt },
-      { id: 'chef', icon: 'skull', title: chiefTitle, completion: `Le ${chiefDef.name} s’effondre : sa bande perd courage.`, at: chiefAt },
-    ],
+    quests: objective.quests,
     script,
     monsterCardSet: level,
     deck: { listedMonsterIds: [...new Set(monsters.map((m) => m.definitionId))] },
   };
+
+  // À partir de 5 tuiles, le terrain est assez grand pour des portails : un couple violet qui relie le départ à l'autre bout du
+  // plateau, et à partir de 7 tuiles un couple bleu en plus (raccourcis entre zones lointaines). Jetons violets et bleus : 8 au plus.
+  if (count >= MIN_PORTAL_TILES) {
+    const flat = scenarioBoard(def, content).board;
+    const walk = walkDistances(flat, starts);
+    const taken = new Set([...starts, ...monsters.map((m) => m.at), ...objectiveCells, chiefAt, ...spawnCells].map(key));
+    const cells = [...walk.entries()].map(([k, d]) => ({ p: { x: Number(k.split(',')[0]), y: Number(k.split(',')[1]) }, d })).filter((c) => !taken.has(key(c.p)));
+    const maxD = Math.max(...cells.map((c) => c.d), 0);
+    const portalLines: string[] = [];
+    const place = (color: string, near: (c: { p: Position; d: number }) => boolean, far: (c: { p: Position; d: number }) => boolean, apart: Position[] = []) => {
+      const a = cells.filter((c) => near(c) && !taken.has(key(c.p)));
+      const b = cells.filter((c) => far(c) && !taken.has(key(c.p)) && apart.every((q) => dist(q, c.p) >= 4));
+      if (a.length === 0 || b.length === 0) return;
+      const from = pick(rng, a);
+      taken.add(key(from.p));
+      const to = pick(rng, b.filter((c) => dist(c.p, from.p) >= 4).length > 0 ? b.filter((c) => dist(c.p, from.p) >= 4) : b);
+      taken.add(key(to.p));
+      portalLines.push(`portal portail-${portalLines.length + 1} ${from.p.x},${from.p.y} ${color}`, `portal portail-${portalLines.length + 2} ${to.p.x},${to.p.y} ${color}`);
+    };
+    if (maxD >= 5) place('violet', (c) => c.d >= 1 && c.d <= 3, (c) => c.d >= Math.ceil(maxD * 0.8));
+    if (count >= MIN_BLUE_PORTAL_TILES && maxD >= 8) {
+      const violetCells = portalLines.map((l) => ({ x: Number(l.split(' ')[2]!.split(',')[0]), y: Number(l.split(' ')[2]!.split(',')[1]) }));
+      place('blue', (c) => c.d >= Math.floor(maxD * 0.3) && c.d <= Math.ceil(maxD * 0.5), (c) => c.d >= Math.ceil(maxD * 0.65), violetCells);
+    }
+    if (portalLines.length > 0) def.board = [def.board, ...portalLines].join(String.fromCharCode(10));
+  }
 
   // Le scénario doit être valide et tout doit être atteignable depuis le départ (une porte, fermée ou ouverte, se franchit).
   if (validateScenario(def, content).length > 0) return null;
@@ -270,7 +306,7 @@ function attempt(rng: RandomSource, count: number, seed: number, level: Generate
       queue.push(n);
     }
   }
-  const needed = [...monsters.map((m) => m.at), objectiveAt, ...spawnCells];
+  const needed = [...monsters.map((m) => m.at), ...objectiveCells, ...spawnCells];
   if (!needed.every((p) => reach.has(key(p)))) return null;
   return def;
 }
@@ -280,7 +316,7 @@ export const GENERATED_LEVELS = ['1', '2-3', '4-5', '6'] as const;
 export type GeneratedLevel = (typeof GENERATED_LEVELS)[number];
 
 /** Génère un scénario de `tileCount` tuiles (1 à 9) avec des monstres du niveau `level` (1 par défaut). Même graine et même niveau, même scénario ; lève une erreur lisible si aucun tirage ne convient. */
-export function generateScenario(opts: { tileCount: number; seed: number; level?: GeneratedLevel; avoidChiefs?: readonly string[] }, content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition {
+export function generateScenario(opts: { tileCount: number; seed: number; level?: GeneratedLevel; avoidChiefs?: readonly string[]; objective?: ObjectiveKind }, content: Pick<Content, 'monsters' | 'tiles'>): ScenarioDefinition {
   const level = opts.level ?? '1';
   if (!GENERATED_LEVELS.includes(level)) throw new Error(`Niveau « ${String(level)} » inconnu : choisissez ${GENERATED_LEVELS.join(' ou ')}.`);
   if (!Object.values(content.monsters).some((d) => monsterStats(d, level))) throw new Error(`Aucun monstre n'a de statistiques au niveau ${level} : renseignez-les dans monsters.json.`);
@@ -291,7 +327,7 @@ export function generateScenario(opts: { tileCount: number; seed: number; level?
   if (!content.tiles || Object.keys(content.tiles).length === 0) throw new Error("Aucune tuile n'est définie : définissez les tuiles dans l'éditeur avant de générer un scénario.");
   const rng = createSeededRandom(opts.seed);
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
-    const def = attempt(rng, count, opts.seed, level, opts.avoidChiefs ?? [], content);
+    const def = attempt(rng, count, opts.seed, level, opts.avoidChiefs ?? [], content, opts.objective);
     if (def) return def;
   }
   throw new Error(`Aucun scénario viable n'a été trouvé avec ${count} tuile${count > 1 ? 's' : ''} : essayez un autre nombre de tuiles.`);

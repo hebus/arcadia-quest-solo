@@ -17,7 +17,7 @@ describe('scénarios one shot : choix de la difficulté au briefing', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
-    expect(screen.getAllByText(/One shot · difficulté au choix/).length).toBe(4);
+    expect(screen.getAllByText(/One shot · difficulté au choix/).length).toBe(5);
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Le Quartier des Voleurs/ }));
     const summary = () => screen.getByTestId('difficulty-summary').textContent ?? '';
     expect(summary()).toContain('Niveau des monstres : 1'); // conseillée : facile

@@ -94,7 +94,7 @@ spawn S3 5,2 sword+bow
       addMonsters: [
         { id: 'OM4', definitionId: 'OM', at: { x: 3, y: 3 } },
         { id: 'OC2', definitionId: 'OC', at: { x: 2, y: 1 } },
-        { id: 'HB2', definitionId: 'HB', at: { x: 5, y: 3 } },
+        { id: 'HB2', definitionId: 'HB', at: { x: 5, y: 1 } },
       ],
     }),
   },

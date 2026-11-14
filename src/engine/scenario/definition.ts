@@ -1,4 +1,5 @@
 import { doorTokenProblems } from '../doorTokens';
+import { portalProblems } from '../portals';
 import { boxProblems } from '../figurines';
 import { HERO_START_ENCLOSED, heroStartsEnclosed } from '../startArea';
 import { tilePlacementProblems } from '../tileCatalog';
@@ -11,6 +12,7 @@ import { CELL_CAPACITY } from '../movement/board';
 import { monsterStats } from '../monsters';
 import { createGame, type DeckRules, type SetupConfig } from '../setup';
 import { DIFFICULTIES, DIFFICULTY_LABEL, DifficultyVariantsSchema, MonsterPlacementSchema, resolveDifficulty, variantProblems } from './difficulty';
+import { reachableCells } from './reachability';
 import { RuleSchema, validateScript } from './script';
 
 /** Modèle de héros jouable : l'univers du jeu fournit les gabarits, le scénario place les trois choisis. */
@@ -170,7 +172,24 @@ function validateOne(def: ScenarioDefinition, content: Pick<Content, 'monsters' 
   // Un scénario pose de 1 à 5 jetons Spawn (pas forcément les 5, mais au moins un : sans jeton, les monstres n'agiraient jamais).
   if (spawnPoints.length === 0) problems.push('Aucun jeton Spawn : un scénario en pose au moins un (de 1 à 5).');
   problems.push(...doorTokenProblems(board.doors));
+  problems.push(...portalProblems(board.portals));
+  for (const p of board.portals) if (!playable(p.at)) problems.push(`Portail « ${p.id} » hors du plateau ${where(p.at)}`);
   if (def.heroStarts.every(playable) && heroStartsEnclosed(board, def.heroStarts)) problems.push(HERO_START_ENCLOSED);
+  // Tout ce qui compte doit être atteignable depuis le départ des héros : un chemin existe (les portes s'ouvrent, les murs non).
+  if (!def.sandbox && def.heroStarts.length > 0 && def.heroStarts.every(playable)) {
+    const reach = reachableCells(board, def.heroStarts);
+    const out = (p: Position) => playable(p) && !reach.has(`${p.x},${p.y}`);
+    for (const q of def.quests) if (q.at && out(q.at)) problems.push(`Objectif « ${q.title} » inatteignable depuis le départ des héros ${where(q.at)} : ajoutez une porte ou tournez une tuile.`);
+    for (const m of def.monsters) if (out(m.at)) problems.push(`${m.id} inatteignable depuis le départ des héros ${where(m.at)}.`);
+    for (const sp of spawnPoints) if (out(sp.at)) problems.push(`Jeton Spawn ${sp.id} inatteignable depuis le départ des héros ${where(sp.at)}.`);
+    for (const r of def.script ?? []) for (const e of r.then) if (e.type === 'spawn' && out(e.at)) problems.push(`Renfort ${e.monsterId} inatteignable depuis le départ des héros ${where(e.at)}.`);
+    for (const r of def.script ?? []) {
+      for (const c of r.when) {
+        if (c.type === 'hero-on' && out(c.at)) problems.push(`Script « ${r.id} » : la case ${where(c.at)} est inatteignable depuis le départ des héros.`);
+        if (c.type === 'heroes-on' && c.cells.some(out)) problems.push(`Script « ${r.id} » : la zone de ralliement est inatteignable depuis le départ des héros.`);
+      }
+    }
+  }
   if (def.tiles) {
     const check = tilePlacementProblems(def.tiles.placements.map((p) => p.tileId));
     problems.push(...check.errors);

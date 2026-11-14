@@ -9,8 +9,8 @@ const start = (id: string, difficulty: Difficulty) => createScenarioGame(ONE_SHO
 const countOf = (monsters: { definitionId: string }[], id: string) => monsters.filter((m) => m.definitionId === id).length;
 
 describe('scénarios one shot : difficulté au choix', () => {
-  it('quatre scénarios livrés, tous au catalogue, avec des identifiants distincts et les quatre variantes', () => {
-    expect(ONE_SHOT_SCENARIOS.map((s) => s.id)).toEqual(['quartier-des-voleurs', 'corridor-des-ombres', 'evasion-du-quartier', 'dernier-rempart']);
+  it('cinq scénarios livrés, tous au catalogue, avec des identifiants distincts et les quatre variantes', () => {
+    expect(ONE_SHOT_SCENARIOS.map((s) => s.id)).toEqual(['quartier-des-voleurs', 'corridor-des-ombres', 'evasion-du-quartier', 'dernier-rempart', 'caveau-des-brumes']);
     for (const s of ONE_SHOT_SCENARIOS) {
       expect(ORIGINAL_SCENARIOS).toContain(s);
       expect(Object.keys(s.difficulties ?? {}).sort()).toEqual(['easy', 'hard', 'legendary', 'medium']);

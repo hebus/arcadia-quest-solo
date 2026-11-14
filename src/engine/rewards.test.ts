@@ -87,10 +87,15 @@ describe('cartes Récompense : effet de script', () => {
 
 describe('cartes Récompense : dans les scénarios', () => {
   it('le chef d’un scénario aléatoire donne une récompense au hasard', () => {
-    const def = generateScenario({ tileCount: 5, seed: 4 }, ORIGINAL_CONTENT);
+    const def = generateScenario({ tileCount: 5, seed: 4, objective: 'chef' }, ORIGINAL_CONTENT);
     const chief = def.script!.find((r) => r.id === 'chef-tombe')!;
     expect(chief.then[0]).toMatchObject({ type: 'reward', card: RANDOM_REWARD });
     expect(chief.then.at(-1)).toMatchObject({ type: 'complete-quest' }); // la récompense est donnée avant la fin de partie
+    // Quel que soit l'objectif, le chef donne sa récompense.
+    for (const kind of ['massacre', 'tenir', 'brasiers'] as const) {
+      const other = generateScenario({ tileCount: 5, seed: 4, objective: kind }, ORIGINAL_CONTENT);
+      expect(other.script!.find((r) => r.id === 'chef-tombe')!.then[0]).toMatchObject({ type: 'reward' });
+    }
     expect(validateScenario(def, ORIGINAL_CONTENT)).toEqual([]);
   });
 

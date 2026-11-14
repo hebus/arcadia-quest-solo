@@ -8,6 +8,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
 import { BoardSetup, slug, type DefRow, type HeroRow, type InstRow } from './BoardSetup';
 import { doorTokenProblems } from '@/engine/doorTokens';
+import { portalProblems } from '@/engine/portals';
 import { HERO_START_ENCLOSED, heroStartsEnclosed } from '@/engine/startArea';
 import { tilePlacementProblems } from '@/engine/tileCatalog';
 import { BLANK_TILE, DEMO_HOUSE_TILE, allTiles } from './builtinTiles';
@@ -126,6 +127,9 @@ export function SetupWizard({ onDone, openLibrary }: { onDone: () => void; openL
     // Seuls 22 pions porte existent (recto ouvert / verso fermé), dont un seul spécial (violet).
     const doorCheck = doorTokenProblems(board.doors);
     if (doorCheck.length) throw new Error(doorCheck.join(' '));
+    // Huit jetons portail (violet / bleu) : un portail se relie aux autres de sa couleur, il en faut donc au moins deux.
+    const portalCheck = portalProblems(board.portals);
+    if (portalCheck.length) throw new Error(portalCheck.join(' '));
     const notPlaced = heroes.filter((h) => !h.pos).map((h) => h.name);
     if (notPlaced.length) throw new Error(`Placez les héros sur le plateau : ${notPlaced.join(', ')}.`);
     if (spawns.length === 0) throw new Error('Ajoutez au moins un jeton Spawn (outil « Jeton Spawn »).');

@@ -142,7 +142,7 @@ describe('générateur : tout le bestiaire du niveau 1, dans les limites des bo�
 
   it('le deck liste tous les types présents, et la quête porte le nom du chef', () => {
     for (const seed of seeds) {
-      const def = generateScenario({ tileCount: 5, seed }, ORIGINAL_CONTENT);
+      const def = generateScenario({ tileCount: 5, seed, objective: 'atteindre' }, ORIGINAL_CONTENT);
       const present = [...new Set(def.monsters.map((m) => m.definitionId))].sort();
       expect([...(def.deck!.listedMonsterIds ?? [])].sort()).toEqual(present);
       const chefName = defs[def.monsters.at(-1)!.definitionId]!.name;

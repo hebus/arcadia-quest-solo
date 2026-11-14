@@ -8,6 +8,8 @@ import { ORIGINAL_CONTENT, ORIGINAL_HEROES } from '@/game-data/original';
 import { startScenario } from '../turn/machine';
 
 const gen = (tileCount: number, seed: number) => generateScenario({ tileCount, seed }, ORIGINAL_CONTENT);
+/** Objectif classique (atteindre un objet puis abattre le chef) : les autres types ont leurs propres tests (objectives.test.ts). */
+const genClassic = (tileCount: number, seed: number) => generateScenario({ tileCount, seed, objective: 'atteindre' }, ORIGINAL_CONTENT);
 const seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 42, 99, 123, 2024, 31337];
 
 describe('scénario aléatoire', () => {
@@ -78,7 +80,7 @@ describe('scénario aléatoire', () => {
 
   it('les monstres sont ceux du niveau 1, au plus un par case, et un chef gardien (vilain) porte la quête', () => {
     for (const seed of seeds) {
-      const def = gen(5, seed);
+      const def = genClassic(5, seed);
       expect(def.monsters.every((m) => ['OM', 'OC', 'M', 'T', 'SB', 'HB'].includes(m.definitionId))).toBe(true);
       expect(['M', 'T']).toContain(def.monsters.at(-1)!.definitionId); // le chef est un vilain
       expect(new Set(def.monsters.map((m) => `${m.at.x},${m.at.y}`)).size).toBe(def.monsters.length);
@@ -91,7 +93,7 @@ describe('scénario aléatoire', () => {
   });
 
   it('les quêtes se valident : toucher l’objectif, abattre le chef, et la partie est gagnée', () => {
-    const def = gen(4, 5);
+    const def = genClassic(4, 5);
     const g0 = startScenario(createScenarioGame(def, { sessionId: 's', difficulty: 'medium', seed: 1, heroes: ORIGINAL_HEROES.slice(0, 3) }, ORIGINAL_CONTENT));
     const objective = def.quests.find((q) => q.id === 'objectif')!.at!;
     const onObjective = { ...g0, heroes: g0.heroes.map((h, i) => (i === 0 ? { ...h, position: objective } : h)) };

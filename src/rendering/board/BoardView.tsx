@@ -352,8 +352,8 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
       ))}
       {board.portals.map((p) => (
         <g key={p.id} pointerEvents="none">
-          <circle cx={center(p.at).x} cy={center(p.at).y} r="18" fill="none" stroke={p.color === 'red' ? '#ef4444' : p.color === 'blue' ? '#3b82f6' : '#a855f7'} strokeWidth="3" />
-          <circle cx={center(p.at).x} cy={center(p.at).y} r="10" fill="none" stroke="#a855f7" strokeWidth="1.5" />
+          <circle cx={center(p.at).x} cy={center(p.at).y} r="18" fill="none" stroke={p.color === 'blue' ? '#3b82f6' : '#a855f7'} strokeWidth="3" />
+          <circle cx={center(p.at).x} cy={center(p.at).y} r="10" fill="none" stroke={p.color === 'blue' ? '#3b82f6' : '#a855f7'} strokeWidth="1.5" />
         </g>
       ))}
       {spawns.map((s) => {
