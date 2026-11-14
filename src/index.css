@@ -16,6 +16,15 @@
 .aq-pulse { animation: aq-pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .aq-march { animation: aq-march 0.9s linear infinite; }
 .aq-shake { animation: aq-snap 0.3s ease-in-out 2; }
+/* Bandeau de tour : apparaît, reste un instant puis s'efface (durée alignée sur TurnBanner). */
+@keyframes aq-banner {
+  0% { opacity: 0; transform: translateX(-6%) scaleY(0.6); }
+  12% { opacity: 1; transform: translateX(0) scaleY(1); }
+  80% { opacity: 1; transform: translateX(0) scaleY(1); }
+  100% { opacity: 0; transform: translateX(4%) scaleY(0.9); }
+}
+.aq-banner { animation: aq-banner 2.2s ease-in-out forwards; }
 @media (prefers-reduced-motion: reduce) {
   .aq-pulse, .aq-march, .aq-shake { animation: none; }
+  .aq-banner { animation: none; }
 }

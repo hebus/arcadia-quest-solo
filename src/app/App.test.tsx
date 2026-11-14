@@ -56,13 +56,20 @@ describe('App', () => {
     // Règle « un héros par tour » : Grom est activé, les deux autres ne peuvent plus l'être ce tour-ci.
     expect(screen.getByRole('button', { name: /Repérer Maya/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Repérer Zazu/ })).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: /Terminer le tour : place aux monstres/ }));
-    expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Monster Turn : Spawn');
-
     // Un jet de spawn sans jeton correspondant ne fait rien (pas de relance) : la graine est fixée pour que les dés tombent sur un jeton.
     act(() => useGameStore.setState((st) => ({ game: { ...st.game!, rngSeed: 1 } })));
-    await user.click(screen.getByRole('button', { name: 'Lancer le Monster Turn' }));
+    // « Fin de tour » passe la main aux monstres et lance leur tour directement : bandeau « Tour des monstres ».
+    await user.click(screen.getByRole('button', { name: 'Fin de tour' }));
     expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Manche 2');
+    expect(screen.getByTestId('turn-banner')).toHaveAttribute('data-side', 'monsters');
+    expect(screen.getByTestId('turn-banner')).toHaveTextContent('Tour des monstres');
+    // Tant que les étapes du tour des monstres ne sont pas toutes jouées sur la table, c'est encore leur tour.
+    expect(screen.queryByRole('button', { name: 'Fin de tour' })).not.toBeInTheDocument();
+    act(() => useGameStore.getState().confirmAll());
+    // Tour des monstres terminé : bandeau « Tour des héros ».
+    expect(screen.getByTestId('turn-banner')).toHaveAttribute('data-side', 'heroes');
+    expect(screen.getByTestId('turn-banner')).toHaveTextContent('Tour des héros');
+    expect(screen.getByRole('button', { name: 'Fin de tour' })).toBeInTheDocument();
     // Les décisions de l'agent ne s'affichent plus en permanence : un dialogue les montre à la demande.
     expect(screen.queryByRole('region', { name: /Décisions de l'agent/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Décisions de l'agent \(/ }));
@@ -142,8 +149,7 @@ describe('App', () => {
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
     await user.click(screen.getByRole('button', { name: /Repérer Grom/ }));
     await user.click(screen.getByRole('button', { name: 'Activer sans agir' }));
-    await user.click(screen.getByRole('button', { name: /Terminer le tour : place aux monstres/ }));
-    await user.click(screen.getByRole('button', { name: 'Lancer le Monster Turn' }));
+    await user.click(screen.getByRole('button', { name: 'Fin de tour' }));
     const prompt = screen.getByRole('group', { name: 'Saisie requise' });
     expect(prompt).toHaveTextContent(/dé 1/);
     expect(useGameStore.getState().agent.status).toBe('awaiting-input');

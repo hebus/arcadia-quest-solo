@@ -31,21 +31,6 @@ export interface BoardPath {
   color?: string;
 }
 
-/** Bouton flottant sur le plateau (grande cible tactile), ancré à une case. */
-export interface BoardMenuItem {
-  id: string;
-  label: string;
-  icon: string;
-  active?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-}
-
-export interface BoardMenu {
-  at: Position;
-  items: BoardMenuItem[];
-}
-
 export interface PlacedTile {
   def: TileDef;
   placement: TilePlacement;
@@ -66,8 +51,6 @@ interface Props {
   lines?: { from: Position; to: Position; tone: 'clear' | 'blocked' }[];
   /** Étape d'instruction à montrer visuellement (fantômes, flèches, croix, portes). */
   overlay?: InstructionOverlay;
-  /** Menu de boutons affiché près d'une case (ex. choix du type d'attaque d'un héros). */
-  menu?: BoardMenu;
   onCell?: (p: Position) => void;
   onToken?: (id: string) => void;
   /** Un pion peut-il être glissé ? Par défaut aucun. */
@@ -158,7 +141,7 @@ interface DragState {
 }
 
 /** Plateau en SVG : art de tuiles généré, murs, portes, pions déplaçables et instructions visuelles. */
-export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlights = [], paths = [], ghosts = [], objectives = [], lines = [], overlay, menu, onCell, onToken, canDrag, onTokenMove, onDoor, doorIds, doorHints = [], onEdge, outerEdges = false, inactiveEdges = [], showCoords = true, label = 'Plateau' }: Props) {
+export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlights = [], paths = [], ghosts = [], objectives = [], lines = [], overlay, onCell, onToken, canDrag, onTokenMove, onDoor, doorIds, doorHints = [], onEdge, outerEdges = false, inactiveEdges = [], showCoords = true, label = 'Plateau' }: Props) {
   const uid = useId().replace(/:/g, '');
   const svgRef = useRef<SVGSVGElement>(null);
   const suppressClick = useRef(false);
@@ -586,43 +569,6 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
           </g>
         );
       })}
-
-      {menu && menu.items.length > 0 && (() => {
-        const BW = 96;
-        const BH = 46;
-        const GAP = 6;
-        const total = menu.items.length * BW + (menu.items.length - 1) * GAP;
-        const x0 = Math.min(Math.max(menu.at.x * C + C / 2 - total / 2, 0), W - total);
-        // Au-dessus du héros s'il y a la place, sinon en dessous.
-        const above = menu.at.y * C - BH - 6 >= 0;
-        const y0 = above ? menu.at.y * C - BH - 6 : (menu.at.y + 1) * C + 6;
-        return (
-          <g data-testid="board-menu">
-            {menu.items.map((it, i) => (
-              <g
-                key={it.id}
-                role="button"
-                aria-label={it.label}
-                aria-pressed={it.active ?? false}
-                aria-disabled={it.disabled ?? false}
-                data-testid={`menu-${it.id}`}
-                style={{ cursor: it.disabled ? 'not-allowed' : 'pointer' }}
-                opacity={it.disabled ? 0.45 : 1}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!it.disabled) it.onClick();
-                }}
-              >
-                <rect x={x0 + i * (BW + GAP)} y={y0} width={BW} height={BH} rx="10" fill={it.active ? '#b45309' : '#1c1917'} stroke={it.active ? '#facc15' : '#a8a29e'} strokeWidth="2.5" />
-                <text x={x0 + i * (BW + GAP) + BW / 2} y={y0 + 29} fontSize="15" fontWeight="bold" textAnchor="middle" fill="#fff" pointerEvents="none">
-                  {it.icon} {it.label}
-                </text>
-              </g>
-            ))}
-          </g>
-        );
-      })()}
 
       {edges.map(([a, b]) => (
         <line

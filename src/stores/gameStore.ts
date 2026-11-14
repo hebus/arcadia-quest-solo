@@ -66,6 +66,8 @@ export interface GameStore {
   finishActivations(): void;
   rest(resurrectAt?: Record<string, Position>): void;
   startMonsterTurn(): void;
+  /** Fin de tour des héros : passe la main aux monstres et lance leur tour. */
+  endTurn(): void;
   provideAnswer(a: InputAnswer): void;
   abortMonsterTurn(): void;
   confirmInstruction(id: string): void;
@@ -283,6 +285,11 @@ export const useGameStore = create<GameStore>()((set, get) => {
       if (!get().game) return;
       if (pending()) return set({ error: 'Confirmez ou corrigez les actions physiques en attente avant de continuer.' });
       runTurn([]);
+    },
+    endTurn() {
+      get().finishActivations();
+      const g = get().game;
+      if (g?.phase === 'MONSTER_TURN_SPAWN' && !get().error) get().startMonsterTurn();
     },
     provideAnswer(a) {
       if (!get().game) return;

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui';
 import { MiniPawn } from '@/components/MiniPawn';
 import { HERO_MOVEMENT, mpLeft } from '@/engine/combat/heroMove';
-import { blockedByOtherHero, isTerminal, oneHeroPerTurn } from '@/engine/state';
+import { blockedByOtherHero, isTerminal } from '@/engine/state';
 import { InstructionPlayer } from '@/features/instructions/InstructionPlayer';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { actorInfo } from '@/rendering/instructions/overlay';
@@ -58,7 +58,6 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
   const g = useGameStore((s) => s.game)!;
   const st = useGameStore();
   const pendingSteps = st.instructions.some((i) => !i.confirmed);
-  const one = oneHeroPerTurn(g);
   const selected = g.heroes.find((h) => h.id === st.selectedId && !h.dead) ?? null;
   const guild = g.phase === 'GUILD_TURN';
   const ended = isTerminal(g.phase);
@@ -115,9 +114,6 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
                   {selected.name} : {mpLeft(g, selected.id)}/{HERO_MOVEMENT} PM
                 </span>
               )}
-              <Button variant="primary" onClick={st.finishActivations}>
-                {one ? 'Terminer le tour : place aux monstres' : 'Terminer l’activation des héros'}
-              </Button>
               <Button disabled={g.activatedHeroIds.length > 0} onClick={st.restWithPlacement}>
                 Se reposer
               </Button>

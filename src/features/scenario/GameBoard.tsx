@@ -7,13 +7,14 @@ import { monsterCanPayback } from '@/engine/combat/heroActions';
 import { adjacentDoors, canHeroTarget, mpLeft, reachableCells } from '@/engine/combat/heroMove';
 import { CELL_CAPACITY, isClose } from '@/engine/movement/board';
 import type { Position } from '@/engine/domain/schemas';
-import { BoardView, type BoardMenu, type BoardToken, type Highlight, type PlacedTile } from '@/rendering/board/BoardView';
+import { BoardView, type BoardToken, type Highlight, type PlacedTile } from '@/rendering/board/BoardView';
 import { MiniPawn } from '@/components/MiniPawn';
 import { blockedByOtherHero } from '@/engine/state';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { actorInfo, overlayForAttackAnnouncement, overlayForQueue } from '@/rendering/instructions/overlay';
 import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
+import { TurnBanner, turnSide } from './TurnBanner';
 import { BUILTIN_TILES } from '../setup/builtinTiles';
 
 const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
@@ -126,6 +127,9 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   // le déplacement que le joueur vient de faire lui-même, qui reste à valider.
   const announcement = useAttackAnnouncement();
   const awaitingInput = useGameStore((st) => st.agent.status === 'awaiting-input');
+  /** Le tour des monstres vient d'être calculé : ses étapes se jouent encore sur la table. */
+  const agentDone = useGameStore((st) => st.agent.status === 'done');
+  const endTurn = useGameStore((s) => s.endTurn);
   const locked =
     awaitingInput ||
     !!announcement ||
@@ -224,18 +228,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
 
   // Le menu est lié au héros : en changer ou le désélectionner le referme.
   const menuVisible = !!hero?.position && menuFor === hero.id && guildTurn && !locked && !correctionMode && !placing && !turn?.attacked && targets.length === 0;
-  const menu: BoardMenu | undefined = menuVisible
-    ? {
-        at: hero!.position!,
-        items: (['melee', 'ranged'] as const).map((t) => ({
-          id: t,
-          label: t === 'melee' ? 'Mêlée' : 'Distance',
-          icon: t === 'melee' ? '⚔' : '🏹',
-          active: activeType === t,
-          onClick: () => chooseType(t),
-        })),
-      }
-    : undefined;
+  const attackChoices = (['melee', 'ranged'] as const).map((t) => ({ id: t, label: t === 'melee' ? 'Mêlée' : 'Distance', icon: t === 'melee' ? '⚔' : '🏹' }));
 
   const onToken = (id: string) => {
     const tokenAt = tokens.find((t) => t.id === id)?.at;
@@ -342,7 +335,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   };
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[min(calc(100dvh_-_7rem),62vw)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-3 lg:grid-cols-[min(calc(100dvh_-_10.5rem),62vw)_minmax(0,1fr)] lg:items-start">
       <div className="min-w-0 space-y-2">
       {placing && (
         <div role="status" className="flex items-center justify-between gap-3 rounded-lg border border-amber-500 bg-amber-950 p-2" data-testid="placing-banner">
@@ -356,6 +349,39 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
           </Button>
         </div>
       )}
+      {/* Barre de choix du type d'attaque, hors du plateau pour ne cacher aucune case ; hauteur réservée pour que le plateau ne bouge pas. */}
+      {guildTurn && !placing && (
+        <div className="flex min-h-12 flex-nowrap items-center gap-2">
+          {menuVisible && hero ? (
+            <div role="group" aria-label="Type d'attaque" data-testid="board-menu" className="flex flex-nowrap items-center gap-2">
+              {attackChoices.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  data-testid={`menu-${c.id}`}
+                  aria-pressed={activeType === c.id}
+                  onClick={() => chooseType(c.id)}
+                  className={`min-h-12 whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold transition-colors sm:px-5 sm:text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${activeType === c.id ? 'border-amber-400 bg-amber-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
+                >
+                  {c.icon} {c.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            !locked && !correctionMode && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
+          )}
+          {!locked && !correctionMode && (
+            <button
+              type="button"
+              onClick={endTurn}
+              className="ml-auto min-h-12 whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >
+              Fin de tour
+            </button>
+          )}
+        </div>
+      )}
+      <div className="relative">
       <BoardView
         label="Plateau de jeu"
         board={g.board}
@@ -364,7 +390,6 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
         tokens={tokens}
         highlights={highlights}
         overlay={overlay}
-        menu={menu}
         lines={sightLines}
         objectives={g.quests.flatMap((q) => (q.at ? [{ id: q.id, at: q.at, icon: q.icon, title: q.title, done: q.done }] : []))}
         onCell={onCell}
@@ -375,6 +400,8 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
         doorIds={correctionMode ? undefined : nearDoors}
         doorHints={nearDoors}
       />
+      <TurnBanner side={turnSide(g.phase, agentDone && instructions.some((i) => !i.confirmed))} />
+      </div>
       </div>
 
       <div className="min-w-0 space-y-3">
