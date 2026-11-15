@@ -28,3 +28,44 @@
   .aq-pulse, .aq-march, .aq-shake { animation: none; }
   .aq-banner { animation: none; }
 }
+
+/* Vue plateau : fond d'écran selon l'orientation. L'image réserve en haut une bannière (personnage + titre) que
+   l'interface ne recouvre pas : --aq-banner est la hauteur de cette bannière telle qu'affichée (image en « cover »). */
+.aq-stage {
+  --aq-banner: calc(max(100dvh, 56.3vw) * 0.25);
+  padding-top: calc(var(--aq-banner) + 0.5rem);
+  /* Page de la hauteur de l'écran : seul le contenu défile, sous la bannière, jamais par-dessus. */
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.aq-stage-content {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+}
+.aq-stage-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: #0c0a09 url('/bg-landscape.png') center top / cover no-repeat;
+}
+@media (orientation: portrait) {
+  .aq-stage { --aq-banner: calc(max(100dvh, 144vw) * 0.2); }
+  .aq-stage-bg { background-image: url('/bg-portrait.png'); }
+}
+
+/* Barres de défilement discrètes : piste transparente, poignée translucide, pour se fondre dans le décor. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.22); border-radius: 9999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgb(255 255 255 / 0.4); }

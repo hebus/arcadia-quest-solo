@@ -167,8 +167,11 @@ describe('scénario de l’univers original', () => {
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const page = screen.getByTestId('briefing-page');
-    // Hauteur bornée à celle de la fenêtre sur grand écran : pas de défilement de la page.
-    expect(page.className).toContain('lg:h-[calc(100dvh-8rem)]');
+    // Cartes héros à gauche, plan à droite.
+    const guildSection = within(page).getByRole('region', { name: /Votre guilde/ });
+    const plan = within(page).getByRole('img', { name: 'Aperçu du scénario' });
+    expect(guildSection.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(guildSection.nextElementSibling?.contains(plan)).toBe(true); // colonne de droite, voisine des cartes
     for (const name of ['Récit', 'Objectifs', /Votre guilde/]) expect(within(page).getByRole('region', { name })).toBeInTheDocument();
     expect(within(page).getByRole('img', { name: 'Aperçu du scénario' })).toBeInTheDocument();
     expect(within(page).getByRole('button', { name: /Commencer l’aventure/ })).toBeInTheDocument();

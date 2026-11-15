@@ -352,7 +352,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   };
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[min(calc(100dvh_-_10.5rem),62vw)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-3 lg:grid-cols-[min(max(18rem,calc(100dvh_-_10.5rem_-_var(--aq-banner,0px))),62vw)_minmax(0,1fr)] lg:items-start">
       <div className="min-w-0 space-y-2">
       {placing && (
         <div role="status" className="flex items-center justify-between gap-3 rounded-lg border border-amber-500 bg-amber-950 p-2" data-testid="placing-banner">

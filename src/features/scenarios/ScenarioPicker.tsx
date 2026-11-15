@@ -158,9 +158,9 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
     }
   };
 
-  // Tout le briefing tient sur une page, sans défilement : récit, objectifs, guilde et lancement à gauche, plateau à droite.
+  // Une seule colonne : récit, objectifs, guilde, difficulté et lancement, puis deux colonnes : cartes héros à gauche, plan à droite. La page défile sous la bannière.
   return (
-    <div data-testid="briefing-page" className="flex flex-col gap-2 lg:h-[calc(100dvh-8rem)]">
+    <div data-testid="briefing-page" className="flex flex-col gap-2">
       <ErrorBanner message={error} onClose={() => setError(null)} />
       <header className="flex items-start justify-between gap-3">
         <div>
@@ -180,8 +180,8 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_min(calc(100dvh_-_11rem),46vw)]">
-        <div className="flex min-h-0 flex-col gap-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <section aria-label="Récit" className="space-y-2 text-[15px] leading-snug">
             {def.story.intro.map((p, i) => (
               <p key={i} className={i === 0 ? 'italic text-amber-100' : 'text-stone-200'}>
@@ -201,9 +201,32 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
             </ul>
           </section>
 
+          {def.difficulties && (
+            <p data-testid="difficulty-summary" className="text-sm text-amber-200">
+              Niveau des monstres : {DIFFICULTY_LEVEL[chosen]} · {played.monsters.length} monstre{played.monsters.length > 1 ? 's' : ''} au départ
+            </p>
+          )}
+
+          <footer className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              Difficulté
+              <select className="min-h-11 rounded-lg border border-stone-600 bg-stone-800 px-3" value={difficulty ?? def.recommended} onChange={(e) => setDifficulty(e.target.value as Difficulty)}>
+                {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
+                  <option key={d} value={d}>
+                    {DIFFICULTY_LABEL[d]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button variant="primary" className="flex-1" disabled={guildIssues.length > 0} onClick={start}>
+              Commencer l’aventure
+            </Button>
+          </footer>
+
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(14rem,1fr)_3fr]">
           <section aria-label="Votre guilde">
             <h3 className="mb-1 text-sm font-semibold text-amber-300">Votre guilde ({GUILD_SIZE} héros)</h3>
-            <ul className="grid gap-2 sm:grid-cols-3">
+            <ul className="flex flex-col gap-2">
               {guild.map((h, i) => (
                 <li key={i} className="space-y-2 rounded-xl border-2 border-stone-700 bg-stone-800 p-2" data-testid={`guild-hero-${i + 1}`}>
                   <label className="flex items-center gap-2">
@@ -228,32 +251,14 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
             )}
           </section>
 
-          {def.difficulties && (
-            <p data-testid="difficulty-summary" className="text-sm text-amber-200">
-              Niveau des monstres : {DIFFICULTY_LEVEL[chosen]} · {played.monsters.length} monstre{played.monsters.length > 1 ? 's' : ''} au départ
-            </p>
-          )}
+          {/* Plan entier visible : le SVG garde son ratio et se réduit pour tenir dans la hauteur disponible sous la bannière. */}
+          <div className="mx-auto w-full [&_svg]:max-h-[calc(100dvh-var(--aq-banner,0px)-2rem)]">
+            <ScenarioPreview def={played} heroes={heroes} />
+          </div>
+          </div>
 
-          <footer className="mt-auto flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              Difficulté
-              <select className="min-h-11 rounded-lg border border-stone-600 bg-stone-800 px-3" value={difficulty ?? def.recommended} onChange={(e) => setDifficulty(e.target.value as Difficulty)}>
-                {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
-                  <option key={d} value={d}>
-                    {DIFFICULTY_LABEL[d]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button variant="primary" className="flex-1" disabled={guildIssues.length > 0} onClick={start}>
-              Commencer l’aventure
-            </Button>
-          </footer>
         </div>
 
-        <div className="min-h-0 self-start">
-          <ScenarioPreview def={played} heroes={heroes} />
-        </div>
       </div>
     </div>
   );

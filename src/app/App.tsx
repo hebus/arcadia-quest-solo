@@ -58,15 +58,18 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
   return (
-    <main className="min-h-screen bg-stone-950 p-4 text-stone-100 md:p-6">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold text-amber-300">Arcadia Quest Solo Companion</h1>
+    <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage`}>
+      <div className="aq-stage-bg" aria-hidden="true" />
+      {/* Le titre est dans le fond d'écran : on le garde pour les lecteurs d'écran et le bouton Accueil flotte en haut à droite. */}
+      <header className="absolute right-3 top-3 z-10 flex items-center gap-2">
+        <h1 className="sr-only">Arcadia Quest Solo Companion</h1>
         {screen !== 'home' && (
           <Button variant="ghost" onClick={() => setScreen('home')}>
             ← Accueil
           </Button>
         )}
       </header>
+      <div className="aq-stage-content">
       {screen === 'home' && <HomeScreen go={setScreen} />}
       {screen === 'scenarios' && <ScenarioPicker onStart={() => setScreen('game')} />}
       {screen === 'setup' && <SetupWizard onDone={() => setScreen('game')} openLibrary={() => setScreen('tiles')} />}
@@ -79,6 +82,7 @@ export function App() {
           <Button onClick={() => setScreen('setup')}>Retour à la mise en place</Button>
         </div>
       )}
+      </div>
     </main>
   );
 }
