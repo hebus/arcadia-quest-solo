@@ -29,7 +29,7 @@ describe('écran de jeu sobre : plateau, barre d’actions, le reste en dialogue
     expect(screen.getByRole('img', { name: 'Plateau de jeu' })).toBeInTheDocument();
     expect(screen.getByTestId('action-dock')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    for (const panel of ['Corrections', 'Historique', 'Objectifs', 'Héros', /Monstres/]) {
+    for (const panel of ['Mode sync', 'Historique', 'Objectifs', 'Héros', /Monstres/]) {
       expect(screen.queryByRole('region', { name: panel })).not.toBeInTheDocument();
     }
   });
@@ -53,13 +53,13 @@ describe('écran de jeu sobre : plateau, barre d’actions, le reste en dialogue
     expect(within(menu).getByRole('region', { name: 'Héros' })).toBeInTheDocument();
     await user.click(within(menu).getByRole('button', { name: 'Journal' }));
     expect(within(menu).getByRole('list', { name: 'Journal des événements' })).toBeInTheDocument();
-    await user.click(within(menu).getByRole('button', { name: 'Corrections' }));
-    expect(within(menu).getByRole('region', { name: 'Corrections' })).toBeInTheDocument();
+    // Les corrections se font directement sur le plateau (bouton Sync) : plus d'onglet dédié.
+    expect(within(menu).queryByRole('button', { name: 'Corrections' })).not.toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('l’attaque s’ouvre dans un dialogue et se ferme sans rien résoudre', async () => {
+  it('l’attaque s’ouvre à la place des cartes héros et se ferme sans rien résoudre', async () => {
     const user = userEvent.setup();
     await startDemo(user);
     useGameStore.setState((st) => ({ game: { ...st.game!, monsters: st.game!.monsters.map((m) => (m.id === 'goblin1' ? { ...m, position: { x: 1, y: 6 } } : m)) } }));
@@ -67,17 +67,20 @@ describe('écran de jeu sobre : plateau, barre d’actions, le reste en dialogue
     fireEvent.click(screen.getByTestId('token-h3'));
     fireEvent.click(screen.getByTestId('menu-ranged'));
     fireEvent.click(screen.getByTestId('token-goblin1'));
-    const dialog = await screen.findByRole('dialog', { name: 'Attaque' });
-    expect(within(dialog).getByRole('region', { name: 'Zazu attaque' })).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: 'Escape' });
+    const panel = await screen.findByTestId('attack-panel');
+    expect(within(panel).getByRole('region', { name: 'Zazu attaque' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('hero-roster')).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByTestId('attack-panel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('hero-roster')).toBeInTheDocument();
     expect(useGameStore.getState().game!.heroTurn.h3?.attacked ?? false).toBe(false);
   });
 
   it('la saisie des dés matériels est un dialogue, pas un bloc de la page', async () => {
     const user = userEvent.setup();
     await startDemo(user);
-    useGameStore.getState().setSettings({ diceMode: 'physical' });
+    useGameStore.getState().setSettings({ cardMode: 'physical' });
     await user.click(screen.getByRole('button', { name: /Repérer Grom/ }));
     await user.click(screen.getByRole('button', { name: 'Activer sans agir' }));
     await user.click(screen.getByRole('button', { name: 'Fin de tour' }));
@@ -89,7 +92,9 @@ describe('écran de jeu sobre : plateau, barre d’actions, le reste en dialogue
     const user = userEvent.setup();
     await startDemo(user);
     const heroes = screen.getByTestId('hero-roster');
-    expect(within(heroes).getAllByRole('button')).toHaveLength(3);
+    expect(within(heroes).getAllByRole('button', { name: /Repérer/ })).toHaveLength(3);
+    expect(within(heroes).getAllByRole('button', { name: /^Soigner / })).toHaveLength(3);
+    expect(within(heroes).getAllByRole('button', { name: /^Blesser / })).toHaveLength(3);
     expect(within(heroes).getByRole('button', { name: /Repérer Grom/ })).toHaveTextContent('❤❤❤❤');
   });
 });

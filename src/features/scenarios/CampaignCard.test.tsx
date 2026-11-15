@@ -125,10 +125,16 @@ describe('la campagne dans le choix des scénarios', () => {
     expect(within(card).getByTestId('campaign-gold')).toHaveTextContent('PO de la guilde : 0');
   });
 
-  it('la liste des scénarios isolés garde le scénario 1 et le terrain d’essai, mais pas les chapitres 2 et 3 (réservés à la campagne)', async () => {
-    await openCampaign(userEvent.setup());
+  it('trois onglets : campagnes, scénarios uniques (le scénario 1, mais pas les chapitres 2 et 3, réservés à la campagne) et terrain d’essai', async () => {
+    const user = userEvent.setup();
+    await openCampaign(user);
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     expect(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Voir le briefing : Terrain d’essai/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Terrain d’essai' }));
     expect(screen.getByRole('button', { name: /Voir le briefing : Terrain d’essai/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Voir le briefing : Les Braises/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     expect(screen.queryByRole('button', { name: /Voir le briefing : Le Marché des Ombres/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Voir le briefing : La Forge du Maître-Fer/ })).not.toBeInTheDocument();
     expect(CHAPTER_IDS).toHaveLength(3);

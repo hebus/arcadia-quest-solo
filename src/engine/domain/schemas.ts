@@ -293,8 +293,8 @@ export const GameStateSchema = type({
   nextActivationTargetsPet: 'boolean',
   /** Héros activés pendant le Guild Turn courant. */
   activatedHeroIds: 'string[]',
-  /** Suivi de l'activation de chaque héros : points de mouvement restants, déplacé, a attaqué. */
-  heroTurn: { '[string]': { mpLeft: 'number.integer', moved: 'boolean', attacked: 'boolean' } },
+  /** Suivi de l'activation de chaque héros : points de mouvement restants, déplacé, a attaqué ; `moveLocked` : l'attaque est venue après le début du mouvement, il ne reprend plus. */
+  heroTurn: { '[string]': { mpLeft: 'number.integer', moved: 'boolean', attacked: 'boolean', 'moveLocked?': 'boolean' } },
   eventSeq: 'number.integer >= 0',
   events: GameEventSchema.array(),
   /** Règles du script de scénario déjà déclenchées (une seule fois chacune). */

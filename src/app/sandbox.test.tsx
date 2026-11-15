@@ -21,6 +21,7 @@ beforeEach(() => {
 async function startSandbox(user: User) {
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+  await user.click(screen.getByRole('tab', { name: 'Terrain d’essai' }));
   await user.click(screen.getByRole('button', { name: /Voir le briefing : Terrain d’essai/ }));
   await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
   await screen.findByTestId('sandbox-strip');
@@ -47,6 +48,7 @@ describe('terrain d’essai : démarrage', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     await screen.findByRole('img', { name: 'Plateau de jeu' });
@@ -68,7 +70,7 @@ describe('terrain d’essai : outils', () => {
     const user = userEvent.setup();
     await startSandbox(user);
     // (0,5) : un héros y est déjà ; un monstre de plus la remplit (deux figurines au maximum).
-    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, monsters: st.game!.monsters.map((m) => (m.id === 'OM3' ? { ...m, position: { x: 0, y: 5 } } : m)) } })));
+    act(() => useGameStore.setState((st) => ({ game: { ...st.game!, monsters: st.game!.monsters.map((m) => (m.id === 'OM1' ? { ...m, position: { x: 0, y: 5 } } : m)) } })));
     const menu = await openSandboxMenu(user);
     await user.click(within(menu).getByRole('button', { name: '+ Orc Marauder' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -76,22 +78,22 @@ describe('terrain d’essai : outils', () => {
     fireEvent.click(screen.getByTestId('cell-0-5')); // pleine
     expect(screen.getByTestId('placing-banner')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('cell-3-1')); // libre
-    expect(game().monsters.find((m) => m.id === 'OM4')).toMatchObject({ definitionId: 'OM', position: { x: 3, y: 1 }, status: 'board' });
-    expect(screen.getByTestId('token-OM4')).toBeInTheDocument();
+    expect(game().monsters.find((m) => m.id === 'OM2')).toMatchObject({ definitionId: 'OM', position: { x: 3, y: 1 }, status: 'board' });
+    expect(screen.getByTestId('token-OM2')).toBeInTheDocument();
   });
 
   it('régler les blessures d’un monstre, le passer en garde, le retirer', async () => {
     const user = userEvent.setup();
     await startSandbox(user);
     const menu = await openSandboxMenu(user);
-    await user.click(within(menu).getByRole('button', { name: 'Blessures de OM3 : plus' }));
-    await user.click(within(menu).getByRole('button', { name: 'Blessures de OM3 : plus' }));
-    expect(game().monsters.find((m) => m.id === 'OM3')!.wounds).toBe(2);
-    const guard = within(menu).getAllByRole('button', { name: 'Garde' })[2]!; // OM3 est le 3e de la liste
+    await user.click(within(menu).getByRole('button', { name: 'Blessures de OM1 : plus' }));
+    await user.click(within(menu).getByRole('button', { name: 'Blessures de OM1 : plus' }));
+    expect(game().monsters.find((m) => m.id === 'OM1')!.wounds).toBe(2);
+    const guard = within(menu).getAllByRole('button', { name: 'Garde' })[0]!; // OM1 est le 1er de la liste
     await user.click(guard);
-    expect(game().monsters.find((m) => m.id === 'OM3')!.isGuard).toBe(true);
-    await user.click(within(menu).getByRole('button', { name: 'Retirer OM3' }));
-    expect(game().monsters.find((m) => m.id === 'OM3')!.status).toBe('removed');
+    expect(game().monsters.find((m) => m.id === 'OM1')!.isGuard).toBe(true);
+    await user.click(within(menu).getByRole('button', { name: 'Retirer OM1' }));
+    expect(game().monsters.find((m) => m.id === 'OM1')!.status).toBe('removed');
   });
 
   it('régler les blessures d’un héros', async () => {
@@ -145,33 +147,27 @@ describe('terrain d’essai : le déroulement affiché de la phase des monstres'
   it('étapes sur la table d’abord, puis annonce « qui attaque qui », puis dialogue de défense', async () => {
     const user = userEvent.setup();
     await startSandbox(user);
-    // Situation : Mira collée au rôdeur 1 ; cartes choisies à la main ; dés qui touchent toujours, jeton S1 ; défense du joueur.
+    // Situation : Mira collée au rôdeur 1 ; cartes choisies à la main ; dés qui touchent toujours ; défense du joueur.
     act(() => {
       useGameStore.getState().setDice(DICE_PRESETS.find((p) => p.id === 'hit-s1')!.faces!, useGameStore.getState().content.defenseDie);
       useGameStore.getState().setSettings({ cardMode: 'physical', defenseRoll: 'physical' });
-      useGameStore.getState().correct({ kind: 'monster-position', monsterId: 'OM1', to: { x: 1, y: 1 } }); // le plus proche du jeton S1
+      useGameStore.getState().correct({ kind: 'monster-position', monsterId: 'OM1', to: { x: 1, y: 1 } }); // la mieux placée pour attaquer
       useGameStore.getState().correct({ kind: 'hero-position', heroId: 'h1', to: { x: 1, y: 2 } });
     });
     await user.click(screen.getByRole('button', { name: /Sauter au tour des monstres/ }));
     await user.click(screen.getByRole('button', { name: 'Lancer le Monster Turn' }));
 
-    // 1. Le jeton de référence s'affiche en étape de la phase des monstres, avant toute saisie.
-    expect(await screen.findByRole('region', { name: /Sur la table/ })).toHaveTextContent('Jeton Spawn de référence');
-    expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Phase des monstres · Activation 1');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Fait' }));
-
-    // 2. Carte d'activation choisie à la main.
+    // 1. Carte d'activation choisie à la main (plus de jeton Spawn de référence).
     const cardDialog = await screen.findByRole('dialog', { name: 'Résultat des dés' });
     await user.click(within(cardDialog).getByRole('button', { name: 'Orc Marauder' }));
 
-    // 3. Le monstre activé est montré ; l'attaque n'est ni annoncée ni demandée tant que cette étape n'est pas jouée.
+    // 2. Le monstre activé est montré ; l'attaque n'est ni annoncée ni demandée tant que cette étape n'est pas jouée.
     expect(await screen.findByRole('region', { name: /Sur la table/ })).toHaveTextContent('Orc Marauder est activé');
     expect(screen.queryByTestId('attack-announcement')).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Fait' }));
 
-    // 4. Annonce de l'attaque sur le plateau, puis seulement ensuite le dialogue de dés.
+    // 3. Annonce de l'attaque sur le plateau, puis seulement ensuite le dialogue de dés.
     expect(await screen.findByTestId('attack-announcement')).toHaveTextContent('Orc Marauder');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ }));

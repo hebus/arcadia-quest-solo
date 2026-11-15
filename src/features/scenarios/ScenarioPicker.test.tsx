@@ -33,6 +33,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     expect(screen.getByText(/Port-Cendre brûle depuis trois nuits/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Aperçu du scénario' })).toBeInTheDocument();
@@ -62,6 +63,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
@@ -93,6 +95,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
@@ -123,6 +126,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const preview = screen.getByRole('img', { name: 'Aperçu du scénario' });
     expect(preview.querySelector('[data-testid="objective-cle"] svg')).toHaveAttribute('data-icon', 'key');
@@ -137,6 +141,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
@@ -165,6 +170,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const page = screen.getByTestId('briefing-page');
     // Cartes héros à gauche, plan à droite.
@@ -184,6 +190,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const guild = screen.getByRole('region', { name: 'Votre guilde' });
     for (const i of [1, 2, 3]) {
@@ -204,6 +211,7 @@ describe('scénario de l’univers original', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const names = [1, 2, 3].map((i) => (screen.getByLabelText(`Nom du héros ${i}`) as HTMLInputElement).value);
     expect(new Set(names).size).toBe(3);
@@ -220,6 +228,7 @@ describe('tuiles du scénario 1', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const preview = screen.getByRole('img', { name: 'Aperçu du scénario' });
     expect(within(preview).getByTestId('tile-label-2-0')).toHaveTextContent('2A'); // la chapelle, en haut à droite
@@ -238,6 +247,7 @@ describe('tuiles du scénario 1', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Voir les tuiles/ }));
     const dialog = screen.getByRole('dialog', { name: 'Tuiles du plateau' });
@@ -252,6 +262,7 @@ describe('tuiles du scénario 1', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     // Mise en place de la partie.

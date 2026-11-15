@@ -33,16 +33,12 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
   const ended = g.phase === 'SCENARIO_WON' || g.phase === 'SCENARIO_LOST';
   if (ended && result) return <ResultScreen onLeave={leave} onCampaign={toCampaign} />;
   return (
-    <div className="mx-auto max-w-7xl space-y-2">
+    <div className="space-y-2">
       <ErrorBanner message={error} onClose={clear} />
       <StoryDialog />
       <GameBoard
-        header={
-          <>
-            <StatusBar onMenu={() => setMenu('team')} />
-            <HeroRoster />
-          </>
-        }
+        header={<StatusBar onMenu={() => setMenu('team')} />}
+        roster={<HeroRoster />}
         footer={<ActionPanel onDecisions={() => setMenu('decisions')} onResult={() => setResult(true)} />}
       />
       {agent.request && agent.status === 'awaiting-input' && !announcing && !stepsPending && (
@@ -69,7 +65,9 @@ export function App() {
           </Button>
         )}
       </header>
+      {/* Sur laptop, le contenu est centré avec des marges ; le plateau de jeu, lui, prend toute la largeur. */}
       <div className="aq-stage-content">
+      <div className={screen === 'game' ? 'w-full' : 'mx-auto w-full max-w-6xl'}>
       {screen === 'home' && <HomeScreen go={setScreen} />}
       {screen === 'scenarios' && <ScenarioPicker onStart={() => setScreen('game')} />}
       {screen === 'setup' && <SetupWizard onDone={() => setScreen('game')} openLibrary={() => setScreen('tiles')} />}
@@ -82,6 +80,7 @@ export function App() {
           <Button onClick={() => setScreen('setup')}>Retour à la mise en place</Button>
         </div>
       )}
+      </div>
       </div>
     </main>
   );

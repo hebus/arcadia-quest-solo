@@ -189,7 +189,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
     if (!canDrag?.(id)) return;
     const p = toSvg(e);
     if (!p) return;
-    svgRef.current?.setPointerCapture?.(e.pointerId);
+    // Pas de capture ici : à la souris, elle renverrait le clic sur le plateau au lieu du pion. Elle se fait au premier mouvement.
     setDrag({ id, x: p.x, y: p.y, sx: p.x, sy: p.y, moved: false });
   };
   const moveDrag = (e: ReactPointerEvent) => {
@@ -197,6 +197,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
     const p = toSvg(e);
     if (!p) return;
     const moved = drag.moved || Math.hypot(p.x - drag.sx, p.y - drag.sy) > DRAG_THRESHOLD;
+    if (moved && !drag.moved) svgRef.current?.setPointerCapture?.(e.pointerId);
     setDrag({ ...drag, x: p.x, y: p.y, moved });
   };
   const endDrag = (e: ReactPointerEvent, cancelled: boolean) => {

@@ -39,9 +39,9 @@ describe('terrain d’essai : ajouter un monstre', () => {
     const g = sandbox();
     const a = addMonster(g, ORIGINAL_CONTENT, 'OM', at(3, 1));
     const b = addMonster(a, ORIGINAL_CONTENT, 'OM', at(2, 1));
-    expect(a.monsters.find((m) => m.id === 'OM4')).toMatchObject({ definitionId: 'OM', position: at(3, 1), status: 'board', wounds: 0, isGuard: false });
-    expect(b.monsters.map((m) => m.id)).toContain('OM5');
-    expect(g.monsters.some((m) => m.id === 'OM4')).toBe(false);
+    expect(a.monsters.find((m) => m.id === 'OM2')).toMatchObject({ definitionId: 'OM', position: at(3, 1), status: 'board', wounds: 0, isGuard: false });
+    expect(b.monsters.map((m) => m.id)).toContain('OM1');
+    expect(g.monsters.some((m) => m.id === 'OM2')).toBe(false);
     expect(a.events.at(-1)!.type).toBe('sandbox-add');
   });
 
@@ -52,8 +52,8 @@ describe('terrain d’essai : ajouter un monstre', () => {
     expect(() => addMonster(shared, ORIGINAL_CONTENT, 'OM', at(0, 5))).toThrow(/pleine/);
     const twoMonsters = addMonster(g, ORIGINAL_CONTENT, 'OM', at(3, 0)); // OM1 s'y tenait déjà
     expect(() => addMonster(twoMonsters, ORIGINAL_CONTENT, 'OM', at(3, 0))).toThrow(/pleine/);
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(4, 1))).toThrow(/pas sur le plateau/); // le puits : case bloquée de la tuile 4A
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(6, 4))).toThrow(/pas sur le plateau/); // l'espace vide laissé par le décalage de la tuile 3B
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(6, 4))).toThrow(/pas sur le plateau/); // hors du plateau 6×6
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(-1, 2))).toThrow(/pas sur le plateau/);
     expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', at(40, 4))).toThrow(/pas sur le plateau/);
     expect(() => addMonster(g, ORIGINAL_CONTENT, 'dragon', at(5, 8))).toThrow(/inconnu/);
   });
@@ -62,9 +62,9 @@ describe('terrain d’essai : ajouter un monstre', () => {
 describe('terrain d’essai : blessures, tour et dés', () => {
   it('correction des blessures d’un monstre : valeur entière, jamais négative', () => {
     const g = sandbox();
-    expect(applyCorrection(g, { kind: 'monster-wounds', monsterId: 'OM3', wounds: 3 }).monsters.find((m) => m.id === 'OM3')!.wounds).toBe(3);
-    expect(applyCorrection(g, { kind: 'monster-wounds', monsterId: 'OM3', wounds: -2 }).monsters.find((m) => m.id === 'OM3')!.wounds).toBe(0);
-    expect(applyCorrection(g, { kind: 'monster-wounds', monsterId: 'OM3', wounds: 2.7 }).monsters.find((m) => m.id === 'OM3')!.wounds).toBe(2);
+    expect(applyCorrection(g, { kind: 'monster-wounds', monsterId: 'OM1', wounds: 3 }).monsters.find((m) => m.id === 'OM1')!.wounds).toBe(3);
+    expect(applyCorrection(g, { kind: 'monster-wounds', monsterId: 'OM1', wounds: -2 }).monsters.find((m) => m.id === 'OM1')!.wounds).toBe(0);
+    expect(applyCorrection(g, { kind: 'monster-wounds', monsterId: 'OM1', wounds: 2.7 }).monsters.find((m) => m.id === 'OM1')!.wounds).toBe(2);
   });
 
   it('sauter le tour de guilde mène directement au Monster Turn, sans activation', () => {
@@ -84,7 +84,7 @@ describe('terrain d’essai : blessures, tour et dés', () => {
 });
 
 describe('terrain d’essai : une situation se rejoue à l’identique', () => {
-  /** OM1 en (1,1), le plus proche du jeton S1 (0,0), collé à Grom (h1) ; cartes choisies à la main : OM1 agit aux deux activations. */
+  /** OM1 en (1,1), collé à Grom (h1) : c'est la figurine la mieux placée pour attaquer ; cartes choisies à la main : OM (activation 1), puis OM (plus de Marauder disponible, écartée) et T (activation 2). */
   const situation = (seed: number) => {
     const g = sandbox(seed, { cardMode: 'physical' });
     return skipGuildTurn({
@@ -93,24 +93,17 @@ describe('terrain d’essai : une situation se rejoue à l’identique', () => {
       monsters: g.monsters.map((m) => (m.id === 'OM1' ? { ...m, position: at(1, 1) } : m)),
     });
   };
-  const card = { kind: 'card', value: 'OM' } as const;
+  const cards = [{ kind: 'card', value: 'OM' }, { kind: 'card', value: 'OM' }, { kind: 'card', value: 'T' }] as const;
   const run = (seed: number, presetId: string) => {
     const faces = DICE_PRESETS.find((p) => p.id === presetId)!.faces!;
-    return runMonsterTurn(situation(seed), { ...ORIGINAL_CONTENT, attackDie: faces }, [card, card]);
+    return runMonsterTurn(situation(seed), { ...ORIGINAL_CONTENT, attackDie: faces }, cards);
   };
 
-  it('dés « toujours S1 » : même jeton de référence et mêmes étapes quelle que soit la graine', () => {
+  it('mêmes dés « toujours S1 » : mêmes étapes quelle que soit la graine', () => {
     const a = run(1, 'hit-s1');
     const b = run(99, 'hit-s1');
-    const ref = (r: ReturnType<typeof run>) => r.instructions.filter((i) => i.visual?.type === 'spawn-point').map((i) => (i.visual as { pointId: string }).pointId);
-    expect(ref(a)).toEqual(['S1', 'S1']);
-    expect(ref(b)).toEqual(['S1', 'S1']);
     expect(a.instructions.map((i) => i.id)).toEqual(b.instructions.map((i) => i.id));
-  });
-
-  it('dés « toujours S2 » : le jeton de référence change', () => {
-    const r = run(3, 'hit-s2');
-    expect(r.instructions.filter((i) => i.visual?.type === 'spawn-point').map((i) => (i.visual as { pointId: string }).pointId)).toEqual(['S2', 'S2']);
+    expect(a.instructions.some((i) => i.visual?.type === 'spawn-point')).toBe(false);
   });
 
   it('« touchent toujours » : l’Orc Marauder blesse Grom à chaque attaque ; « ratent toujours » : jamais', () => {
@@ -121,10 +114,13 @@ describe('terrain d’essai : une situation se rejoue à l’identique', () => {
     expect(wounds(run(5, 'miss-s1')).length).toBeGreaterThan(0);
   });
 
-  it('le monstre le plus proche du jeton de référence est celui qui agit, pas les autres', () => {
+  it('la figurine la mieux placée pour attaquer est celle qui agit en premier, l’autre activation revient à un autre monstre', () => {
     const r = run(7, 'hit-s1');
     const actors = r.instructions.filter((i) => i.visual?.type === 'activate').map((i) => i.actorId);
-    expect(actors).toEqual(['OM1', 'OM1']);
+    expect(actors).toHaveLength(2);
+    expect(actors[0]).toBe('OM1');
+    expect(actors[1]).toBe('T1'); // un seul Marauder : la 2e carte OM est écartée, c'est le Troll qui agit
+    expect(r.instructions.find((i) => i.id === 'R1-A1-attack')).toBeDefined();
     expect(r.instructions.filter((i) => i.group === 'Activation 1').length).toBeGreaterThan(0);
   });
 });

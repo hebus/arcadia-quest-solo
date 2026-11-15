@@ -4,11 +4,11 @@ import { testContent } from '@/tests/fixtures/demo';
 import { attackTurn } from '@/tests/fixtures/monsterTurn';
 
 describe('Monster Turn : étapes déjà décidées avant une saisie', () => {
-  it('sur une saisie de défense, partial contient dans l’ordre jet de référence, activation, déplacement', () => {
+  it('sur une saisie de défense, partial contient dans l’ordre activation, déplacement', () => {
     const out = runMonsterTurnSafe(attackTurn(), testContent);
     if (out.status !== 'awaiting-input') throw new Error(`saisie attendue, reçu ${out.status}`);
     expect(out.request.kind).toBe('defense-result');
-    expect(out.partial.map((p) => p.visual?.type)).toEqual(['spawn-point', 'activate', 'move']);
+    expect(out.partial.map((p) => p.visual?.type)).toEqual(['activate', 'move']);
     expect(out.partial.every((p) => p.group === 'Activation 1')).toBe(true);
     expect(out.partial.every((p) => p.label)).toBe(true);
   });

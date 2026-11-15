@@ -32,8 +32,67 @@ export interface PlacingRequest {
   onPlace(to: Position): void;
 }
 
+/** Résumé compact de l'état, pour lire le journal d'actions sans rouvrir l'état complet. */
+export interface StateBrief {
+  phase: string;
+  round: number;
+  rngCounter: number;
+  deaths: number;
+  coins: number;
+  questsDone: string[];
+  activated: string[];
+  heroTurn: GameState['heroTurn'];
+  heroes: { id: string; at: Position | null; wounds: number; dead: boolean; stunned: boolean }[];
+  monsters: { id: string; def: string; at: Position | null; wounds: number; status: string; guard: boolean }[];
+  doors: { id: string; open: boolean }[];
+}
+
+/** Une action du joueur (ou de l'application), avec ses arguments et son effet : de quoi la rejouer et comprendre l'écart. */
+export interface ActionLogEntry {
+  n: number;
+  /** Profondeur d'appel : une action peut en déclencher d'autres (fin de tour → lancement du tour des monstres). */
+  depth: number;
+  at: string;
+  action: string;
+  args: unknown[];
+  error?: string;
+  /** Saisie physique attendue après l'action (jet de dés, choix…). */
+  awaiting?: InputRequest;
+  /** Étapes physiques encore à valider après l'action. */
+  pendingSteps: number;
+  after: StateBrief | null;
+}
+
+/** Argument d'une action, sous forme JSON ; un événement du navigateur (clic sur un bouton relié directement) n'est pas un argument. */
+const plainArg = (a: unknown): unknown => {
+  if (typeof Event !== 'undefined' && a instanceof Event) return null;
+  try {
+    return JSON.parse(JSON.stringify(a ?? null)) as unknown;
+  } catch {
+    return null;
+  }
+};
+
+export const briefOf = (g: GameState): StateBrief => ({
+  phase: g.phase,
+  round: g.round,
+  rngCounter: g.rngCounter,
+  deaths: g.deaths,
+  coins: g.coins,
+  questsDone: g.quests.filter((q) => q.done).map((q) => q.id),
+  activated: [...g.activatedHeroIds],
+  heroTurn: structuredClone(g.heroTurn),
+  heroes: g.heroes.map((h) => ({ id: h.id, at: h.position ? { ...h.position } : null, wounds: h.wounds, dead: h.dead, stunned: !!h.stunned })),
+  monsters: g.monsters.map((m) => ({ id: m.id, def: m.definitionId, at: m.position ? { ...m.position } : null, wounds: m.wounds, status: m.status, guard: !!m.isGuard })),
+  doors: g.board.doors.map((d) => ({ id: d.id, open: d.open })),
+});
+
 export interface GameStore {
   game: GameState | null;
+  /** Journal détaillé des actions depuis le début de la partie (exportable depuis le terrain d'essai). */
+  actionLog: ActionLogEntry[];
+  /** État au début du journal : point de départ pour rejouer les actions. */
+  logStart: GameState | null;
   content: Content;
   history: HistoryEntry[];
   agent: { status: AgentStatus; request?: InputRequest; error?: string };
@@ -201,7 +260,31 @@ export const useGameStore = create<GameStore>()((set, get) => {
     }
   };
 
-  return {
+  let logSeq = 0;
+  let depth = 0;
+  /** Enveloppe une action du store : l'enregistre (arguments, erreur, résumé de l'état après) dans le journal. */
+  const logged = <A extends unknown[]>(name: string, fn: (...a: A) => void) => (...args: A): void => {
+    const entry: ActionLogEntry = { n: ++logSeq, depth, at: new Date().toISOString(), action: name, args: args.filter((a) => typeof a !== 'function').map(plainArg), pendingSteps: 0, after: null };
+    set((st) => ({ actionLog: [...st.actionLog, entry] }));
+    const errBefore = get().error;
+    depth += 1;
+    try {
+      fn(...args);
+    } catch (e) {
+      entry.error = errMsg(e);
+      throw e;
+    } finally {
+      depth -= 1;
+      const st = get();
+      if (st.error && st.error !== errBefore) entry.error = st.error;
+      if (st.agent.status === 'awaiting-input' && st.agent.request) entry.awaiting = st.agent.request;
+      entry.pendingSteps = st.instructions.filter((i) => !i.confirmed).length;
+      entry.after = st.game ? briefOf(st.game) : null;
+      set((cur) => ({ actionLog: [...cur.actionLog] }));
+    }
+  };
+
+  const actions: Omit<GameStore, 'actionLog' | 'logStart'> & Partial<Pick<GameStore, 'actionLog' | 'logStart'>> = {
     game: null,
     content: defaultContent(),
     history: [],
@@ -251,16 +334,18 @@ export const useGameStore = create<GameStore>()((set, get) => {
     },
     reset() {
       resume = null;
-      set({ game: null, script: [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, selectedId: null, placing: null, correctionMode: false, error: null });
+      set({ game: null, script: [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, selectedId: null, placing: null, correctionMode: false, error: null, actionLog: [], logStart: null });
     },
     newGame(config, script = []) {
       const g = attempt(() => createGame(config, get().content));
       if (!g) return;
-      set({ game: g, startConfig: config, script, beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null });
+      logSeq = 0;
+      set({ game: g, startConfig: config, script, beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null, actionLog: [], logStart: structuredClone(g) });
       void repository?.saveSession(g).catch(() => undefined);
     },
     loadGame(state) {
-      set({ game: state, script: scenarioForGame(state)?.script ?? [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null });
+      logSeq = 0;
+      set({ game: state, script: scenarioForGame(state)?.script ?? [], beats: [], history: [], instructions: [], traces: [], answers: [], agent: { status: 'ready' }, error: null, actionLog: [], logStart: structuredClone(state) });
     },
     begin() {
       const g = get().game;
@@ -383,4 +468,10 @@ export const useGameStore = create<GameStore>()((set, get) => {
       set((s) => ({ content: { ...s.content, attackDie, defenseDie } }));
     },
   };
+
+  // Chaque geste est journalisé (arguments, effet, erreur) : le terrain d'essai exporte ce journal pour analyser un défaut.
+  const LOGGED = ['begin', 'activateHero', 'finishActivations', 'rest', 'startMonsterTurn', 'endTurn', 'provideAnswer', 'abortMonsterTurn', 'confirmInstruction', 'confirmAll', 'moveHero', 'openDoor', 'closeDoor', 'attackHero', 'skipToMonsters', 'completeQuest', 'correct', 'undo', 'setSettings', 'setDice', 'setCorrectionMode', 'restart'] as const;
+  const out = actions as unknown as Record<string, (...a: unknown[]) => void>;
+  for (const name of LOGGED) out[name] = logged(name, out[name] as (...a: unknown[]) => void);
+  return { ...(actions as GameStore), actionLog: [], logStart: null };
 });

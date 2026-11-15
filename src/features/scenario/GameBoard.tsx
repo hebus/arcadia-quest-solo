@@ -1,7 +1,6 @@
 import { monsterClassLabel, skillLines, statsOfMonster } from '@/engine/monsters';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, Panel } from '@/components/ui';
-import { Modal } from '@/components/Modal';
 import { Stepper } from '@/components/Tally';
 import { monsterCanPayback } from '@/engine/combat/heroActions';
 import { adjacentDoors, canHeroTarget, mpLeft, reachableCells } from '@/engine/combat/heroMove';
@@ -9,8 +8,10 @@ import { CELL_CAPACITY, isClose } from '@/engine/movement/board';
 import type { Position } from '@/engine/domain/schemas';
 import { BoardView, type BoardToken, type Highlight, type PlacedTile } from '@/rendering/board/BoardView';
 import { MiniPawn } from '@/components/MiniPawn';
+import { MonsterStatsIcons } from '@/components/MonsterStatsIcons';
 import { blockedByOtherHero } from '@/engine/state';
 import { useAttackAnnouncement } from '@/features/game/announce';
+import { useIsSandbox } from '@/features/game/SandboxPanel';
 import { actorInfo, overlayForAttackAnnouncement, overlayForQueue } from '@/rendering/instructions/overlay';
 import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
@@ -71,6 +72,7 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
                   <p>
                     <strong>{content.monsters[m.definitionId]?.name ?? m.definitionId}</strong> · {monsterClassLabel(content.monsters[m.definitionId], g.monsterCardSet)}
                   </p>
+                  <MonsterStatsIcons stats={stats} wounds={m.wounds} />
                   {!!stats.defense && (
                     <p data-testid={`monster-defense-${t}`}>
                       Défense : {stats.defense} dé{stats.defense > 1 ? 's' : ''} blanc{stats.defense > 1 ? 's' : ''} : un bouclier ou un critique annule une touche, lancez-les avant d’indiquer les blessures.
@@ -106,8 +108,116 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
   );
 }
 
+type BuildTool = 'wall' | 'door' | 'interior' | 'room' | 'blocked';
+const BUILD_TOOLS: { id: BuildTool; label: string; hint: string }[] = [
+  { id: 'wall', label: '🧱 Mur', hint: 'Touchez une arête entre deux cases : un mur est posé, ou retiré.' },
+  { id: 'door', label: '🚪 Porte', hint: 'Touchez une arête : porte fermée, puis ouverte, puis retirée.' },
+  { id: 'interior', label: '🏠 Bâtiment', hint: 'Touchez une case : elle devient un intérieur (ou non) ; les murs du contour suivent.' },
+  { id: 'room', label: '🟫 Salle', hint: 'Touchez une case : son sol change (salle), sans murs. Utile avec les murs et les portes pour dessiner une pièce.' },
+  { id: 'blocked', label: '⛔ Case bloquée', hint: 'Touchez une case : elle devient impassable (ou libre).' },
+];
+
+/** Terrain d'essai : construire le plateau comme dans l'éditeur de tuiles, pour tester toutes sortes de conditions. */
+function BuildStrip({ tool, onTool }: { tool: BuildTool | null; onTool: (t: BuildTool | null) => void }) {
+  const current = BUILD_TOOLS.find((t) => t.id === tool);
+  return (
+    <section aria-label="Construire" data-testid="build-strip" className="space-y-2 rounded-xl border border-dashed border-sky-500 bg-stone-900/90 p-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-sky-200">🏗 Construire</span>
+        {BUILD_TOOLS.map((t) => (
+          <Button key={t.id} variant={tool === t.id ? 'primary' : 'secondary'} aria-pressed={tool === t.id} onClick={() => onTool(tool === t.id ? null : t.id)}>
+            {t.label}
+          </Button>
+        ))}
+      </div>
+      <p className="text-sm text-stone-300">{current ? current.hint : 'Choisissez un outil, puis touchez le plateau. Touchez de nouveau l’outil pour le ranger.'}</p>
+    </section>
+  );
+}
+
+/**
+ * Mode sync (placement libre) : recale l'écran sur la table. Les pions se glissent et les portes se touchent sur le plateau ;
+ * ce panneau, à la place des cartes héros, montre ce qui peut être modifié sur le pion touché.
+ */
+function SyncPanel({ selectedId }: { selectedId: string | null }) {
+  const g = useGameStore((s) => s.game)!;
+  const content = useGameStore((s) => s.content);
+  const correct = useGameStore((s) => s.correct);
+  const select = useGameStore((s) => s.select);
+  const m = selectedId ? g.monsters.find((x) => x.id === selectedId && x.status === 'board') : undefined;
+  const h = selectedId ? g.heroes.find((x) => x.id === selectedId && !x.dead) : undefined;
+  const stats = m ? statsOfMonster(content, g, m) : undefined;
+  const close = <Button variant="ghost" onClick={() => select(null)}>Fermer</Button>;
+  return (
+    <section aria-label="Mode sync" data-testid="sync-panel" className="space-y-2 rounded-xl border-2 border-sky-500 bg-stone-900/90 p-2">
+      <p className="text-sm text-sky-200">
+        ⟳ Sync : glissez les héros et les monstres vers leur vraie case, touchez une porte pour l’ouvrir ou la fermer, touchez un pion pour régler son état.
+      </p>
+      {m && (
+        <div className="space-y-2 rounded-lg bg-stone-800 p-2" data-testid="sync-monster">
+          <div className="flex items-center gap-3">
+            <MiniPawn kind="monster" label={actorInfo(g, m.id).label} size={36} />
+            <strong className="flex-1">
+              {content.monsters[m.definitionId]?.name ?? m.definitionId} · {m.id}
+            </strong>
+            {close}
+          </div>
+          {stats && <MonsterStatsIcons stats={stats} wounds={m.wounds} />}
+          <Stepper label={`Blessures de ${m.id}`} value={m.wounds} onChange={(n) => correct({ kind: 'monster-wounds', monsterId: m.id, wounds: n })} {...(stats ? { max: Math.max(0, stats.life - 1) } : {})} />
+          <div className="flex flex-wrap gap-2">
+            <Button variant={m.isGuard ? 'primary' : 'secondary'} aria-pressed={m.isGuard} onClick={() => correct({ kind: 'monster-guard', monsterId: m.id, isGuard: !m.isGuard })}>
+              🛡 Garde
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                correct({ kind: 'monster-status', monsterId: m.id, status: 'removed' });
+                select(null);
+              }}
+            >
+              🪦 Cimetière
+            </Button>
+          </div>
+        </div>
+      )}
+      {h && (
+        <div className="space-y-2 rounded-lg bg-stone-800 p-2" data-testid="sync-hero">
+          <div className="flex items-center gap-3">
+            <MiniPawn kind="hero" label={actorInfo(g, h.id).label} size={36} />
+            <strong className="flex-1">{h.name}</strong>
+            {close}
+          </div>
+          <Stepper
+            label={`Blessures de ${h.name}`}
+            value={h.wounds}
+            max={h.life}
+            onChange={(n) => {
+              correct({ kind: 'hero-wounds', heroId: h.id, wounds: n });
+              if (n >= h.life) correct({ kind: 'hero-dead', heroId: h.id, dead: true });
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button variant={h.stunned ? 'primary' : 'secondary'} aria-pressed={!!h.stunned} onClick={() => correct({ kind: 'hero-stunned', heroId: h.id, stunned: !h.stunned })}>
+              💫 Étourdi
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                correct({ kind: 'hero-dead', heroId: h.id, dead: true });
+                select(null);
+              }}
+            >
+              ☠ Hors combat
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 /** Plateau de jeu : sélection d'un héros, cases atteignables, déplacement au clic, attaque en touchant un monstre. */
-export function GameBoard({ header, footer }: { header?: ReactNode; footer?: ReactNode }) {
+export function GameBoard({ header, roster, footer }: { header?: ReactNode; /** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
   const g = useGameStore((s) => s.game)!;
   const selectedId = useGameStore((s) => s.selectedId);
   const select = useGameStore((s) => s.select);
@@ -120,10 +230,14 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   const cancelPlacing = useGameStore((s) => s.cancelPlacing);
   const correctionMode = useGameStore((s) => s.correctionMode);
   const correct = useGameStore((s) => s.correct);
+  const setCorrectionMode = useGameStore((s) => s.setCorrectionMode);
   const { tiles, loaded, load } = useTileStore();
   const [targets, setTargets] = useState<string[]>([]);
   /** Arme choisie avant de viser : seules les cibles valides pour ce type sont désignables. */
   const [attackType, setAttackType] = useState<'melee' | 'ranged' | null>(null);
+  /** Terrain d'essai : outil de construction actif (mur, porte, bâtiment, case bloquée), appliqué en touchant le plateau. */
+  const [buildTool, setBuildTool] = useState<BuildTool | null>(null);
+  const sandbox = useIsSandbox();
   /** Boutons Mêlée / Distance affichés près du héros sélectionné (2e touche sur le héros). */
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [aimHint, setAimHint] = useState<string | null>(null);
@@ -135,6 +249,8 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   }, [loaded, load]);
 
   const hero = g.heroes.find((h) => h.id === selectedId && !h.dead) ?? null;
+  /** Mode sync : un pion du plateau est touché, ses réglages remplacent les cartes héros. */
+  const inspected = !!selectedId && (g.heroes.some((h) => h.id === selectedId && !h.dead) || g.monsters.some((m) => m.id === selectedId && m.status === 'board'));
   const guildTurn = g.phase === 'GUILD_TURN';
   const activeType = attackType;
   const turn = hero ? g.heroTurn[hero.id] : undefined;
@@ -151,7 +267,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
     awaitingInput ||
     !!announcement ||
     instructions.some((i) => !i.confirmed && !(i.kind === 'move' && g.heroes.some((h) => h.id === i.actorId)));
-  const canMove = !!hero && guildTurn && !locked && mp > 0 && !(turn?.attacked && turn?.moved);
+  const canMove = !!hero && guildTurn && !locked && mp > 0 && !turn?.moveLocked;
 
   /** Cibles désignables avec l'arme choisie : adjacentes (corps à corps) ou visibles (distance). */
   const validTargets = useMemo<string[]>(
@@ -231,6 +347,18 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
     return true;
   };
 
+  /** Le combat remplace les cartes héros, à droite du plateau (plus de boîte de dialogue). */
+  const attacking = !!hero && guildTurn && targets.length > 0;
+  useEffect(() => {
+    if (!attacking) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') resetAim();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attacking]);
+
   const resetAim = () => {
     setTargets([]);
     setAttackType(null);
@@ -250,6 +378,8 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   const onToken = (id: string) => {
     const tokenAt = tokens.find((t) => t.id === id)?.at;
     if (tokenAt && confirmAt(tokenAt)) return;
+    // Mode sync : toucher un pion le sélectionne (héros : fiche ; monstre : blessures et cimetière sous le plateau).
+    if (correctionMode) return select(id === selectedId ? null : id);
     if (locked) return;
     const isHero = g.heroes.some((h) => h.id === id);
     if (isHero) {
@@ -282,6 +412,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
 
   const onCell = (p: Position) => {
     if (confirmAt(p)) return;
+    if (buildTool === 'interior' || buildTool === 'room' || buildTool === 'blocked') return correct({ kind: buildTool === 'interior' ? 'board-interior' : buildTool === 'room' ? 'board-room' : 'board-blocked', at: p });
     if (placing) {
       // Deux figurines au maximum par case : on ne pose pas sur une case déjà pleine.
       if (occupied(p)) return flashWrong(p);
@@ -309,7 +440,8 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
     if (correctionMode) return g.heroes.some((h) => h.id === id) || g.monsters.some((m) => m.id === id);
     if (!guildTurn) return false;
     const h = g.heroes.find((x) => x.id === id);
-    return !!h && !h.dead && !blockedByOtherHero(g, id) && (mpLeft(g, id) > 0 || !(g.heroTurn[id]?.attacked ?? false));
+    const t = g.heroTurn[id];
+    return !!h && !h.dead && !blockedByOtherHero(g, id) && !t?.moveLocked && (mpLeft(g, id) > 0 || !(t?.attacked ?? false));
   };
 
   const onTokenMove = (id: string, to: Position) => {
@@ -343,7 +475,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
       setTargets([victim.id]);
       return;
     }
-    if (!reachableCells(g, id, mpLeft(g, id)).some((r) => same(r.pos, to))) return flashWrong(to);
+    if (g.heroTurn[id]?.moveLocked || !reachableCells(g, id, mpLeft(g, id)).some((r) => same(r.pos, to))) return flashWrong(to);
     setMenuFor(null);
     moveHero(id, to);
     for (const i of useGameStore.getState().instructions) {
@@ -352,7 +484,10 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
   };
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[min(max(18rem,calc(100dvh_-_10.5rem_-_var(--aq-banner,0px))),62vw)_minmax(0,1fr)] lg:items-start">
+    <div
+      style={{ '--board-ratio': g.board.width / g.board.height } as React.CSSProperties}
+      className="grid gap-3 lg:grid-cols-[min(max(18rem,calc((100dvh_-_10.5rem_-_var(--aq-banner,0px))*var(--board-ratio))),72vw)_minmax(0,1fr)] lg:items-start"
+    >
       <div className="min-w-0 space-y-2">
       {placing && (
         <div role="status" className="flex items-center justify-between gap-3 rounded-lg border border-amber-500 bg-amber-950 p-2" data-testid="placing-banner">
@@ -367,9 +502,9 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
         </div>
       )}
       {/* Barre de choix du type d'attaque, hors du plateau pour ne cacher aucune case ; hauteur réservée pour que le plateau ne bouge pas. */}
-      {guildTurn && !placing && (
+      {!placing && (
         <div className="flex min-h-12 flex-nowrap items-center gap-2">
-          {menuVisible && hero ? (
+          {guildTurn && (menuVisible && hero ? (
             <div role="group" aria-label="Type d'attaque" data-testid="board-menu" className="flex flex-nowrap items-center gap-2">
               {attackChoices.map((c) => (
                 <button
@@ -386,19 +521,37 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
             </div>
           ) : (
             !locked && !correctionMode && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
-          )}
-          {!locked && !correctionMode && (
+          ))}
+          <div className="ml-auto flex flex-nowrap items-center gap-2">
             <button
               type="button"
-              onClick={endTurn}
-              className="ml-auto min-h-12 whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              data-testid="sync-toggle"
+              aria-pressed={correctionMode}
+              title="Recaler le plateau sur la table : glisser les pions, ouvrir ou fermer les portes, régler les blessures des monstres"
+              onClick={() => {
+                resetAim();
+                setMenuFor(null);
+                select(null);
+                setCorrectionMode(!correctionMode);
+              }}
+              className={`min-h-12 whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
             >
-              Fin de tour
+              ⟳ Sync
             </button>
-          )}
+            {guildTurn && !locked && !correctionMode && (
+              <button
+                type="button"
+                onClick={endTurn}
+                className="min-h-12 whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              >
+                Fin de tour
+              </button>
+            )}
+          </div>
         </div>
       )}
-      <div className="relative">
+      {/* Plateau entier visible : il se réduit à la hauteur disponible (sous la bannière) sans jamais déborder. */}
+      <div className="relative [&_svg]:max-h-[calc(100dvh-10.5rem-var(--aq-banner,0px))]">
       <BoardView
         label="Plateau de jeu"
         board={g.board}
@@ -411,6 +564,7 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
         lines={sightLines}
         objectives={g.quests.flatMap((q) => (q.at ? [{ id: q.id, at: q.at, icon: q.icon, title: q.title, done: q.done }] : []))}
         onCell={onCell}
+        onEdge={buildTool === 'wall' || buildTool === 'door' ? (a, b) => correct({ kind: buildTool === 'wall' ? 'board-wall' : 'board-door', a, b }) : undefined}
         onToken={onToken}
         canDrag={canDrag}
         onTokenMove={onTokenMove}
@@ -424,15 +578,19 @@ export function GameBoard({ header, footer }: { header?: ReactNode; footer?: Rea
 
       <div className="min-w-0 space-y-3">
       {header}
+      {correctionMode && <SyncPanel selectedId={selectedId} />}
+      {attacking && hero ? (
+        <section aria-label="Combat" data-testid="attack-panel">
+          <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => setTargets(targets.filter((x) => x !== id))} onClose={resetAim} />
+        </section>
+      ) : (
+        !(correctionMode && inspected) && roster
+      )}
+      {sandbox && !placing && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
       {aimHint && <p className="text-amber-300" role="status">{aimHint}</p>}
       {footer}
       </div>
 
-      {hero && guildTurn && targets.length > 0 && (
-        <Modal title="Attaque" onClose={() => { setTargets([]); setAttackType(null); setAimHint(null); }}>
-        <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => setTargets(targets.filter((x) => x !== id))} onClose={() => { setTargets([]); setAttackType(null); setAimHint(null); }} />
-        </Modal>
-      )}
     </div>
   );
 }

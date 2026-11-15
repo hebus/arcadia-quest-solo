@@ -65,11 +65,20 @@ describe('ouvrir une porte : 1 point de mouvement, pas une action', () => {
     expect(r.state.heroes[0]!.wounds).toBe(0);
   });
 
-  it('attaque puis porte : permis tant que le mouvement n’avait pas commencé ; ensuite plus de déplacement', () => {
-    const attacked = resolveHeroAttack(started(), ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' }).state;
+  it('attaque puis porte : la porte fait partie du mouvement qui suit, le héros peut ensuite avancer', () => {
+    // Le rôdeur est tué sur le coup : aucune réaction Guard ne vient troubler le déplacement.
+    const attacked = resolveHeroAttack(started(), ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 99 }], [], { weaponId: 'lame' }).state;
     const r = open(attacked);
     expect(door(r.state).open).toBe(true);
-    expect(() => moveHeroTo(r.state, ORIGINAL_CONTENT, 'h1', { x: 2, y: 5 })).toThrow(/ne peut pas être repris/);
+    const moved = moveHeroTo(r.state, ORIGINAL_CONTENT, 'h1', { x: 2, y: 5 });
+    expect(moved.state.heroes[0]!.position).toEqual({ x: 2, y: 5 });
+  });
+
+  it('porte puis attaque puis déplacement : refusé, ouvrir une porte est du mouvement', () => {
+    const opened = open(started()).state;
+    const attacked = resolveHeroAttack(opened, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'lame' }).state;
+    expect(attacked.heroTurn.h1!.moveLocked).toBe(true);
+    expect(() => moveHeroTo(attacked, ORIGINAL_CONTENT, 'h1', { x: 2, y: 5 })).toThrow(/ne peut pas être repris/);
   });
 
   it('déplacement puis attaque puis porte : refusé, le mouvement ne se reprend pas après l’attaque', () => {

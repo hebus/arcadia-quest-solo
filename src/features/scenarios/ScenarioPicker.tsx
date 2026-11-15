@@ -43,11 +43,19 @@ function ScenarioPreview({ def, heroes }: { def: ScenarioDefinition; heroes: Her
   return <BoardView label="Aperçu du scénario" board={board} spawns={spawnPoints} tokens={tokens} objectives={objectives} tileLabels={tileLabels} showCoords={false} />;
 }
 
+type PickerTab = 'campaigns' | 'single' | 'sandbox';
+const PICKER_TABS: { id: PickerTab; label: string }[] = [
+  { id: 'campaigns', label: 'Campagnes' },
+  { id: 'single', label: 'Scénarios uniques' },
+  { id: 'sandbox', label: 'Terrain d’essai' },
+];
+
 /** Choix d'un scénario de l'univers original, de ses héros, puis briefing narratif avant de jouer : aucune mise en place manuelle. */
 export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   const setDefs = useGameStore((s) => s.setMonsterDefinitions);
   const newGame = useGameStore((s) => s.newGame);
   const [def, setDef] = useState<ScenarioDefinition | null>(null);
+  const [tab, setTab] = useState<PickerTab>('campaigns');
   // La guilde : 3 héros, nom et points de vie, gardés d'une partie à l'autre.
   const guild = useGuildStore((s) => s.heroes);
   const setHeroName = useGuildStore((s) => s.setName);
@@ -75,28 +83,55 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   };
 
   if (!def) {
+    const play = (s: ScenarioDefinition) => {
+      setDef(s);
+      setDifficulty(s.recommended);
+    };
+    const card = (s: ScenarioDefinition) => (
+      <li key={s.id} className="rounded-xl border border-stone-700 bg-stone-800/90 p-4">
+        <h3 className="text-xl font-semibold text-amber-300">
+          {s.sandbox && <span aria-hidden="true">🧪 </span>}
+          {s.title}
+        </h3>
+        <p className="mt-1 text-stone-300">{s.tagline}</p>
+        <p className="mt-2 text-sm text-stone-400">
+          {s.difficulties ? `One shot · difficulté au choix (conseillée : ${DIFFICULTY_LABEL[s.recommended]})` : `Difficulté conseillée : ${DIFFICULTY_LABEL[s.recommended]}`}
+        </p>
+        <Button className="mt-3" variant="primary" aria-label={`Voir le briefing : ${s.title}`} onClick={() => play(s)}>
+          Voir le briefing
+        </Button>
+      </li>
+    );
     return (
       <Panel title="Choisir un scénario">
         <ErrorBanner message={error} onClose={() => setError(null)} />
-        <CampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
-        <MediumCampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
-        <RandomCampaignCard onPlay={(s) => { setDef(s); setDifficulty(s.recommended); }} />
-        <ul className="grid gap-3 md:grid-cols-2">
-          {ORIGINAL_SCENARIOS.filter((s) => !CHAPTER_IDS.slice(1).includes(s.id) && !MEDIUM_IDS.slice(1).includes(s.id)).map((s) => (
-            <li key={s.id} className="rounded-xl border border-stone-700 bg-stone-800 p-4">
-              <h3 className="text-xl font-semibold text-amber-300">
-                {s.sandbox && <span aria-hidden="true">🧪 </span>}
-                {s.title}
-              </h3>
-              <p className="mt-1 text-stone-300">{s.tagline}</p>
-              <p className="mt-2 text-sm text-stone-400">
-                {s.difficulties ? `One shot · difficulté au choix (conseillée : ${DIFFICULTY_LABEL[s.recommended]})` : `Difficulté conseillée : ${DIFFICULTY_LABEL[s.recommended]}`}
-              </p>
-              <Button className="mt-3" variant="primary" aria-label={`Voir le briefing : ${s.title}`} onClick={() => { setDef(s); setDifficulty(s.recommended); }}>
-                Voir le briefing
-              </Button>
-            </li>
+        <div role="tablist" aria-label="Type de scénario" className="mb-3 flex flex-wrap gap-2">
+          {PICKER_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              id={`picker-tab-${t.id}`}
+              aria-selected={tab === t.id}
+              aria-controls="picker-panel"
+              onClick={() => setTab(t.id)}
+              className={`min-h-11 rounded-xl border-2 px-4 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${tab === t.id ? 'border-amber-400 bg-amber-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100 hover:bg-stone-800'}`}
+            >
+              {t.label}
+            </button>
           ))}
+        </div>
+        <div role="tabpanel" id="picker-panel" aria-labelledby={`picker-tab-${tab}`} className="space-y-3">
+          {tab === 'campaigns' && (
+            <>
+              <CampaignCard onPlay={play} />
+              <MediumCampaignCard onPlay={play} />
+              <RandomCampaignCard onPlay={play} />
+            </>
+          )}
+          {tab === 'single' && (
+            <ul className="grid gap-3 md:grid-cols-2">
+              {ORIGINAL_SCENARIOS.filter((s) => !s.sandbox && !CHAPTER_IDS.slice(1).includes(s.id) && !MEDIUM_IDS.slice(1).includes(s.id)).map(card)}
           <li className="rounded-xl border border-amber-700 bg-stone-800 p-4" data-testid="random-mode">
             <h3 className="text-xl font-semibold text-amber-300">
               <span aria-hidden="true">🎲 </span>Scénario aléatoire
@@ -127,7 +162,10 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
               Générer un scénario
             </Button>
           </li>
-        </ul>
+            </ul>
+          )}
+          {tab === 'sandbox' && <ul className="grid gap-3 md:grid-cols-2">{ORIGINAL_SCENARIOS.filter((s) => s.sandbox).map(card)}</ul>}
+        </div>
       </Panel>
     );
   }

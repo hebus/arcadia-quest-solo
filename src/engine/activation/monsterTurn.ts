@@ -1,15 +1,14 @@
-import type { Content, DecisionTrace, GameState } from '../domain/schemas';
+import type { ActivationCard, Content, DecisionTrace, GameState, MonsterDefinition, MonsterInstance } from '../domain/schemas';
 import { monsterStrike, stunInstruction } from '../combat/monsterAttack';
-import { selectionDistance } from '../movement/board';
-import { planMonsterAction, type ActionPlan } from '../movement/plan';
+import { monsterView, selectionDistance } from '../movement/board';
+import { statsOfMonster } from '../monsters';
+import { planMonsterAction, searchReachable, type ActionPlan, type PathStep } from '../movement/plan';
 import { createOracle, NeedInput, type InputAnswer, type InputRequest, type Oracle } from '../oracle';
 import { CountingRandom, type RandomSource } from '../random';
-import { resolveSpawnPhase, rollSpawnPoint, type SpawnReport } from '../spawn/spawn';
+import { resolveSpawnPhase, type SpawnReport } from '../spawn/spawn';
 import { cloneState, isTerminal, log } from '../state';
 import type { VisualAction } from '../visual';
 import { discardCard, drawCard, pruneEliminatedTypes, recycleDiscard } from './deck';
-
-export const MONSTER_TURN_MOVEMENT = 3;
 
 export interface PhysicalInstruction {
   id: string;
@@ -70,6 +69,32 @@ export function spawnInstructions(report: SpawnReport, nameOf: (id: string) => s
   ];
 }
 
+/** Cases où un monstre à distance peut se replier après son tir : plus loin des héros que sa case actuelle. */
+function retreatPlan(s: GameState, monsterId: string, mp: number): ActionPlan | null {
+  const m = s.monsters.find((x) => x.id === monsterId);
+  const heroes = s.heroes.filter((h) => !h.dead && h.position);
+  if (!m?.position || mp <= 0 || heroes.length === 0) return null;
+  const nearest = (p: { x: number; y: number }) => Math.min(...heroes.map((h) => selectionDistance(p, h.position!)));
+  const here = nearest(m.position);
+  type SearchNode = ReturnType<typeof searchReachable>[number];
+  let best: SearchNode | null = null;
+  for (const n of searchReachable(s, monsterId, m.position, mp)) {
+    if (!n.step || !monsterView(s, n.pos, monsterId).canEnd) continue;
+    const d = nearest(n.pos);
+    const bd = best ? nearest(best.pos) : here;
+    if (d > bd || (best && d === bd && n.cost < best.cost)) best = n;
+  }
+  if (!best) return null;
+  const steps: PathStep[] = [];
+  for (let n: SearchNode | null = best; n && n.step; n = n.prev) steps.unshift(n.step);
+  return { monsterId, targetId: null, steps, destination: best.pos, mpUsed: best.cost, canAttack: false, evaluations: [], explanation: ['Se replie après son tir.'] };
+}
+
+/**
+ * Une activation, jouée comme le ferait un joueur humain : on tire des cartes jusqu'à tomber sur un type de monstre dont une
+ * figurine peut agir (pas encore activée ce tour, pas un garde), on active celle qui atteint le plus facilement un héros, elle
+ * utilise TOUT son mouvement : se déplace puis attaque, ou, si elle tire déjà sur un héros à distance, attaque puis se replie.
+ */
 function activateOne(
   s: GameState,
   content: Content,
@@ -77,137 +102,124 @@ function activateOne(
   rng: RandomSource,
   n: 1 | 2,
   out: MonsterTurnResult,
+  activated: Set<string>,
 ): void {
   const tag = `R${s.round}-A${n}`;
   const group = `Activation ${n}`;
-  const { point, dice } = rollSpawnPoint(s, oracle, `Activation ${n} : Spawn Point de référence`);
-  if (!point) {
-    // Jeton inexistant sur ce plateau : rien ne se passe (aucune relance, aucune carte piochée).
-    out.instructions.push({
-      id: `${tag}-nospawn`,
-      kind: 'info',
-      group,
-      label: 'Pas de jeton Spawn : rien ne se passe',
-      text: `Dés de référence : ${dice[0]} / ${dice[1]} → aucun jeton Spawn correspondant sur le plateau. Activation ${n} : rien ne se passe.`,
-    });
-    log(s, 'activation', `Activation ${n} : dés ${dice[0]}/${dice[1]}, aucun jeton Spawn correspondant : rien ne se passe.`);
-    return;
-  }
-  out.instructions.push({
-    id: `${tag}-dice`,
-    kind: 'info',
-    group,
-    label: 'Jeton Spawn de référence',
-    text: `Dés de référence : ${dice[0]} / ${dice[1]} → jeton ${point.id}.`,
-    visual: { type: 'spawn-point', at: { ...point.at }, pointId: point.id },
-  });
-
-  // Carte d'activation ; les cartes Wild Pet modifient la cible de la prochaine activation (Pets).
-  let card = drawCard(s, rng, oracle.cardPick());
-  while (card.kind === 'wild-pet') {
-    discardCard(s, card);
-    if (s.nextActivationTargetsPet) recycleDiscard(s, rng, 'deux cartes Wild Pet consécutives');
-    s.nextActivationTargetsPet = true;
-    log(s, 'wild-pet', 'Carte Wild Pet : le prochain monstre vise le familier le plus proche.');
-    card = drawCard(s, rng, oracle.cardPick());
-  }
-  const targetsPet = s.nextActivationTargetsPet && s.pets.some((p) => !p.dead && p.position);
-  s.nextActivationTargetsPet = false;
-  const def = content.monsters[card.monsterDefId!];
-  if (!def) throw new Error(`Monstre inconnu : ${card.monsterDefId}`);
-
-  const onBoard = s.monsters.filter((m) => m.status === 'board' && m.position && m.definitionId === def.id);
+  const explanation: string[] = [];
   const rejected: { entityId: string; reason: string }[] = [];
-  const explanation = [
-    `La carte révélée demande : ${def.name}.`,
-    `Spawn Point de référence : ${point.id} en (${point.at.x},${point.at.y}).`,
-  ];
   const trace: DecisionTrace = {
     decisionId: `${tag}-select`,
     ruleIds: ['RULE-SOLO-009', 'RULE-SOLO-010', 'RULE-SOLO-011', 'RULE-SOLO-014'],
     summary: '',
     explanation,
-    candidates: onBoard.map((m) => m.id),
+    candidates: [],
     rejectedCandidates: rejected,
   };
+  const candidatesOf = (defId: string) => s.monsters.filter((m) => m.status === 'board' && m.position && m.definitionId === defId && !m.isGuard && !activated.has(m.id));
 
-  const finish = (summary: string) => {
-    trace.summary = summary;
+  // Carte d'activation ; les cartes Wild Pet modifient la cible de la prochaine activation (Pets). Une carte dont aucune
+  // figurine ne peut agir est défaussée et on en pioche une autre : il y a toujours deux monstres activés par tour.
+  let card: ActivationCard | null = null;
+  let def: MonsterDefinition | undefined;
+  let candidates: MonsterInstance[] = [];
+  for (let tries = s.deck.draw.length + s.deck.discard.length + 1; tries > 0; tries--) {
+    let c = drawCard(s, rng, oracle.cardPick());
+    while (c.kind === 'wild-pet') {
+      discardCard(s, c);
+      if (s.nextActivationTargetsPet) recycleDiscard(s, rng, 'deux cartes Wild Pet consécutives');
+      s.nextActivationTargetsPet = true;
+      log(s, 'wild-pet', 'Carte Wild Pet : le prochain monstre vise le familier le plus proche.');
+      c = drawCard(s, rng, oracle.cardPick());
+    }
+    const d = content.monsters[c.monsterDefId!];
+    if (!d) throw new Error(`Monstre inconnu : ${c.monsterDefId}`);
+    const cands = candidatesOf(d.id);
+    if (cands.length > 0) {
+      card = c;
+      def = d;
+      candidates = cands;
+      break;
+    }
+    explanation.push(`Carte ${d.name} : aucune figurine disponible, on en pioche une autre.`);
+    discardCard(s, c);
+  }
+  if (!card || !def) {
+    out.instructions.push({ id: `${tag}-none`, kind: 'info', group, label: 'Aucun monstre ne peut agir', text: `Activation ${n} : aucun monstre disponible.` });
+    trace.summary = `Activation ${n} : aucun monstre disponible.`;
     out.traces.push(trace);
-    log(s, 'activation', summary, { card: card.id }, trace);
-    discardCard(s, card);
-  };
+    log(s, 'activation', trace.summary, {}, trace);
+    return;
+  }
+  const targetsPet = s.nextActivationTargetsPet && s.pets.some((p) => !p.dead && p.position);
+  s.nextActivationTargetsPet = false;
+  explanation.unshift(`La carte révélée demande : ${def.name}.`);
+  trace.candidates = candidates.map((m) => m.id);
+  const kind: 'hero' | 'pet' = targetsPet ? 'pet' : 'hero';
+  const monsterName = def.name;
 
-  if (onBoard.length === 0) {
-    explanation.push('Aucune figurine de ce type sur le plateau : rien ne se passe (solo p.6).');
-    out.instructions.push({ id: `${tag}-none`, kind: 'info', group, label: `Aucun ${def.name} sur le plateau : rien ne se passe`, text: `Activation ${n} : aucun ${def.name} sur le plateau.` });
-    return finish(`Activation ${n} : aucun ${def.name} sur le plateau.`);
-  }
-  const ranked = onBoard
-    .map((m) => ({ m, d: selectionDistance(point.at, m.position!) }))
-    .sort((a, b) => a.d - b.d || a.m.id.localeCompare(b.m.id));
-  const free = ranked.filter((r) => !r.m.isGuard);
-  for (const r of ranked.filter((x) => x.m.isGuard)) {
-    rejected.push({ entityId: r.m.id, reason: 'garde : ignoré pour l\'activation' });
-  }
-  if (free.length === 0) {
-    explanation.push('Tous les monstres de ce type sont des gardes : aucune activation (question ouverte B6).');
-    out.instructions.push({ id: `${tag}-guards`, kind: 'info', group, label: `Seuls des gardes ${def.name} restent : personne n'agit`, text: `Activation ${n} : seuls des gardes ${def.name} restent.` });
-    return finish(`Activation ${n} : seuls des gardes ${def.name} restent.`);
-  }
-  const minD = free[0]!.d;
-  const tied = free.filter((r) => r.d === minD).map((r) => r.m.id);
-  explanation.push(`Distance orthogonale minimale (terrain ignoré) : ${minD} Space(s).`);
-  const chosenId = oracle.choose(`Départager les ${def.name} à égalité (distance ${minD})`, tied);
+  // Comme un joueur : on active la figurine qui peut attaquer au plus vite (sans saisie : les égalités sont tranchées après).
+  const stat = (m: MonsterInstance) => statsOfMonster(content, s, m)!;
+  const scored = candidates.map((m) => {
+    const p = planMonsterAction(s, content, m.id, stat(m).movement, { targetKind: kind, choose: (_q, o) => o[0]! });
+    const cost = p.evaluations.reduce<number>((acc, e) => (e.cost === null ? acc : Math.min(acc, e.cost)), Infinity);
+    return { m, rank: (p.canAttack ? 0 : 1000) + cost };
+  });
+  const bestRank = Math.min(...scored.map((x) => x.rank));
+  const tied = scored.filter((x) => x.rank === bestRank).map((x) => x.m.id).sort();
+  const chosenId = tied.length > 1 ? oracle.choose(`Départager les ${monsterName} à égalité`, tied) : tied[0]!;
   if (tied.length > 1) explanation.push(`Égalité entre ${tied.join(', ')} : ${chosenId} choisi (${s.settings.tiePolicy}).`);
-  for (const r of free) if (r.m.id !== chosenId) rejected.push({ entityId: r.m.id, reason: `plus loin ou non retenu (distance ${r.d})` });
+  for (const r of scored) if (r.m.id !== chosenId) rejected.push({ entityId: r.m.id, reason: 'moins bien placé pour attaquer' });
   trace.selectedEntityId = chosenId;
+  activated.add(chosenId);
+  const monster = s.monsters.find((m) => m.id === chosenId)!;
+  const mstats = stat(monster);
   out.instructions.push({
     id: `${tag}-select`,
     kind: 'info',
     group,
-    label: `${def.name} est activé`,
-    text: `${def.name} ${chosenId} est activé.`,
+    label: `${monsterName} est activé`,
+    text: `${monsterName} ${chosenId} est activé.`,
     actorId: chosenId,
-    visual: { type: 'activate', actorId: chosenId, at: { ...ranked.find((r) => r.m.id === chosenId)!.m.position! } },
+    visual: { type: 'activate', actorId: chosenId, at: { ...monster.position! } },
   });
 
-  const kind: 'hero' | 'pet' = targetsPet ? 'pet' : 'hero';
-  const plan = planMonsterAction(s, content, chosenId, MONSTER_TURN_MOVEMENT, {
+  const plan = planMonsterAction(s, content, chosenId, mstats.movement, {
     targetKind: kind,
     choose: (purpose, options) => oracle.choose(purpose, options),
   });
   explanation.push(...plan.explanation);
   trace.ruleIds.push('RULE-SOLO-012');
 
-  const monster = s.monsters.find((m) => m.id === chosenId)!;
-  const openedDoorIds: string[] = [];
-  for (const st of plan.steps) {
-    if (st.kind === 'open-door') {
-      const d = s.board.doors.find((x) => x.id === st.doorId);
-      if (d) d.open = true;
-      if (st.doorId) openedDoorIds.push(st.doorId);
+  const doMove = (p: ActionPlan, label: string): void => {
+    const openedDoorIds: string[] = [];
+    for (const st of p.steps) {
+      if (st.kind === 'open-door') {
+        const d = s.board.doors.find((x) => x.id === st.doorId);
+        if (d) d.open = true;
+        if (st.doorId) openedDoorIds.push(st.doorId);
+      }
     }
-  }
-  const from = monster.position!;
-  monster.position = { ...plan.destination };
-  if (plan.steps.length) {
+    const from = monster.position!;
+    monster.position = { ...p.destination };
+    if (!p.steps.length) return;
+    const path = [from, ...p.steps.map((st) => st.to)];
     out.instructions.push({
       id: `${tag}-move`,
       kind: 'move',
       group,
-      label: `${def.name} avance`,
-      text: describePlan(plan, `${def.name} ${chosenId} (depuis (${from.x},${from.y}))`).join('\n'),
+      label,
+      text: describePlan(p, `${monsterName} ${chosenId} (depuis (${from.x},${from.y}))`).join('\n'),
       actorId: chosenId,
-      path: [from, ...plan.steps.map((st) => st.to)],
-      visual: { type: 'move', actorId: chosenId, path: [from, ...plan.steps.map((st) => st.to)], doorIds: openedDoorIds },
+      path,
+      visual: { type: 'move', actorId: chosenId, path, doorIds: openedDoorIds },
     });
-    log(s, 'monster-move', `${chosenId} → (${plan.destination.x},${plan.destination.y}) en ${plan.mpUsed} PM`, { plan: plan.steps });
-  }
+    log(s, 'monster-move', `${chosenId} → (${p.destination.x},${p.destination.y}) en ${p.mpUsed} PM`, { plan: p.steps });
+  };
 
-  if (plan.canAttack && plan.targetId) {
+  const doAttack = (): void => {
     // Point d'entrée unique de l'attaque d'un monstre : applique ses compétences (relances, critiques, Troll, Spear, étourdi).
-    const results = monsterStrike(s, content, oracle, chosenId, plan.targetId, { purpose: `${def.name} ${chosenId} attaque ${plan.targetId}`, cause: `attaque de ${chosenId}` });
+    const results = monsterStrike(s, content, oracle, chosenId, plan.targetId!, { purpose: `${monsterName} ${chosenId} attaque ${plan.targetId}`, cause: `attaque de ${chosenId}` });
     // Une cible : id et texte habituels ; plusieurs (Troll) : une étape par héros ciblé, suffixée de son identifiant.
     const multi = results.length > 1;
     for (const r of results) {
@@ -217,9 +229,9 @@ function activateOne(
         id: multi ? `${tag}-attack-${r.targetId}` : `${tag}-attack`,
         kind: 'attack',
         group,
-        label: `${def.name} attaque`,
+        label: `${monsterName} attaque`,
         text:
-          `${def.name} ${chosenId} attaque ${r.targetId} : ${outcome.hits} coup(s), ${outcome.saves} sauvegarde(s) → ` +
+          `${monsterName} ${chosenId} attaque ${r.targetId} : ${outcome.hits} coup(s), ${outcome.saves} sauvegarde(s) → ` +
           `${outcome.wounds} blessure(s)${extra}.`,
         visual: { type: 'attack', attackerId: chosenId, targetId: r.targetId, wounds: outcome.wounds },
       });
@@ -229,12 +241,31 @@ function activateOne(
         defenseFaces: outcome.defenseFaces,
       });
     }
-  } else if (plan.targetId) {
-    explanation.push(`${chosenId} ne peut pas atteindre ${plan.targetId} ce tour-ci.`);
+  };
+
+  let retreated = false;
+  if (plan.canAttack && plan.targetId) {
+    if (mstats.attackType === 'ranged' && plan.steps.length === 0) {
+      // Il voit déjà sa cible : il tire d'abord, puis utilise son mouvement pour se replier.
+      doAttack();
+      const back = retreatPlan(s, chosenId, mstats.movement);
+      if (back) {
+        retreated = true;
+        explanation.push(...back.explanation);
+        doMove(back, `${monsterName} se replie`);
+      }
+    } else {
+      doMove(plan, `${monsterName} avance`);
+      doAttack();
+    }
+  } else {
+    doMove(plan, `${monsterName} avance`);
+    if (plan.targetId) explanation.push(`${chosenId} ne peut pas atteindre ${plan.targetId} ce tour-ci.`);
   }
-  finish(
-    `Activation ${n} : ${chosenId} (${def.name}) ${plan.canAttack ? `attaque ${plan.targetId}` : plan.steps.length ? 'avance sans pouvoir attaquer' : 'reste en place'}.`,
-  );
+  trace.summary = `Activation ${n} : ${chosenId} (${monsterName}) ${plan.canAttack ? `attaque ${plan.targetId}${retreated ? ' puis se replie' : ''}` : plan.steps.length ? 'avance sans pouvoir attaquer' : 'reste en place'}.`;
+  out.traces.push(trace);
+  log(s, 'activation', trace.summary, { card: card.id }, trace);
+  discardCard(s, card);
 }
 
 /**
@@ -258,9 +289,10 @@ export function runMonsterTurn(state: GameState, content: Content, answers: read
     const report = resolveSpawnPhase(s, oracle, rng);
     out.instructions.push(...spawnInstructions(report, nameOf));
 
+    const activated = new Set<string>();
     for (const n of [1, 2] as const) {
       s.phase = n === 1 ? 'MONSTER_TURN_ACTIVATION_1' : 'MONSTER_TURN_ACTIVATION_2';
-      activateOne(s, content, oracle, rng, n, out);
+      activateOne(s, content, oracle, rng, n, out, activated);
       pruneEliminatedTypes(s);
       if (isTerminal(s.phase)) break;
     }

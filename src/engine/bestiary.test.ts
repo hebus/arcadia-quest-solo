@@ -101,18 +101,18 @@ describe('boîtes de figurines : 8 Orcs partagés, 1 Minotaur, 1 Troll, 2 Spear 
 
   it('au terrain d’essai, la boîte des Orcs est commune et chaque vilain n’a qu’une figurine', () => {
     let g = startScenario(createScenarioGame(TERRAIN_ESSAI, { sessionId: 's', difficulty: 'medium', seed: 1, heroes: ORIGINAL_HEROES.slice(0, 3) }, ORIGINAL_CONTENT));
-    // 4 Orcs en jeu (3 Marauder, 1 Captain) : 4 Orc Captain de plus complètent les 8 de la boîte, un 5e est refusé.
-    for (const [x, y] of [[0, 0], [1, 0], [2, 0], [0, 1]] as const) g = addMonster(g, ORIGINAL_CONTENT, 'OC', { x, y });
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OC', { x: 1, y: 1 })).toThrow(/Plus de figurine Orc Marauder ou Orc Captain disponible \(8 dans la boîte\)/);
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', { x: 1, y: 1 })).toThrow(/Plus de figurine/);
+    // 2 Orcs en jeu (1 Marauder, 1 Captain) : 6 Orc Captain de plus complètent les 8 de la boîte, un 7e est refusé.
+    for (const [x, y] of [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]] as const) g = addMonster(g, ORIGINAL_CONTENT, 'OC', { x, y });
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OC', { x: 3, y: 1 })).toThrow(/Plus de figurine Orc Marauder ou Orc Captain disponible \(8 dans la boîte\)/);
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'OM', { x: 3, y: 1 })).toThrow(/Plus de figurine/);
     // Le Minotaur et le Troll sont déjà sur le plateau : leur unique figurine est prise.
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'M', { x: 1, y: 1 })).toThrow(/Plus de figurine Minotaur disponible \(1 dans la boîte\)/);
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'T', { x: 1, y: 1 })).toThrow(/Plus de figurine Troll disponible \(1 dans la boîte\)/);
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'M', { x: 3, y: 1 })).toThrow(/Plus de figurine Minotaur disponible \(1 dans la boîte\)/);
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'T', { x: 3, y: 1 })).toThrow(/Plus de figurine Troll disponible \(1 dans la boîte\)/);
     // Spear et Hammer Beastman : 2 chacun, un seul en jeu au départ ; ils n'existent qu'en major mais se posent.
-    g = addMonster(g, ORIGINAL_CONTENT, 'SB', { x: 1, y: 1 });
-    expect(() => addMonster(g, ORIGINAL_CONTENT, 'SB', { x: 2, y: 1 })).toThrow(/Spear Beastman/);
+    g = addMonster(g, ORIGINAL_CONTENT, 'SB', { x: 0, y: 2 });
+    expect(() => addMonster(g, ORIGINAL_CONTENT, 'SB', { x: 3, y: 1 })).toThrow(/Spear Beastman/);
     expect(g.monsters.filter((m) => m.definitionId === 'SB')).toHaveLength(2);
-    g = addMonster(g, ORIGINAL_CONTENT, 'HB', { x: 2, y: 1 });
+    g = addMonster(g, ORIGINAL_CONTENT, 'HB', { x: 0, y: 3 });
     expect(() => addMonster(g, ORIGINAL_CONTENT, 'HB', { x: 3, y: 1 })).toThrow(/Hammer Beastman/);
     expect(g.monsters.filter((m) => m.definitionId === 'HB')).toHaveLength(2);
   });

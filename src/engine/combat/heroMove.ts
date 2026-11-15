@@ -161,7 +161,7 @@ export function moveHeroTo(
   const oracle = createOracle(s, content, rng, answers);
   ensureActivated(s, heroId);
   const turn = s.heroTurn[heroId]!;
-  if (turn.attacked && turn.moved) throw new Error("Le mouvement ne peut pas être repris après l'attaque");
+  if (turn.moveLocked) throw new Error("Le mouvement ne peut pas être repris après l'attaque");
   const hero = s.heroes.find((h) => h.id === heroId)!;
   const dest = reachableCells(s, heroId, turn.mpLeft).find((r) => samePos(r.pos, target));
   if (!dest) throw new Error(`Case (${target.x},${target.y}) hors de portée (${turn.mpLeft} PM restants)`);
@@ -222,7 +222,7 @@ export function setDoorAsHero(state: GameState, _content: Content, heroId: strin
   ensureActivated(s, heroId);
   const turn = s.heroTurn[heroId]!;
   const hero = s.heroes.find((h) => h.id === heroId)!;
-  if (turn.attacked && turn.moved) throw new Error("Le mouvement ne peut pas être repris après l'attaque");
+  if (turn.moveLocked) throw new Error("Le mouvement ne peut pas être repris après l'attaque");
   if (turn.mpLeft < 1) throw new Error(`Aucun point de mouvement restant pour ${open ? 'ouvrir' : 'fermer'} une porte`);
   const door = s.board.doors.find((d) => d.id === doorId);
   if (!door) throw new Error(`Porte inconnue : ${doorId}`);
@@ -230,7 +230,7 @@ export function setDoorAsHero(state: GameState, _content: Content, heroId: strin
   if (!adjacentDoors(s, heroId).includes(doorId)) throw new Error("Cette porte n'est pas au bord de la case du héros");
   door.open = open;
   turn.mpLeft -= 1;
-  turn.moved = true; // des points de mouvement ont été dépensés : le mouvement ne pourra plus être repris après une attaque
+  turn.moved = true; // ouvrir une porte EST du mouvement : si une attaque suit, le mouvement ne pourra plus être repris
   const verb = open ? 'ouvre' : 'ferme';
   log(s, 'hero-door', `${hero.name} ${verb} la porte ${doorId} (1 PM, ${turn.mpLeft} restants)`, { heroId, doorId, open });
   return {

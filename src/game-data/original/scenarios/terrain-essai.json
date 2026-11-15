@@ -1,64 +1,21 @@
 {
   "id": "terrain-essai",
-  "commentaire": "Terrain d'essai : pas une aventure, un banc d'essai. On y place héros et monstres où l'on veut, on règle les dés des monstres et on lance le tour des monstres en un clic pour vérifier le déroulement (déplacements, attaques, ripostes, jets de défense, compétences) dans des conditions reproductibles. Plateau construit depuis 6 tuiles du jeu (10×6 cases) : 5A, la tuile 4A et sa case bloquée (le puits, en (4,1)), la tuile 2A (un bâtiment en L, la chapelle), la tuile 7A (le bâtiment de départ des héros), la salle de la tuile 1B, et la tuile 3B décalée d'une case vers la droite : la colonne vide (6,3) à (6,5) est un espace bloquant entre la salle et 3B. Un monstre de chaque type du niveau 1, placés pour essayer chaque compétence.",
+  "commentaire": "Terrain d'essai : pas une aventure, un banc d'essai. Plateau vierge de 2×2 tuiles (6×6 cases), sans bâtiment, mur ni porte : on le construit soi-même avec les outils « Construire » (murs, portes, bâtiments, cases bloquées) pour recréer n'importe quelle situation. On y place héros et monstres où l'on veut (glisser les pions), on règle les dés des monstres et on lance le tour des monstres en un clic. Un monstre de chaque type du niveau 1.",
   "title": "Terrain d’essai",
-  "tagline": "Un monstre de chaque type : placez héros et monstres où vous voulez pour reproduire une situation.",
+  "tagline": "Un plateau vierge de 2×2 tuiles et un monstre de chaque type : construisez le terrain, placez héros et monstres, reproduisez une situation.",
   "recommended": "easy",
   "sandbox": true,
   "story": {
     "intro": [
-      "Un banc d’essai pour vérifier le déroulement du jeu, sans enchaîner une campagne : six tuiles du jeu et un monstre de chaque type du niveau 1.",
-      "Le « Placement libre » est activé : glissez n’importe quel pion où vous voulez. Le menu « Terrain d’essai » ajoute ou retire des monstres, règle leurs blessures et leurs dés, saute le tour de guilde et remet la disposition de départ.",
-      "Pour rejouer une situation à l’identique, choisissez des dés « toujours » : le jeton Spawn de référence est alors fixé et décide quel monstre agit."
+      "Un banc d’essai pour vérifier le déroulement du jeu, sans enchaîner une campagne : un plateau vierge de 2×2 tuiles, sans bâtiment, et un monstre de chaque type du niveau 1.",
+      "Le bouton « Construire » sous le plateau pose des murs, des portes, des bâtiments et des cases bloquées, comme l’éditeur de tuiles. Le bouton « Sync » glisse n’importe quel pion où vous voulez.",
+      "Le menu « Terrain d’essai » ajoute ou retire des monstres, règle leurs blessures et leurs dés, saute le tour de guilde et remet la disposition de départ."
     ],
     "win": [
       "Terrain d’essai validé."
     ],
     "lose": [
       "Terrain d’essai : trop de héros sont tombés. Remettez la disposition de départ depuis le menu."
-    ]
-  },
-  "tiles": {
-    "tilesW": 3,
-    "tilesH": 2,
-    "placements": [
-      {
-        "tileId": "5A",
-        "tx": 0,
-        "ty": 0,
-        "rotation": 0
-      },
-      {
-        "tileId": "4A",
-        "tx": 1,
-        "ty": 0,
-        "rotation": 0
-      },
-      {
-        "tileId": "2A",
-        "tx": 2,
-        "ty": 0,
-        "rotation": 0
-      },
-      {
-        "tileId": "7A",
-        "tx": 0,
-        "ty": 1,
-        "rotation": 0
-      },
-      {
-        "tileId": "1B",
-        "tx": 1,
-        "ty": 1,
-        "rotation": 0
-      },
-      {
-        "tileId": "3B",
-        "tx": 2,
-        "ty": 1,
-        "rotation": 0,
-        "dx": 1
-      }
     ]
   },
   "heroStarts": [
@@ -85,26 +42,18 @@
       }
     },
     {
-      "id": "OM2",
-      "definitionId": "OM",
+      "id": "SB1",
+      "definitionId": "SB",
       "at": {
         "x": 5,
         "y": 1
       }
     },
     {
-      "id": "OM3",
-      "definitionId": "OM",
-      "at": {
-        "x": 4,
-        "y": 4
-      }
-    },
-    {
       "id": "OC1",
       "definitionId": "OC",
       "at": {
-        "x": 7,
+        "x": 4,
         "y": 2
       },
       "guard": true
@@ -113,8 +62,8 @@
       "id": "M1",
       "definitionId": "M",
       "at": {
-        "x": 8,
-        "y": 1
+        "x": 5,
+        "y": 3
       },
       "guard": true
     },
@@ -122,16 +71,8 @@
       "id": "T1",
       "definitionId": "T",
       "at": {
-        "x": 2,
-        "y": 5
-      }
-    },
-    {
-      "id": "SB1",
-      "definitionId": "SB",
-      "at": {
-        "x": 6,
-        "y": 1
+        "x": 3,
+        "y": 3
       }
     },
     {
@@ -139,7 +80,7 @@
       "definitionId": "HB",
       "at": {
         "x": 1,
-        "y": 3
+        "y": 2
       }
     }
   ],
@@ -150,7 +91,7 @@
       "title": "Terrain d’essai (à valider à la main)",
       "completion": "Essai terminé.",
       "at": {
-        "x": 4,
+        "x": 3,
         "y": 2
       }
     }
@@ -167,14 +108,11 @@
   },
   "monsterCardSet": "1",
   "board": [
-    "size 10x6",
-    "door porte-chapelle 7,1-7,2 closed special",
-    "door porte-salle 2,4-3,4 closed",
-    "door porte-depart 1,4-1,5 open",
+    "size 6x6",
     "spawn S1 0,0 sword+sword",
-    "spawn S2 9,5 bow+bow",
-    "spawn S3 4,0 sword+bow",
+    "spawn S2 5,5 bow+bow",
+    "spawn S3 2,0 sword+bow",
     "spawn S4 5,2 sword+crit",
-    "spawn S5 7,4 bow+crit"
+    "spawn S5 4,4 bow+crit"
   ]
 }

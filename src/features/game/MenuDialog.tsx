@@ -1,20 +1,18 @@
 import { Button } from '@/components/ui';
 import { Modal } from '@/components/Modal';
-import { CorrectionsPanel } from '@/features/scenario/CorrectionsPanel';
 import { QuestsPanel, TeamPanels } from '@/features/scenario/Dashboard';
 import { HistoryScreen } from '@/features/history/HistoryScreen';
 import { DecisionsPanel } from '@/features/monster-turn/MonsterTurnScreen';
 import { SandboxPanel, useIsSandbox } from './SandboxPanel';
 import { SoundPanel } from './SoundControls';
 
-export type MenuTab = 'team' | 'quests' | 'decisions' | 'journal' | 'corrections' | 'sound' | 'sandbox';
+export type MenuTab = 'team' | 'quests' | 'decisions' | 'journal' | 'sound' | 'sandbox';
 
 const TABS: { id: MenuTab; label: string }[] = [
   { id: 'team', label: 'Équipe' },
   { id: 'quests', label: 'Objectifs' },
   { id: 'decisions', label: 'Décisions' },
   { id: 'journal', label: 'Journal' },
-  { id: 'corrections', label: 'Corrections' },
   { id: 'sound', label: 'Son' },
 ];
 const SANDBOX_TAB = { id: 'sandbox' as const, label: '🧪 Terrain d’essai' };
@@ -36,7 +34,6 @@ export function MenuDialog({ tab, onTab, onClose }: { tab: MenuTab; onTab: (t: M
       {tab === 'quests' && <QuestsPanel />}
       {tab === 'decisions' && <DecisionsPanel />}
       {tab === 'journal' && <HistoryScreen />}
-      {tab === 'corrections' && <CorrectionsPanel />}
       {tab === 'sound' && <SoundPanel />}
       {tab === 'sandbox' && sandbox && <SandboxPanel onPlace={onClose} />}
     </Modal>

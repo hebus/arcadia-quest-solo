@@ -101,13 +101,15 @@ describe('Monster Turn', () => {
     expect(() => runMonsterTurn(demoGame(), testContent)).toThrow(/impossible/);
   });
 
-  it('deux activations : monstre le plus proche, garde ignoré, trace explicative', () => {
+  it('deux activations : figurine la mieux placée, garde ignoré, trace explicative', () => {
     const s = toMonsterTurn(demoGame({ settings: physical }));
-    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), card('goblin'), atk(2, 0), die('C'), die('D'), card('orc')]);
+    s.heroes.find((h) => h.id === 'h1')!.position = { x: 3, y: 2 }; // adjacent au Goblin g1
+    const r = runMonsterTurn(s, testContent, [card('goblin'), atk(2, 0), card('orc')]);
     expect(r.traces).toHaveLength(2);
     expect(r.traces[0]!.selectedEntityId).toBe('g1');
     expect(r.traces[1]!.selectedEntityId).toBe('o1');
-    expect(r.traces[1]!.rejectedCandidates?.some((c) => c.entityId === 'o2' && /garde/.test(c.reason))).toBe(true);
+    expect(r.traces[1]!.candidates).toEqual(['o1']);
+    expect(r.state.monsters.find((m) => m.id === 'o2')!.position).toEqual({ x: 7, y: 0 });
     expect(r.state.phase).toBe('GUILD_TURN');
     expect(r.state.round).toBe(2);
     expect(r.state.deck.discard).toHaveLength(2);
@@ -116,24 +118,23 @@ describe('Monster Turn', () => {
     expect(wounded[0]!.wounds).toBe(2);
   });
 
-  it('jet de référence sans jeton Spawn sur le plateau : rien ne se passe, ni relance ni carte piochée', () => {
-    const s = toMonsterTurn(demoGame({ settings: physical }));
-    // Activation 1 : A/D n'existe pas ; activation 2 : C/D existe.
-    const r = runMonsterTurn(s, testContent, [die('A'), die('D'), die('C'), die('D'), card('goblin'), atk(0, 0)]);
-    expect(r.state.events.some((e) => e.type === 'spawn-none')).toBe(true);
-    expect(r.state.events.some((e) => e.type === 'spawn-reroll')).toBe(false);
-    expect(r.traces).toHaveLength(1);
-    expect(r.state.deck.discard).toHaveLength(1);
+  it('aucun monstre ne peut agir (seulement des gardes) : « Aucun monstre ne peut agir », aucune carte gardée en main', () => {
+    const s = toMonsterTurn(demoGame({ monsters: [{ id: 'o2', definitionId: 'orc', position: { x: 7, y: 0 }, isGuard: true }] }));
+    const r = runMonsterTurn(s, testContent);
+    const ids = r.instructions.map((i) => i.id);
+    expect(ids).toContain('R1-A1-none');
+    expect(ids).toContain('R1-A2-none');
+    expect(r.state.monsters.find((m) => m.id === 'o2')!.position).toEqual({ x: 7, y: 0 });
     expect(r.state.phase).toBe('GUILD_TURN');
   });
 
   it('Spawn Tile pleine et jeton tiré absent du plateau : le monstre sort définitivement du jeu', () => {
-    const s = toMonsterTurn(demoGame({ settings: physical, spawnTileCapacity: 1 }));
+    const s = toMonsterTurn(demoGame({ settings: { diceMode: 'physical' }, spawnTileCapacity: 1 }));
     const g1 = s.monsters.find((m) => m.id === 'g1')!;
     g1.status = 'spawn-tile';
     g1.position = null;
     s.spawnTile = ['g1'];
-    const r = runMonsterTurn(s, testContent, [die('A'), die('D'), die('A'), die('B'), card('orc'), die('A'), die('B'), card('orc'), atk(0, 0)]);
+    const r = runMonsterTurn(s, testContent, [die('A'), die('D')]);
     const after = r.state.monsters.find((m) => m.id === 'g1')!;
     expect(after.status).toBe('box');
     expect(after.position).toBeNull();
@@ -141,16 +142,25 @@ describe('Monster Turn', () => {
     expect(r.instructions.some((i) => i.id === 'box-g1')).toBe(true);
   });
 
-  it('aucun monstre du type sur le plateau : rien ne se passe', () => {
-    const s = toMonsterTurn(demoGame({ settings: physical, deck: { listedMonsterIds: ['goblin', 'orc'] }, monsters: [{ id: 'g1', definitionId: 'goblin', position: { x: 4, y: 2 } }] }));
-    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), card('orc'), die('A'), die('B'), card('orc')]);
-    expect(r.traces[0]!.summary).toMatch(/aucun Orc/);
-    expect(r.state.monsters.find((m) => m.id === 'g1')!.position).toEqual({ x: 4, y: 2 });
+  it('aucun monstre du type sur le plateau : la carte est défaussée et on en pioche une autre', () => {
+    const s = toMonsterTurn(demoGame({ deck: { listedMonsterIds: ['goblin', 'orc'] }, monsters: [{ id: 'g1', definitionId: 'goblin', position: { x: 4, y: 2 } }] }));
+    const r = runMonsterTurn(s, testContent);
+    expect(r.traces[0]!.selectedEntityId).toBe('g1');
+    expect(r.state.monsters.find((m) => m.id === 'g1')!.position).not.toEqual({ x: 4, y: 2 });
+    // Le seul Goblin est déjà activé : la seconde activation ne trouve personne.
+    expect(r.instructions.map((i) => i.id)).toContain('R1-A2-none');
+  });
+
+  it('un monstre n est jamais activé deux fois dans le même Monster Turn si un autre candidat existe', () => {
+    const s = toMonsterTurn(demoGame({ settings: physical, monsters: [{ id: 'g1', definitionId: 'goblin', position: { x: 4, y: 2 } }, { id: 'g2', definitionId: 'goblin', position: { x: 7, y: 3 } }] }));
+    const r = runMonsterTurn(s, testContent, [card('goblin'), card('goblin')]);
+    expect(r.traces.map((t) => t.selectedEntityId).sort()).toEqual(['g1', 'g2']);
   });
 
   it('la mort d un héros au seuil de défaite termine le scénario (Legendary = 1 mort)', () => {
     const s = toMonsterTurn(demoGame({ difficulty: 'legendary', settings: physical }));
-    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), card('goblin'), atk(9, 0)]);
+    s.heroes.find((h) => h.id === 'h1')!.position = { x: 3, y: 2 }; // adjacent au Goblin g1
+    const r = runMonsterTurn(s, testContent, [card('goblin'), atk(9, 0)]);
     expect(r.state.phase).toBe('SCENARIO_LOST');
     expect(r.state.deaths).toBe(1);
     expect(r.traces).toHaveLength(1);
@@ -175,7 +185,7 @@ describe('Monster Turn', () => {
     const s = toMonsterTurn(demoGame({ settings: physical }));
     s.deck.discard = s.deck.draw.splice(0);
     s.deck.draw = [];
-    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), card('goblin'), atk(0, 0), die('A'), die('B'), card('goblin'), atk(0, 0)]);
+    const r = runMonsterTurn(s, testContent, [card('goblin'), card('orc')]);
     expect(r.state.events.some((e) => e.type === 'deck-recycled')).toBe(true);
   });
 
@@ -184,7 +194,7 @@ describe('Monster Turn', () => {
     s.monsters.find((m) => m.id === 'g1')!.status = 'spawn-tile';
     s.monsters.find((m) => m.id === 'g1')!.position = null;
     s.spawnTile = ['g1'];
-    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), die('A'), die('B'), card('orc'), die('A'), die('B'), card('orc'), atk(0, 0)]);
+    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), card('orc'), card('goblin')]);
     expect(r.state.monsters.find((m) => m.id === 'g1')!.status).toBe('board');
     expect(r.state.spawnTile).toHaveLength(0);
   });
@@ -192,7 +202,7 @@ describe('Monster Turn', () => {
   it('Wild Pet : le monstre suivant vise le familier le plus proche', () => {
     const s = toMonsterTurn(demoGame({ settings: physical, expansions: ['pets'], deck: { wildPetCards: 1 } }));
     s.pets = [{ id: 'pet1', name: 'Rawr', life: 2, defense: 0, position: { x: 5, y: 2 }, wounds: 0, dead: false }];
-    const r = runMonsterTurn(s, testContent, [die('A'), die('B'), card('wild-pet'), card('goblin'), atk(1, 0), die('A'), die('B'), card('orc')]);
+    const r = runMonsterTurn(s, testContent, [card('wild-pet'), card('goblin'), atk(1, 0), card('orc')]);
     expect(r.traces[0]!.explanation.join(' ')).toMatch(/pet1/);
     expect(r.state.pets[0]!.wounds).toBe(1);
     expect(r.state.deaths).toBe(0);

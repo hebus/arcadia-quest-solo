@@ -146,20 +146,22 @@ describe('App', () => {
     expect(game().coins).toBe(1);
   });
 
-  it('mode dés matériels : l agent demande la saisie puis reprend seul', async () => {
+  it('mode cartes matérielles : l agent demande la saisie puis reprend seul', async () => {
     const user = userEvent.setup();
     render(<App />);
     await createDemoGame(user);
-    useGameStore.getState().setSettings({ diceMode: 'physical' });
+    useGameStore.getState().setSettings({ cardMode: 'physical' });
     await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));
     await user.click(screen.getByRole('button', { name: /Repérer Grom/ }));
     await user.click(screen.getByRole('button', { name: 'Activer sans agir' }));
     await user.click(screen.getByRole('button', { name: 'Fin de tour' }));
     const prompt = screen.getByRole('group', { name: 'Saisie requise' });
-    expect(prompt).toHaveTextContent(/dé 1/);
+    expect(prompt).toHaveTextContent(/Carte Monster Activation/);
     expect(useGameStore.getState().agent.status).toBe('awaiting-input');
-    await user.click(within(prompt).getByRole('button', { name: 'sword' }));
-    expect(screen.getByRole('group', { name: 'Saisie requise' })).toHaveTextContent(/dé 2/);
+    // La carte choisie est mémorisée et l'agent reprend seul : il montre les étapes de l'activation.
+    await user.click(within(prompt).getAllByRole('button')[0]!);
+    expect(useGameStore.getState().answers).toHaveLength(1);
+    expect(screen.queryByRole('group', { name: 'Saisie requise' })).not.toBeInTheDocument();
   });
 
   it('mise en place : poser une tuile, un héros et un monstre sur le plateau', async () => {

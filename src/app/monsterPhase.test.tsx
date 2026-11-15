@@ -21,8 +21,8 @@ describe('phase des monstres : le store montre les étapes avant la saisie', () 
   it('le lancement affiche des étapes non confirmées et attend la saisie sans les perdre', () => {
     act(() => store().startMonsterTurn());
     expect(store().agent.status).toBe('awaiting-input');
-    expect(store().instructions.map((i) => i.visual?.type)).toEqual(['spawn-point', 'activate', 'move']);
-    expect(unconfirmed()).toHaveLength(3);
+    expect(store().instructions.map((i) => i.visual?.type)).toEqual(['activate', 'move']);
+    expect(unconfirmed()).toHaveLength(2);
   });
 
   it('après la réponse, les étapes déjà confirmées le restent, sans doublon', () => {
@@ -75,7 +75,7 @@ describe('phase des monstres : ordre à l’écran', () => {
     expect(rubriques.getByText('Activation 1')).toHaveAttribute('aria-current', 'step');
     expect(screen.getByLabelText('État de la partie')).toHaveTextContent('Phase des monstres · Activation 1');
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       expect(announce()).not.toBeInTheDocument();
       await user.click(within(steps()!).getByRole('button', { name: 'Fait' }));
     }

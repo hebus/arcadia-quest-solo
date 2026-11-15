@@ -14,20 +14,28 @@ export function HeroRoster() {
   const selectedId = useGameStore((s) => s.selectedId);
   const select = useGameStore((s) => s.select);
   const guild = g.phase === 'GUILD_TURN';
+  const correct = useGameStore((st) => st.correct);
+  const startPlacing = useGameStore((st) => st.startPlacing);
+  /** Santé et état du héros, modifiables à tout moment (soins, pouvoirs…) : la table fait foi. */
+  const setWounds = (id: string, wounds: number, life: number) => {
+    correct({ kind: 'hero-wounds', heroId: id, wounds: Math.max(0, Math.min(life, wounds)) });
+    if (wounds >= life) correct({ kind: 'hero-dead', heroId: id, dead: true });
+  };
+  const btn = 'flex min-h-10 min-w-10 items-center justify-center rounded-lg border-2 border-stone-600 bg-stone-900 px-2 text-lg font-bold transition-colors hover:bg-stone-800 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400';
   return (
     <ul className="flex flex-wrap gap-2 lg:flex-col" aria-label="Héros" data-testid="hero-roster">
       {g.heroes.map((h) => {
         const on = selectedId === h.id;
         const blocked = guild && blockedByOtherHero(g, h.id);
         return (
-          <li key={h.id} className="lg:w-full">
+          <li key={h.id} className="flex items-stretch gap-1 lg:w-full">
             <button
               type="button"
               aria-label={`Repérer ${h.name} sur le plateau`}
               aria-pressed={on}
               disabled={h.dead || blocked}
               onClick={() => select(on ? null : h.id)}
-              className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:opacity-50 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900'}`}
+              className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:opacity-50 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900'}`}
             >
               <MiniPawn kind="hero" label={actorInfo(g, h.id).label} size={40} dead={h.dead} />
               <span className="flex-1 leading-tight">
@@ -50,6 +58,34 @@ export function HeroRoster() {
                 </span>
               )}
             </button>
+            <div className="flex flex-col gap-1" role="group" aria-label={`Santé de ${h.name}`}>
+              {h.dead ? (
+                <button type="button" className={btn} title="Ressusciter : touchez ensuite sa case sur le plateau" aria-label={`Ressusciter ${h.name}`} onClick={() => startPlacing({ actorId: h.id, onPlace: (at) => correct({ kind: 'hero-dead', heroId: h.id, dead: false, at }) })}>
+                  ✚
+                </button>
+              ) : (
+                <>
+                  <button type="button" className={btn} title="Soigner d’un cœur" aria-label={`Soigner ${h.name}`} disabled={h.wounds <= 0} onClick={() => setWounds(h.id, h.wounds - 1, h.life)}>
+                    ❤+
+                  </button>
+                  <button type="button" className={btn} title="Une blessure de plus" aria-label={`Blesser ${h.name}`} onClick={() => setWounds(h.id, h.wounds + 1, h.life)}>
+                    🖤
+                  </button>
+                </>
+              )}
+            </div>
+            {!h.dead && (
+              <button
+                type="button"
+                className={`${btn} ${h.stunned ? 'border-violet-400 bg-violet-900' : ''}`}
+                title={h.stunned ? 'Retirer le jeton Étourdi' : 'Poser un jeton Étourdi'}
+                aria-label={`${h.stunned ? 'Retirer l’étourdissement de' : 'Étourdir'} ${h.name}`}
+                aria-pressed={!!h.stunned}
+                onClick={() => correct({ kind: 'hero-stunned', heroId: h.id, stunned: !h.stunned })}
+              >
+                💫
+              </button>
+            )}
           </li>
         );
       })}

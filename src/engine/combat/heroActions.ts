@@ -111,7 +111,7 @@ export interface TargetOutcome {
 /**
  * Attaque d'un héros sur un ou plusieurs monstres. Le joueur lance les dés et indique les blessures de chaque monstre
  * ciblé ; l'application ne calcule que la portée (type de l'arme). Enchaîne Payback (un seul monstre : tier le plus
- * élevé parmi les cibles, FAQ solo p.20), Overkill et réaction Guard si aucune cible n'était Close.
+ * élevé parmi les cibles, FAQ solo p.20), Overkill.
  */
 export function resolveHeroAttack(
   state: GameState,
@@ -145,10 +145,11 @@ export function resolveHeroAttack(
       }
     }
   }
+  // Le mouvement a déjà commencé (pas, porte…) : l'attaque le scinde, il ne peut plus reprendre ensuite.
+  if (turn.moved) turn.moveLocked = true;
   turn.attacked = true;
   if (weapon) weapon.exhausted = true;
   const instructions: PhysicalInstruction[] = [];
-  const heroPos = hero.position;
   const targeted: { id: string; killed: boolean; overkill: boolean; /** Tombé et incapable de riposter, même en se déplaçant : retiré tout de suite. */ removedNow?: boolean }[] = [];
 
   for (const t of targets) {
@@ -236,18 +237,7 @@ export function resolveHeroAttack(
     instructions.push(...spawnInstructions(resolveSpawnTile(s, oracle, rng), nameOf));
   }
 
-  // Guard : l'attaque ne visait aucun monstre Close au héros → tous les monstres Close ripostent.
-  const targetedIds = targets.map((t) => t.monsterId);
-  const hadCloseTarget = targets.some((t) => {
-    const m = state.monsters.find((x) => x.id === t.monsterId);
-    return m?.position && isClose(s.board, m.position, heroPos);
-  });
-  if (!hadCloseTarget && !hero.dead) {
-    for (const m of closeMonsters(s, heroPos, targetedIds)) {
-      if (hero.dead) break;
-      monsterAttacksHero(s, content, oracle, m.id, heroId, 'Réaction Guard', instructions);
-    }
-  }
+  // Aucune réaction Guard après une attaque : elle ne se déclenche que lorsque le héros quitte sa Space (déplacement).
   pruneEliminatedTypes(s);
   s.rngCounter = rng.counter;
   return { state: s, instructions };

@@ -20,6 +20,7 @@ beforeEach(() => {
 async function startScenario(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+  await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
   await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
   await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
   await user.click(await screen.findByRole('button', { name: 'Démarrer le scénario' }));

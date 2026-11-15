@@ -112,13 +112,13 @@ describe('combat d’un héros : le joueur indique les blessures du monstre', ()
     expect(ids.some((id) => id.includes('OM2'))).toBe(false);
   });
 
-  it('réaction Guard (règle distincte du Payback) : une attaque à distance laisse un voisin riposter', () => {
+  it('réaction Guard (règle distincte du Payback) : une attaque ne déclenche plus de Guard (seulement un déplacement)', () => {
     const s0 = started();
-    // Cible éloignée en (3,0), trait dégagé ; un rôdeur non ciblé est adjacent en (2,2) : il réagit (Guard), il ne fait pas de Payback.
+    // Cible éloignée en (3,0), trait dégagé ; un rôdeur non ciblé est adjacent en (2,2) : il ne réagit pas (Guard ne se déclenche que quand le héros se déplace) et ne fait pas de Payback.
     const s = { ...s0, monsters: s0.monsters.map((m) => (m.id === 'OM1' ? { ...m, position: { x: 3, y: 0 } } : m.id === 'OM2' ? { ...m, position: { x: 2, y: 2 } } : m)) };
     const r = resolveHeroAttack(s, ORIGINAL_CONTENT, 'h1', [{ monsterId: 'OM1', wounds: 1 }], [], { weaponId: 'arbalete' });
     const ids = r.instructions.map((i) => i.id);
-    expect(ids.some((id) => id.startsWith('Réaction Guard') && id.includes('OM2'))).toBe(true);
+    expect(ids.some((id) => id.startsWith('Réaction Guard'))).toBe(false);
     expect(ids.some((id) => id.startsWith('Payback') && id.includes('OM2'))).toBe(false);
   });
 

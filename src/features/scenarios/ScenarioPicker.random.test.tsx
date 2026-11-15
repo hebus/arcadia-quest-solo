@@ -16,6 +16,7 @@ beforeEach(() => {
 async function openRandomMode(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Jouer un scénario' }));
+  await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
   return screen.getByTestId('random-mode');
 }
 
@@ -64,6 +65,7 @@ describe('mode aléatoire', () => {
   it('un scénario classique n’a pas de bouton « Autre tirage »', async () => {
     const user = userEvent.setup();
     await openRandomMode(user);
+    await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     expect(screen.queryByRole('button', { name: /Autre tirage/ })).not.toBeInTheDocument();
   });
