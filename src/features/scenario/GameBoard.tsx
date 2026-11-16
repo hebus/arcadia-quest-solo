@@ -219,7 +219,7 @@ function SyncPanel({ selectedId }: { selectedId: string | null }) {
 }
 
 /** Plateau de jeu : sélection d'un héros, cases atteignables, déplacement au clic, attaque en touchant un monstre. */
-export function GameBoard({ header, roster, footer, monsterInput }: { header?: ReactNode; /** Saisie des dés d'une attaque de monstre : remplace les cartes héros. */ monsterInput?: ReactNode;/** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
+export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dés d'une attaque de monstre : remplace les cartes héros. */ monsterInput?: ReactNode;/** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
   const g = useGameStore((s) => s.game)!;
   const selectedId = useGameStore((s) => s.selectedId);
   const select = useGameStore((s) => s.select);
@@ -265,6 +265,7 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
   /** Le tour des monstres vient d'être calculé : ses étapes se jouent encore sur la table. */
   const agentDone = useGameStore((st) => st.agent.status === 'done');
   const endTurn = useGameStore((s) => s.endTurn);
+  const restWithPlacement = useGameStore((s) => s.restWithPlacement);
   const locked =
     awaitingInput ||
     !!announcement ||
@@ -364,7 +365,7 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
     setAimHint(null);
   };
 
-  /** Le combat remplace les cartes héros, à droite du plateau (plus de boîte de dialogue). */
+  /** Le combat s'affiche en surimpression sur le plateau (plus de boîte de dialogue). */
   const attacking = !!hero && guildTurn && targets.length > 0;
   useEffect(() => {
     if (!attacking) return;
@@ -498,8 +499,9 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
       style={{ '--board-ratio': g.board.width / g.board.height } as React.CSSProperties}
       className="grid gap-3 lg:grid-cols-[min(max(18rem,calc((100dvh_-_9rem_-_var(--aq-banner,0px))*var(--board-ratio))),72vw)_minmax(0,1fr)] lg:items-stretch"
     >
-      {/* Grille 2×2 : en haut, étapes des monstres + Fin de tour | infos de jeu ; en bas, plateau | héros et combat. */}
-      <div className="min-w-0 space-y-2 max-lg:order-1 lg:min-h-[6.5rem]">
+      {/* En haut, cartes héros sur toute la largeur, puis étapes des monstres + Fin de tour ; en dessous, plateau | commandes. */}
+      {!(correctionMode && inspected) && roster && <div className="min-w-0 max-lg:order-1 lg:col-span-2">{roster}</div>}
+      <div className={`min-w-0 space-y-2 max-lg:order-2 lg:col-span-2 lg:min-h-12`}>
       {placing && (
         <div role="status" className="flex items-center justify-between gap-3 rounded-lg border border-amber-500 bg-amber-950 p-2" data-testid="placing-banner">
           <span className="flex items-center gap-3">
@@ -515,7 +517,7 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
       {/* Étapes de la phase des monstres : au-dessus du plateau, pour les lire sans quitter la table des yeux. */}
       {/* Barre de choix du type d'attaque, hors du plateau pour ne cacher aucune case ; hauteur réservée pour que le plateau ne bouge pas. */}
       {!placing && (
-        <div className="flex h-full min-h-[6.5rem] flex-nowrap items-center gap-2">
+        <div className={`flex h-full flex-nowrap items-center gap-2 min-h-12`}>
           {/* Pendant la phase des monstres, la hauteur du bloc d'activation est réservée : le plateau ne bouge pas quand il apparaît ou disparaît. */}
           {announcement ? (
             <AttackAnnouncement announcement={announcement} />
@@ -544,12 +546,37 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
           ) : (
             !locked && !correctionMode && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
           ))}
-          <div className="ml-auto flex flex-nowrap items-stretch gap-2 self-stretch">
+          <div className="ml-auto flex flex-nowrap items-center gap-2 self-start">
+            <button
+              type="button"
+              data-testid="sync-toggle"
+              aria-pressed={correctionMode}
+              title="Recaler le plateau sur la table : glisser les pions, ouvrir ou fermer les portes, régler les blessures des monstres"
+              onClick={() => {
+                resetAim();
+                setMenuFor(null);
+                select(null);
+                setCorrectionMode(!correctionMode);
+              }}
+              className={`h-12 whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold sm:px-6 sm:text-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
+            >
+              ⟳ Sync
+            </button>
+            {guildTurn && !locked && !correctionMode && queue.length === 0 && (
+              <button
+                type="button"
+                disabled={g.activatedHeroIds.length > 0}
+                onClick={restWithPlacement}
+                className="h-12 whitespace-nowrap rounded-xl border-2 border-stone-600 bg-stone-900 px-4 text-base font-semibold text-stone-100 transition-colors hover:bg-stone-800 disabled:opacity-40 sm:px-6 sm:text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+              >
+                Repos
+              </button>
+            )}
             {guildTurn && !locked && !correctionMode && (
               <button
                 type="button"
                 onClick={endTurn}
-                className="self-stretch whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                className="h-12 whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
               >
                 Fin de tour
               </button>
@@ -559,10 +586,9 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
       )}
       </div>
 
-      <div className="min-w-0 max-lg:order-3 lg:min-h-[6.5rem]">{header}</div>
-
       {/* Plateau entier visible : il se réduit à la hauteur disponible (sous la bannière) sans jamais déborder. */}
-      <div className="relative min-w-0 max-lg:order-2 [&_svg]:max-h-[calc(100dvh-9rem-var(--aq-banner,0px))]">
+      <div className="relative min-w-0 max-lg:order-3">
+      <div className="relative [&_svg]:mx-auto [&_svg]:block [&_svg]:max-h-[calc(100dvh-9rem-var(--aq-banner,0px))]">
       <BoardView
         label="Plateau de jeu"
         board={g.board}
@@ -585,33 +611,26 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
       />
       <TurnBanner side={turnSide(g.phase, agentDone && instructions.some((i) => !i.confirmed))} />
       </div>
+      {/* Blocs de combat : en surimpression, centrés sur le plateau mais hors de son conteneur ; les cartes héros restent visibles. */}
+      {(monsterInput || (attacking && hero)) && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-1 sm:p-3">
+         <div className="pointer-events-auto max-h-full w-full max-w-3xl overflow-y-auto rounded-xl shadow-2xl shadow-black/70">
+          {monsterInput ? (
+            <div data-testid="monster-input">{monsterInput}</div>
+          ) : (
+            hero && (
+              <section aria-label="Combat" data-testid="attack-panel">
+                <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => setTargets(targets.filter((x) => x !== id))} onClose={resetAim} />
+              </section>
+            )
+          )}
+         </div>
+        </div>
+      )}
+      </div>
 
       <div className="min-w-0 space-y-3 max-lg:order-4">
       {correctionMode && <SyncPanel selectedId={selectedId} />}
-      {monsterInput ? (
-        <div data-testid="monster-input">{monsterInput}</div>
-      ) : attacking && hero ? (
-        <section aria-label="Combat" data-testid="attack-panel">
-          <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => setTargets(targets.filter((x) => x !== id))} onClose={resetAim} />
-        </section>
-      ) : (
-        !(correctionMode && inspected) && roster
-      )}
-      <button
-        type="button"
-        data-testid="sync-toggle"
-        aria-pressed={correctionMode}
-        title="Recaler le plateau sur la table : glisser les pions, ouvrir ou fermer les portes, régler les blessures des monstres"
-        onClick={() => {
-          resetAim();
-          setMenuFor(null);
-          select(null);
-          setCorrectionMode(!correctionMode);
-        }}
-        className={`min-h-12 w-full whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
-      >
-        ⟳ Sync
-      </button>
       {sandbox && !placing && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
       {aimHint && <p className="text-amber-300" role="status">{aimHint}</p>}
       {footer}

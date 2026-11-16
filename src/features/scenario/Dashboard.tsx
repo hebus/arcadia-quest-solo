@@ -18,14 +18,14 @@ export const PHASE_LABEL: Record<GameState['phase'], string> = {
   SCENARIO_LOST: 'Défaite',
 };
 
-/** Barre d'état d'une seule ligne : l'essentiel de la partie, le reste est dans le menu. */
+/** État de la partie en une ligne, sans cadre : icône + valeur, rangée dans l'en-tête près du bouton Accueil. */
 export function StatusBar({ onMenu }: { onMenu: () => void }) {
   const g = useGameStore((s) => s.game);
   const group = useGameStore((s) => s.instructions.find((i) => !i.confirmed)?.group);
   if (!g) return null;
   const threshold = defeatThreshold(g);
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-stone-700 bg-stone-900 px-3 py-2" aria-label="État de la partie">
+    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1" aria-label="État de la partie">
       <Badge tone="warn">{group ? `Phase des monstres · ${group}` : PHASE_LABEL[g.phase]}</Badge>
       <span>Manche {g.round}</span>
       <span title="Morts de héros / seuil de défaite" className={g.deaths >= threshold - 1 ? 'text-red-300' : ''}>
@@ -35,7 +35,7 @@ export function StatusBar({ onMenu }: { onMenu: () => void }) {
         ⚑ {questsDone(g)}/{g.questsRequired}
       </span>
       <span title="Pièces">🪙 {g.coins}</span>
-      <span className="ml-auto flex items-center gap-1">
+      <span className="flex items-center gap-1">
         <SoundToggle />
         <Button variant="ghost" aria-label="Menu" onClick={onMenu}>
           ☰ Menu

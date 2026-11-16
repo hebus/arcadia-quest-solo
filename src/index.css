@@ -40,6 +40,8 @@
   flex-direction: column;
   overflow: hidden;
 }
+/* Écran de jeu : le contenu remonte dans la marge du bandeau, pour y loger les boutons des héros au-dessus des cartes. */
+.aq-stage-game { padding-top: calc(var(--aq-banner) - 1.75rem); }
 .aq-stage-content {
   position: relative;
   z-index: 1;

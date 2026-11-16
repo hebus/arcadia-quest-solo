@@ -108,7 +108,7 @@ describe('synchronisation visuelle plateau / table', () => {
     await startDemo(user);
     useGameStore.getState().correct({ kind: 'hero-dead', heroId: 'h1', dead: true });
     expect(screen.queryByLabelText('Grom x')).not.toBeInTheDocument();
-    await user.click(await screen.findByRole('button', { name: 'Se reposer' }));
+    await user.click(await screen.findByRole('button', { name: 'Repos' }));
     expect(await screen.findByTestId('placing-banner')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('cell-2-2'));
     expect(game().heroes[0]!.dead).toBe(false);

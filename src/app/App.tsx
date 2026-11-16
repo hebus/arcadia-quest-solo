@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, ErrorBanner, Panel } from '@/components/ui';
 import { GuideScreen } from '@/features/campaign/GuideScreen';
 import { HomeScreen } from '@/features/campaign/HomeScreen';
@@ -28,15 +29,18 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
   const agent = useGameStore((s) => s.agent);
   const [menu, setMenu] = useState<MenuTab | null>(null);
   const [result, setResult] = useState(false);
+  // L'état de la partie se range dans l'en-tête, près du bouton Accueil (sans l'en-tête, il reste en place).
+  const [headerSlot] = useState<HTMLElement | null>(() => (typeof document === 'undefined' ? null : document.getElementById('aq-status-slot')));
   if (!g) return <p>Aucune partie en cours.</p>;
   const ended = g.phase === 'SCENARIO_WON' || g.phase === 'SCENARIO_LOST';
   if (ended && result) return <ResultScreen onLeave={leave} onCampaign={toCampaign} />;
+  const status = <StatusBar onMenu={() => setMenu('team')} />;
   return (
     <div className="space-y-2">
       <ErrorBanner message={error} onClose={clear} />
       <StoryDialog />
+      {headerSlot ? createPortal(status, headerSlot) : status}
       <GameBoard
-        header={<StatusBar onMenu={() => setMenu('team')} />}
         roster={<HeroRoster />}
         monsterInput={
           agent.request && agent.status === 'awaiting-input' && !announcing && !stepsPending ? (
@@ -55,11 +59,12 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
   return (
-    <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage`}>
+    <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage ${screen === 'game' ? 'aq-stage-game' : ''}`}>
       <div className="aq-stage-bg" aria-hidden="true" />
       {/* Le titre est dans le fond d'écran : on le garde pour les lecteurs d'écran et le bouton Accueil flotte en haut à droite. */}
-      <header className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
+      <header className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2">
         <h1 className="sr-only">Arcadia Quest Solo Companion</h1>
+        <div id="aq-status-slot" className="flex justify-end" />
         {screen !== 'home' && (
           <Button variant="ghost" onClick={() => setScreen('home')}>
             ← Accueil

@@ -68,7 +68,7 @@ describe('quand un monstre attaque, le héros ne peut que se défendre', () => {
     await startDemo(user);
     act(() => useGameStore.setState({ instructions: [monsterAttackStep()], selectedId: 'h1' }));
     expect(screen.queryByRole('button', { name: 'Fin de tour' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Se reposer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Repos' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Activer sans agir' })).not.toBeInTheDocument();
   });
 

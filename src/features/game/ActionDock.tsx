@@ -20,44 +20,16 @@ export function HeroRoster() {
     correct({ kind: 'hero-wounds', heroId: id, wounds: Math.max(0, Math.min(life, wounds)) });
     if (wounds >= life) correct({ kind: 'hero-dead', heroId: id, dead: true });
   };
-  const btn = 'flex min-h-10 min-w-10 items-center justify-center rounded-lg border-2 border-stone-600 bg-stone-900 px-2 text-lg font-bold transition-colors hover:bg-stone-800 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400';
+  const btn = 'flex min-h-9 min-w-9 items-center justify-center rounded-lg border-2 border-stone-600 bg-stone-900 px-1.5 text-base font-bold transition-colors hover:bg-stone-800 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400';
   return (
-    <ul className="flex flex-wrap gap-2 lg:flex-col" aria-label="Héros" data-testid="hero-roster">
+    <ul className="flex flex-nowrap gap-1 landscape:flex-wrap landscape:gap-2" aria-label="Héros" data-testid="hero-roster">
       {g.heroes.map((h) => {
         const on = selectedId === h.id;
         const blocked = guild && blockedByOtherHero(g, h.id);
         return (
-          <li key={h.id} className="flex items-stretch gap-1 lg:w-full">
-            <button
-              type="button"
-              aria-label={`Repérer ${h.name} sur le plateau`}
-              aria-pressed={on}
-              disabled={h.dead || blocked}
-              onClick={() => select(on ? null : h.id)}
-              className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:opacity-50 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900'}`}
-            >
-              <MiniPawn kind="hero" label={actorInfo(g, h.id).label} size={40} dead={h.dead} />
-              <span className="flex-1 leading-tight">
-                <span className="block font-medium">
-                  {h.name}
-                  {h.stunned && !h.dead && (
-                    <span className="ml-2 rounded-full bg-violet-800 px-2 py-0.5 text-xs font-semibold text-violet-100" title="Jeton Étourdi posé sur la figurine">
-                      💫 étourdi
-                    </span>
-                  )}
-                </span>
-                <span className="block text-sm" title="Points de vie">
-                  {'❤'.repeat(Math.max(0, h.life - h.wounds))}
-                  {'🖤'.repeat(Math.min(h.life, h.wounds))}
-                </span>
-              </span>
-              {g.activatedHeroIds.includes(h.id) && (
-                <span className="text-amber-300" title="Activé ce tour" aria-hidden="true">
-                  ●
-                </span>
-              )}
-            </button>
-            <div className="flex flex-col gap-1" role="group" aria-label={`Santé de ${h.name}`}>
+          <li key={h.id} className="flex min-w-0 max-w-[21rem] flex-1 flex-col gap-1 landscape:w-[21rem] landscape:flex-none">
+            <div className="flex justify-end gap-1">
+            <div className="flex shrink-0 gap-1" role="group" aria-label={`Santé de ${h.name}`}>
               {h.dead ? (
                 <button type="button" className={btn} title="Ressusciter : touchez ensuite sa case sur le plateau" aria-label={`Ressusciter ${h.name}`} onClick={() => startPlacing({ actorId: h.id, onPlace: (at) => correct({ kind: 'hero-dead', heroId: h.id, dead: false, at }) })}>
                   ✚
@@ -85,6 +57,36 @@ export function HeroRoster() {
                 💫
               </button>
             )}
+            </div>
+            <button
+              type="button"
+              aria-label={`Repérer ${h.name} sur le plateau`}
+              aria-pressed={on}
+              disabled={h.dead || blocked}
+              onClick={() => select(on ? null : h.id)}
+              className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl border-2 px-2 py-1 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:opacity-50 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900'}`}
+            >
+              <span className="portrait:hidden"><MiniPawn kind="hero" label={actorInfo(g, h.id).label} size={32} dead={h.dead} /></span>
+              <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 leading-tight">
+                <span className="font-medium">
+                  {h.name}
+                  {h.stunned && !h.dead && (
+                    <span className="ml-1 rounded-full bg-violet-800 px-1.5 text-xs font-semibold text-violet-100" title="Jeton Étourdi posé sur la figurine">
+                      💫 étourdi
+                    </span>
+                  )}
+                </span>
+                <span className="text-sm" title="Points de vie">
+                  {'❤'.repeat(Math.max(0, h.life - h.wounds))}
+                  {'🖤'.repeat(Math.min(h.life, h.wounds))}
+                </span>
+              </span>
+              {g.activatedHeroIds.includes(h.id) && (
+                <span className="text-amber-300" title="Activé ce tour" aria-hidden="true">
+                  ●
+                </span>
+              )}
+            </button>
           </li>
         );
       })}
@@ -103,18 +105,18 @@ export function AttackAnnouncement({ announcement }: { announcement: NonNullable
   const attacker = actorInfo(g, announcement.attackerId);
   const target = actorInfo(g, announcement.targetId);
   return (
-    <section aria-label="Attaque du monstre" data-testid="attack-announcement" className="flex min-h-[6.5rem] w-full flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-red-500 bg-stone-800 p-2">
-      <div className="flex items-center gap-3">
-        <MiniPawn kind={attacker.kind} label={attacker.label} size={46} />
-        <span className="text-3xl text-red-400" aria-hidden="true">
+    <section aria-label="Attaque du monstre" data-testid="attack-announcement" className="flex h-12 w-full items-center justify-between gap-3 overflow-hidden rounded-xl border-2 border-red-500 bg-stone-800 px-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <MiniPawn kind={attacker.kind} label={attacker.label} size={32} />
+        <span className="text-xl text-red-400" aria-hidden="true">
           ⚔ ➜
         </span>
-        <MiniPawn kind={target.kind} label={target.label} size={46} />
-        <p className="text-lg">
+        <MiniPawn kind={target.kind} label={target.label} size={32} />
+        <p className="truncate text-base">
           <strong>{nameOf(announcement.attackerId)}</strong> attaque <strong>{nameOf(announcement.targetId)}</strong>
         </p>
       </div>
-      <Button variant="primary" onClick={announcement.acknowledge}>
+      <Button variant="primary" className="min-h-9! py-1! shrink-0" onClick={announcement.acknowledge}>
         Continuer : lancer mes dés
       </Button>
     </section>
@@ -160,9 +162,6 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
                   {selected.name} : {mpLeft(g, selected.id)}/{HERO_MOVEMENT} PM
                 </span>
               )}
-              <Button disabled={g.activatedHeroIds.length > 0} onClick={st.restWithPlacement}>
-                Se reposer
-              </Button>
               {selected && !g.activatedHeroIds.includes(selected.id) && !blockedByOtherHero(g, selected.id) && (
                 <Button variant="ghost" onClick={() => st.activateHero(selected.id)}>
                   Activer sans agir
