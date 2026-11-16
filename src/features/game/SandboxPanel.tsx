@@ -7,8 +7,7 @@ import { DICE_PRESETS, presetOf } from '@/engine/sandbox';
 import { scenarioOfGame } from '@/game-data/original';
 import { actorInfo } from '@/rendering/instructions/overlay';
 import { useGameStore } from '@/stores/gameStore';
-import { buildDebugReport, copyText } from './debugReport';
-import { useState } from 'react';
+import { CopyLogs } from './CopyLogs';
 
 /** La partie en cours est-elle un terrain d'essai ? */
 export function useIsSandbox(): boolean {
@@ -21,16 +20,6 @@ export function SandboxStrip() {
   const free = useGameStore((s) => s.correctionMode);
   const setFree = useGameStore((s) => s.setCorrectionMode);
   const skip = useGameStore((s) => s.skipToMonsters);
-  const logCount = useGameStore((s) => s.actionLog.length);
-  const [copied, setCopied] = useState<string | null>(null);
-  /** Texte à copier à la main quand le presse-papiers est refusé par le navigateur. */
-  const [manual, setManual] = useState<string | null>(null);
-  const copyLogs = async () => {
-    const text = buildDebugReport();
-    const ok = await copyText(text);
-    setManual(ok ? null : text);
-    setCopied(ok ? `Logs copiés (${Math.ceil(text.length / 1024)} Ko, ${logCount} action${logCount > 1 ? 's' : ''})` : 'Copie refusée : sélectionnez le texte ci-dessous');
-  };
   return (
     <div data-testid="sandbox-strip" className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-sky-500 bg-sky-950/40 p-2">
       <span className="text-sm text-sky-200">🧪 Terrain d’essai</span>
@@ -40,11 +29,7 @@ export function SandboxStrip() {
       <Button disabled={g.phase !== 'GUILD_TURN'} onClick={skip}>
         ▶ Sauter au tour des monstres
       </Button>
-      <Button onClick={() => void copyLogs()} title="Copie le journal détaillé des actions et l’état complet, à coller dans la conversation pour analyser un défaut">
-        📋 Copier les logs
-      </Button>
-      {copied && <span role="status" className="text-sm text-sky-200">{copied}</span>}
-      {manual && <textarea readOnly aria-label="Logs à copier" className="h-32 w-full rounded-lg border border-stone-600 bg-stone-950 p-2 font-mono text-xs" value={manual} onFocus={(e) => e.currentTarget.select()} />}
+      <CopyLogs />
     </div>
   );
 }

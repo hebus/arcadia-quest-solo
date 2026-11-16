@@ -208,7 +208,7 @@ export function resolveHeroAttack(
       }
     }
     if (plan.steps.length) {
-      const path = [{ ...m.position! }, ...plan.steps.map((st) => ({ ...st.to }))];
+      const path = [{ ...m.position! }, ...plan.steps.filter((st) => st.kind !== 'open-door').map((st) => ({ ...st.to }))];
       m.position = { ...plan.destination };
       instructions.push({
         id: `payback-move-${chosen}`,

@@ -203,7 +203,8 @@ function activateOne(
     const from = monster.position!;
     monster.position = { ...p.destination };
     if (!p.steps.length) return;
-    const path = [from, ...p.steps.map((st) => st.to)];
+    // Ouvrir une porte ne déplace pas la figurine : seules les cases réellement atteintes font partie du trajet.
+    const path = [from, ...p.steps.filter((st) => st.kind !== 'open-door').map((st) => st.to)];
     // Une porte ouverte n'est pas une « avance » : on le dit (et on précise s'il avance ensuite).
     const opensDoor = openedDoorIds.length > 0;
     const advances = p.steps.some((st) => st.kind !== 'open-door');

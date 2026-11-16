@@ -3,6 +3,7 @@ import { Modal } from '@/components/Modal';
 import { QuestsPanel, TeamPanels } from '@/features/scenario/Dashboard';
 import { HistoryScreen } from '@/features/history/HistoryScreen';
 import { DecisionsPanel } from '@/features/monster-turn/MonsterTurnScreen';
+import { CopyLogs } from './CopyLogs';
 import { SandboxPanel, useIsSandbox } from './SandboxPanel';
 import { SoundPanel } from './SoundControls';
 
@@ -29,6 +30,7 @@ export function MenuDialog({ tab, onTab, onClose }: { tab: MenuTab; onTab: (t: M
             {t.label}
           </Button>
         ))}
+        <CopyLogs />
       </nav>
       {tab === 'team' && <TeamPanels />}
       {tab === 'quests' && <QuestsPanel />}
