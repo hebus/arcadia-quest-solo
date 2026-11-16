@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Panel } from '@/components/ui';
+import { FaceTile } from '@/components/Die';
 import { DiceTally } from '@/components/Tally';
 import type { InputRequest } from '@/engine/oracle';
 import { useGameStore } from '@/stores/gameStore';
@@ -53,15 +54,24 @@ export function InputPrompt({ request }: { request: InputRequest }) {
               Critiques du monstre : {request.extraWounds} blessure{request.extraWounds > 1 ? 's' : ''} supplémentaire{request.extraWounds > 1 ? 's' : ''}, que la défense ne peut pas annuler.
             </p>
           )}
-          <p className="text-sm text-stone-400">Un critique compte comme un bouclier et ajoute un dé, une relance peut aussi en donner : vous pouvez avoir plus de boucliers que de dés. Touchez-en autant que vous en avez obtenu, au plus une par touche.</p>
+          {!!request.attackFaces?.length && (
+            <div className="space-y-1">
+              <p className="text-sm text-stone-300">Jet d&apos;attaque du monstre ({request.attackFaces.length} dé{request.attackFaces.length > 1 ? 's' : ''})</p>
+              <div className="flex flex-wrap gap-1.5" data-testid="monster-roll">
+                {request.attackFaces.map((f, i) => (
+                  <FaceTile key={i} symbol={f} />
+                ))}
+              </div>
+            </div>
+          )}
           <div aria-label="Touches du monstre" role="img" className="flex flex-wrap gap-1 text-3xl">
             {Array.from({ length: request.hits }, (_, i) => (
-              <span key={i} data-testid="monster-hit" data-cancelled={i < parried} className={i < parried ? 'text-stone-500 line-through opacity-40' : 'text-red-400'}>
-                ⚔
+              <span key={i} data-testid="monster-hit" data-cancelled={i < parried} className={i < parried ? 'opacity-30 grayscale' : ''}>
+                🩸
               </span>
             ))}
           </div>
-          <DiceTally label="Boucliers" dice={request.hits} value={parried} onChange={setParried} glyph="🛡" />
+          <DiceTally label="Boucliers" dice={request.hits} value={parried} onChange={setParried} glyph="🛡" tone="white" />
           <div className="flex items-center justify-between gap-4">
             <span className="text-lg" aria-live="polite">
               {Math.max(0, request.hits - parried) + (request.extraWounds ?? 0) === 0 ? '✔ Aucune blessure' : `${'🩸'.repeat(Math.min(8, Math.max(0, request.hits - parried) + (request.extraWounds ?? 0)))} ${Math.max(0, request.hits - parried) + (request.extraWounds ?? 0)} blessure${Math.max(0, request.hits - parried) + (request.extraWounds ?? 0) > 1 ? 's' : ''}`}
@@ -74,14 +84,14 @@ export function InputPrompt({ request }: { request: InputRequest }) {
       )}
       {request.kind === 'attack-result' && (
         <div className="space-y-3">
-          <DiceTally label="Coups" dice={request.attackDice} value={hits} onChange={setHits} glyph="⚔" />
+          <DiceTally label="Coups" dice={request.attackDice} value={hits} onChange={setHits} glyph="⚔" tone="black" />
           {request.critWounds && (
             <>
-              <DiceTally label="Critiques" dice={Math.max(hits, 0)} value={Math.min(crits, hits)} onChange={setCrits} glyph="✸" />
+              <DiceTally label="Critiques" dice={Math.max(hits, 0)} value={Math.min(crits, hits)} onChange={setCrits} glyph="✸" tone="black" />
               <p className="text-sm text-stone-400">Chaque critique de ce monstre donne une blessure supplémentaire, que la défense ne peut pas annuler.</p>
             </>
           )}
-          <DiceTally label="Sauvegardes" dice={Math.max(hits, 0)} value={Math.min(saves, hits)} onChange={setSaves} glyph="🛡" />
+          <DiceTally label="Sauvegardes" dice={Math.max(hits, 0)} value={Math.min(saves, hits)} onChange={setSaves} glyph="🛡" tone="white" />
           <Button variant="primary" onClick={() => provide({ kind: 'attack-result', hits, saves: Math.min(saves, hits), ...(request.critWounds ? { crits: Math.min(crits, hits) } : {}) })}>
             Valider
           </Button>

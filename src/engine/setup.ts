@@ -25,6 +25,8 @@ export interface HeroInit {
   life: number;
   defense: number;
   rerolls?: number;
+  /** Furtivité : pas de réaction Guard quand le héros se déplace. */
+  stealth?: boolean;
   /** Cartes arme (optionnel) : dés et type d'attaque par carte. */
   weapons?: { id: string; name: string; attackDice: number; attackType: 'melee' | 'ranged' }[];
   position: Position;
@@ -129,6 +131,7 @@ export function createGame(config: SetupConfig, content: Content): GameState {
     life: h.life,
     defense: h.defense,
     rerolls: h.rerolls ?? 0,
+    ...(h.stealth ? { stealth: true } : {}),
     ...(h.weapons?.length ? { weapons: h.weapons.map((w) => ({ ...w, exhausted: false })) } : {}),
     position: h.position,
     wounds: 0,

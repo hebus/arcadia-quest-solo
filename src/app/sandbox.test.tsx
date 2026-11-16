@@ -158,7 +158,7 @@ describe('terrain d’essai : le déroulement affiché de la phase des monstres'
     await user.click(screen.getByRole('button', { name: 'Lancer le Monster Turn' }));
 
     // 1. Carte d'activation choisie à la main (plus de jeton Spawn de référence).
-    const cardDialog = await screen.findByRole('dialog', { name: 'Résultat des dés' });
+    const cardDialog = await screen.findByRole('region', { name: 'Résultat des dés' });
     await user.click(within(cardDialog).getByRole('button', { name: 'Orc Marauder' }));
 
     // 2. Le monstre activé est montré ; l'attaque n'est ni annoncée ni demandée tant que cette étape n'est pas jouée.
@@ -171,8 +171,8 @@ describe('terrain d’essai : le déroulement affiché de la phase des monstres'
     expect(await screen.findByTestId('attack-announcement')).toHaveTextContent('Orc Marauder');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ }));
-    expect(await screen.findByRole('dialog', { name: 'Jet de défense' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Jet de défense' })).toBeInTheDocument();
     // Dés qui touchent toujours : l'Orc Marauder (3 dés) touche 3 fois.
-    expect(within(screen.getByRole('dialog')).getAllByTestId('monster-hit')).toHaveLength(3);
+    expect(within(screen.getByRole('region', { name: 'Jet de défense' })).getAllByTestId('monster-hit')).toHaveLength(3);
   });
 });

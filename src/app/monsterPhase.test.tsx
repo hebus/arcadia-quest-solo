@@ -62,7 +62,7 @@ describe('phase des monstres : ordre à l’écran', () => {
     await startDemo(user);
     await user.click(screen.getByRole('button', { name: 'Lancer le Monster Turn' }));
 
-    const dice = () => screen.queryByRole('dialog', { name: 'Jet de défense' });
+    const dice = () => screen.queryByRole('region', { name: 'Jet de défense' });
     const announce = () => screen.queryByTestId('attack-announcement');
     const steps = () => screen.queryByRole('region', { name: /Sur la table : étape/ });
 

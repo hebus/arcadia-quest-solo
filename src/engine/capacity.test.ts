@@ -72,7 +72,7 @@ describe('deux figurines au maximum par case', () => {
     );
     const plan1 = planMonsterAction(one, testContent, 'g1', 3, { targetKind: 'hero', onlyTargetId: 'h1', choose: (_p, o) => o[0]! });
     expect(plan1.canAttack).toBe(true);
-    expect(Math.abs(plan1.destination.x - 5) + Math.abs(plan1.destination.y - 2)).toBe(1); // adjacent à Grom
+    expect(Math.abs(plan1.destination.x - 5) + Math.abs(plan1.destination.y - 2)).toBeLessThanOrEqual(1); // sur la Space de Grom ou à côté
     // Deux monstres sur (4,2) : case pleine, le gobelin ne s'y arrête pas et contourne.
     const full = world(
       [

@@ -12,6 +12,8 @@ export const MAX_HERO_LIFE = 20;
 export interface GuildHero {
   name: string;
   life: number;
+  /** Pouvoir passif « furtivité » : le héros ne déclenche pas les réactions Guard des monstres en se déplaçant. */
+  stealth?: boolean;
 }
 
 /** Points de vie d'un héros tant que le joueur n'a pas saisi les siens. */
@@ -56,12 +58,12 @@ export function guildProblems(guild: readonly GuildHero[]): string[] {
  * relances et les armes sont gérés en physique (0 ici). L'application demande donc toujours au joueur combien de boucliers il obtient.
  */
 export function guildToTemplates(guild: readonly GuildHero[]): HeroTemplate[] {
-  return guild.map((h, i) => ({ id: `guilde-${i + 1}`, name: h.name.trim(), epithet: '', life: h.life, defense: 0, rerolls: 0 }));
+  return guild.map((h, i) => ({ id: `guilde-${i + 1}`, name: h.name.trim(), epithet: '', life: h.life, defense: 0, rerolls: 0, ...(h.stealth ? { stealth: true } : {}) }));
 }
 
 /** Relit une guilde enregistrée ; toute donnée inattendue donne une guilde tirée au hasard. */
 export function parseGuild(raw: unknown): GuildHero[] {
   if (!Array.isArray(raw) || raw.length !== GUILD_SIZE) return randomGuild();
-  const heroes = raw.map((h) => ({ name: typeof (h as GuildHero)?.name === 'string' ? (h as GuildHero).name : '', life: Number((h as GuildHero)?.life) }));
+  const heroes = raw.map((h) => ({ name: typeof (h as GuildHero)?.name === 'string' ? (h as GuildHero).name : '', life: Number((h as GuildHero)?.life), ...((h as GuildHero)?.stealth === true ? { stealth: true } : {}) }));
   return heroes.every((h) => h.name.trim() !== '' && Number.isInteger(h.life)) ? heroes : randomGuild();
 }

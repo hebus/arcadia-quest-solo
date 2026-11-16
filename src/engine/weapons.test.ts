@@ -196,11 +196,11 @@ describe('Payback : le monstre se déplace de son potentiel puis attaque son att
     const s0 = arena('OM1', { x: 2, y: 5 });
     const g = { ...s0, heroes: s0.heroes.map((h) => (h.id === 'h1' ? { ...h, position: { x: 2, y: 7 } } : h)) };
     const plan = planMonsterAction(g, ORIGINAL_CONTENT, 'OM1', 3, { targetKind: 'hero', onlyTargetId: 'h1', choose: (_p, o) => o[0]! });
-    expect(plan.steps.map((st) => st.kind)).toEqual(['open-door', 'move']);
+    expect(plan.steps.map((st) => st.kind)).toEqual(['open-door', 'move', 'move']);
     expect(plan.steps[0]!.doorId).toBe('porte-remise');
-    expect(plan.mpUsed).toBe(2); // 1 PM pour la porte + 1 PM pour sortir
+    expect(plan.mpUsed).toBe(3); // 1 PM pour la porte + 1 PM pour sortir + 1 PM pour rejoindre la Space de l'attaquant
     expect(plan.canAttack).toBe(true);
-    expect(plan.destination).toEqual({ x: 2, y: 6 });
+    expect(plan.destination).toEqual({ x: 2, y: 7 });
   });
 
   it('avec un seul point de mouvement, il ouvre la porte mais ne peut ni sortir ni attaquer', () => {

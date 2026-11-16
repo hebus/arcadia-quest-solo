@@ -24,6 +24,8 @@ export const HeroTemplateSchema = type({
   life: 'number.integer > 0',
   defense: 'number.integer >= 0',
   rerolls: 'number.integer >= 0',
+  /** Furtivité : se déplace sans déclencher les réactions Guard. */
+  'stealth?': 'boolean | undefined',
   'weapons?': type({
     id: 'string',
     name: 'string',
@@ -255,6 +257,7 @@ export function scenarioToSetup(original: ScenarioDefinition, opts: StartOptions
       life: h.life,
       defense: h.defense,
       rerolls: h.rerolls,
+      ...(h.stealth ? { stealth: true } : {}),
       ...(h.weapons?.length ? { weapons: h.weapons } : {}),
       position: def.heroStarts[i]!,
     })),

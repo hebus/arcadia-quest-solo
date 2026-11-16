@@ -6,6 +6,7 @@ import { CountingRandom } from '../random';
 import { black, oracleFor, scripted, skillContent, skillGame, tryRun, white } from '@/tests/fixtures/skillGame';
 import { monsterAttacksHero } from './heroActions';
 import { monsterStrike } from './monsterAttack';
+import { planMonsterAction } from '../movement/plan';
 
 /** Troll en (4,2) ; h1 en (3,2) et h2 en (5,2) lui sont adjacents, h3 est loin. */
 const world = (monster = 'troll', over: Parameters<typeof skillGame>[1] = {}) =>
@@ -136,5 +137,15 @@ describe('Troll : attaque pendant son activation', () => {
     const maya = r.instructions.find((i) => i.id === `${tag}-attack-h2`)!.text;
     // Mêmes touches pour les deux (un seul jet) : « N coup(s) » identique.
     expect(grom.match(/(\d+) coup/)![1]).toBe(maya.match(/(\d+) coup/)![1]);
+  });
+});
+
+describe('Troll : il se place pour toucher le plus de héros', () => {
+  it('il choisit la Space d’un héros quand elle en touche davantage que la case voisine', () => {
+    // Troll en (7,2) ; Grom en (3,2) et Maya en (4,2) : depuis (5,2) il ne touche que Maya, depuis (4,2) il touche Maya (même Space) et Grom (adjacent).
+    const s = skillGame([{ id: 'T1', definitionId: 'troll', position: { x: 6, y: 2 } }], { heroes: [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 0, y: 0 }] });
+    const plan = planMonsterAction(s, skillContent, 'T1', 3, { targetKind: 'hero', choose: (_p, o) => o[0]! });
+    expect(plan.canAttack).toBe(true);
+    expect(plan.destination).toEqual({ x: 4, y: 2 });
   });
 });

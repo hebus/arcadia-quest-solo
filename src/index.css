@@ -32,7 +32,7 @@
 /* Vue plateau : fond d'écran selon l'orientation. L'image réserve en haut une bannière (personnage + titre) que
    l'interface ne recouvre pas : --aq-banner est la hauteur de cette bannière telle qu'affichée (image en « cover »). */
 .aq-stage {
-  --aq-banner: calc(max(100dvh, 56.3vw) * 0.25);
+  --aq-banner: calc(max(100dvh, 56.3vw) * 0.25 * 0.78);
   padding-top: calc(var(--aq-banner) + 0.5rem);
   /* Page de la hauteur de l'écran : seul le contenu défile, sous la bannière, jamais par-dessus. */
   height: 100dvh;
@@ -55,7 +55,7 @@
   background: #0c0a09 url('/bg-landscape.png') center top / cover no-repeat;
 }
 @media (orientation: portrait) {
-  .aq-stage { --aq-banner: calc(max(100dvh, 144vw) * 0.2); }
+  .aq-stage { --aq-banner: calc(max(100dvh, 144vw) * 0.2 * 0.78); }
   .aq-stage-bg { background-image: url('/bg-portrait.png'); }
 }
 

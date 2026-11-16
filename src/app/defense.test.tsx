@@ -36,7 +36,7 @@ async function guardPrompt(user: ReturnType<typeof userEvent.setup>) {
   fireEvent.click(screen.getByTestId('token-h3'));
   fireEvent.click(screen.getByTestId('cell-0-7'));
   await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ })); // l'annonce d'abord, puis les dés
-  return screen.getByRole('dialog', { name: 'Jet de défense' });
+  return screen.getByRole('region', { name: 'Jet de défense' });
 }
 
 describe('jet de défense : le joueur indique ses boucliers', () => {
@@ -62,7 +62,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
     const dialog = await guardPrompt(user);
     await user.click(within(dialog).getByRole('button', { name: 'Boucliers, dé 1' })); // 2 touches, 1 bouclier
     await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
-    expect(screen.queryByRole('dialog', { name: 'Jet de défense' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Jet de défense' })).not.toBeInTheDocument();
     expect(useGameStore.getState().game!.heroes[2]!.wounds).toBe(1);
   });
 
@@ -96,7 +96,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
     fireEvent.click(screen.getByTestId('cell-0-7'));
 
     // Annonce : pas encore de dialogue de dés, mais l'attaque est montrée sur le plateau.
-    expect(screen.queryByRole('dialog', { name: 'Jet de défense' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Jet de défense' })).not.toBeInTheDocument();
     const card = screen.getByTestId('attack-announcement');
     expect(card).toHaveTextContent('Goblin');
     expect(card).toHaveTextContent('attaque');
@@ -110,7 +110,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
 
     await user.click(within(card).getByRole('button', { name: /Continuer/ }));
     expect(screen.queryByTestId('attack-announcement')).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Jet de défense' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Jet de défense' })).toBeInTheDocument();
     expect(screen.queryByTestId('instruction-arrow')).not.toBeInTheDocument();
   });
 
@@ -130,7 +130,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
     expect(screen.getByTestId('attack-announcement')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('cell-1-7')); // la case de Zazu, la cible
     expect(screen.queryByTestId('attack-announcement')).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Jet de défense' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Jet de défense' })).toBeInTheDocument();
   });
 
   it('pendant l’annonce, aucun pion ne se glisse et une autre case ne valide rien', async () => {
@@ -165,7 +165,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
     fireEvent.click(screen.getByTestId('token-h3'));
     fireEvent.click(screen.getByTestId('cell-0-7'));
     await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ }));
-    const dialog = screen.getByRole('dialog', { name: 'Jet de défense' });
+    const dialog = screen.getByRole('region', { name: 'Jet de défense' });
     expect(dialog).toHaveTextContent('Lancez vos 1 dé de défense');
     const shields = within(dialog).getAllByRole('button', { name: /Boucliers, dé \d/ });
     expect(shields).toHaveLength(2); // une case par touche, pas par dé lancé
@@ -189,7 +189,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
     fireEvent.click(screen.getByTestId('token-h3'));
     fireEvent.click(screen.getByTestId('cell-0-7'));
     await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ }));
-    const dialog = screen.getByRole('dialog', { name: 'Jet de défense' });
+    const dialog = screen.getByRole('region', { name: 'Jet de défense' });
     expect(within(dialog).getAllByRole('button', { name: /Boucliers, dé \d/ })).toHaveLength(2);
   });
 });

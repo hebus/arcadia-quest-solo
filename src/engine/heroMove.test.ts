@@ -58,6 +58,17 @@ describe('déplacement d un héros au clic', () => {
     expect(r!.state.heroes[0]!.position).toEqual({ x: 0, y: 4 });
   });
 
+  it('furtivité : quitter une Space gardée ne déclenche aucune réaction Guard (aucune saisie demandée)', () => {
+    const g = game({ settings: { defenseRoll: 'physical' } });
+    g.heroes[0]!.defense = 1;
+    g.heroes[0]!.stealth = true;
+    g.monsters.find((m) => m.id === 'g1')!.position = { x: 1, y: 4 };
+    const r = moveHeroTo(g, testContent, 'h1', { x: 0, y: 4 });
+    expect(r.instructions.some((i) => /Réaction Guard/.test(i.text))).toBe(false);
+    expect(r.state.heroes[0]!.position).toEqual({ x: 0, y: 4 });
+    expect(reachableCells(g, 'h1', 3).every((c) => c.triggers === 0)).toBe(true);
+  });
+
   it('privilégie le chemin qui déclenche le moins de réactions Guard', () => {
     const g = game({ settings: { diceMode: 'physical' } });
     g.monsters.find((m) => m.id === 'g1')!.position = { x: 1, y: 3 };

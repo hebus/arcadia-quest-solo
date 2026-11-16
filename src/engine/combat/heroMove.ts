@@ -75,7 +75,8 @@ export function searchHeroMoves(s: GameState, heroId: string, mp: number): HeroN
       }
       if (edgeBlocked(board, cur.pos, q, openedSet)) continue;
       if (!heroView(s, q, heroId).canTraverse) continue;
-      const t = guardingMonsters(s, cur.pos, openedSet).length;
+      // Furtivité : aucune réaction Guard, où que passe le héros.
+      const t = hero.stealth ? 0 : guardingMonsters(s, cur.pos, openedSet).length;
       push({ pos: q, opened: cur.opened, cost: cur.cost + 1, triggers: cur.triggers + t, prev: cur, step: { kind: 'move', from: cur.pos, to: q } });
     }
     const here = board.portals.find((p) => samePos(p.at, cur.pos));
@@ -173,7 +174,7 @@ export function moveHeroTo(
   for (const st of steps) {
     if (hero.dead) break;
     if (st.kind === 'move') {
-      for (const m of guardingMonsters(s, hero.position!, new Set())) {
+      for (const m of hero.stealth ? [] : guardingMonsters(s, hero.position!, new Set())) {
         if (hero.dead) break;
         monsterAttacksHero(s, content, oracle, m.id, heroId, 'Réaction Guard', instructions);
       }

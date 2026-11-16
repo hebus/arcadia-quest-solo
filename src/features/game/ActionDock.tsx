@@ -2,7 +2,6 @@ import { Button } from '@/components/ui';
 import { MiniPawn } from '@/components/MiniPawn';
 import { HERO_MOVEMENT, mpLeft } from '@/engine/combat/heroMove';
 import { blockedByOtherHero, isTerminal } from '@/engine/state';
-import { InstructionPlayer } from '@/features/instructions/InstructionPlayer';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { actorInfo } from '@/rendering/instructions/overlay';
 import { SandboxStrip, useIsSandbox } from './SandboxPanel';
@@ -93,6 +92,35 @@ export function HeroRoster() {
   );
 }
 
+/** Annonce « qui attaque qui » : même emplacement et mêmes dimensions que le bloc d'activation des monstres, au-dessus du plateau. */
+export function AttackAnnouncement({ announcement }: { announcement: NonNullable<ReturnType<typeof useAttackAnnouncement>> }) {
+  const g = useGameStore((s) => s.game)!;
+  const content = useGameStore((s) => s.content);
+  const nameOf = (id: string): string => {
+    const m = g.monsters.find((x) => x.id === id);
+    return m ? (content.monsters[m.definitionId]?.name ?? m.definitionId) : actorInfo(g, id).name;
+  };
+  const attacker = actorInfo(g, announcement.attackerId);
+  const target = actorInfo(g, announcement.targetId);
+  return (
+    <section aria-label="Attaque du monstre" data-testid="attack-announcement" className="flex min-h-[6.5rem] w-full flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-red-500 bg-stone-800 p-2">
+      <div className="flex items-center gap-3">
+        <MiniPawn kind={attacker.kind} label={attacker.label} size={46} />
+        <span className="text-3xl text-red-400" aria-hidden="true">
+          ⚔ ➜
+        </span>
+        <MiniPawn kind={target.kind} label={target.label} size={46} />
+        <p className="text-lg">
+          <strong>{nameOf(announcement.attackerId)}</strong> attaque <strong>{nameOf(announcement.targetId)}</strong>
+        </p>
+      </div>
+      <Button variant="primary" onClick={announcement.acknowledge}>
+        Continuer : lancer mes dés
+      </Button>
+    </section>
+  );
+}
+
 /**
  * Actions de l'étape en cours : un seul groupe de boutons, ou la carte de l'étape physique à valider.
  * Tout le reste (détails, journal, corrections, décisions de l'agent) est dans le menu.
@@ -107,37 +135,12 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
   const announcement = useAttackAnnouncement();
   const sandbox = useIsSandbox();
 
-  // Un monstre attaque : le plateau le montre ; on le confirme ici avant d'ouvrir le dialogue de dés.
-  if (announcement) {
-    const nameOf = (id: string): string => {
-      const m = g.monsters.find((x) => x.id === id);
-      return m ? (st.content.monsters[m.definitionId]?.name ?? m.definitionId) : actorInfo(g, id).name;
-    };
-    const attacker = actorInfo(g, announcement.attackerId);
-    const target = actorInfo(g, announcement.targetId);
-    return (
-      <section aria-label="Attaque du monstre" data-testid="attack-announcement" className="space-y-3 rounded-xl border-2 border-red-500 bg-stone-800 p-3">
-        <div className="flex items-center justify-center gap-3">
-          <MiniPawn kind={attacker.kind} label={attacker.label} size={46} />
-          <span className="text-3xl text-red-400" aria-hidden="true">
-            ⚔ ➜
-          </span>
-          <MiniPawn kind={target.kind} label={target.label} size={46} />
-        </div>
-        <p className="text-center text-lg">
-          <strong>{nameOf(announcement.attackerId)}</strong> attaque <strong>{nameOf(announcement.targetId)}</strong>
-        </p>
-        <Button variant="primary" className="w-full" onClick={announcement.acknowledge}>
-          Continuer : lancer mes dés
-        </Button>
-      </section>
-    );
-  }
+  // Un monstre attaque : l'annonce est affichée au-dessus du plateau (voir GameBoard), le dock attend.
+  if (announcement) return null;
 
   return (
     <div className="space-y-2" data-testid="action-dock">
       {sandbox && <SandboxStrip />}
-      {pendingSteps && <InstructionPlayer />}
 
       {!pendingSteps && (
         <div className="flex flex-col items-stretch gap-2">

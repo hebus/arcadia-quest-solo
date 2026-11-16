@@ -152,6 +152,8 @@ export const HeroSchema = type({
   deaths: 'number.integer >= 0',
   /** Étourdi (par un Hammer Beastman) : jeton Étourdi posé sur la figurine, à retirer à la main. */
   'stunned?': 'boolean | undefined',
+  /** Furtivité (pouvoir passif) : le héros se déplace sans déclencher les réactions Guard des monstres. */
+  'stealth?': 'boolean | undefined',
   'mountId?': 'string | null | undefined',
   /** Cartes arme du héros. Absentes = saisie libre (mise en place sans cartes). */
   'weapons?': WeaponCardSchema.array().or('undefined'),

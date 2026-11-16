@@ -16,7 +16,7 @@ export type InputRequest =
   | { kind: 'card'; purpose: string }
   | { kind: 'choice'; purpose: string; options: string[] }
   | ({ kind: 'attack-result'; purpose: string; attackDice: number; defenseDice: number; /** Chaque critique donne une blessure en plus : demander aussi le nombre de critiques. */ critWounds?: boolean } & AttackEncounter)
-  | ({ kind: 'defense-result'; purpose: string; hits: number; defenseDice: number; targetName: string; /** Blessures supplémentaires dues aux critiques : elles ne se parent pas. */ extraWounds?: number } & AttackEncounter);
+  | ({ kind: 'defense-result'; purpose: string; hits: number; defenseDice: number; targetName: string; /** Blessures supplémentaires dues aux critiques : elles ne se parent pas. */ extraWounds?: number; /** Le jet d'attaque du monstre, face par face (quand l'application l'a lancé). */ attackFaces?: string[] } & AttackEncounter);
 
 export type InputAnswer =
   | { kind: 'die'; value: string }
@@ -122,6 +122,7 @@ export function createOracle(
           hits: atk.successes,
           defenseDice: ctx.defenseDice,
           targetName: ctx.targetName ?? '',
+          attackFaces: atk.faces,
           ...(extraWounds ? { extraWounds } : {}),
           ...encounter(ctx),
         });
@@ -166,6 +167,7 @@ export function createOracle(
               hits: atk.successes,
               defenseDice: t.defenseDice,
               targetName: t.targetName,
+              attackFaces: atk.faces,
               ...(extraWounds ? { extraWounds } : {}),
               ...encounter({ ...ctx, targetId: t.targetId, targetAt: t.targetAt ?? null }),
             });

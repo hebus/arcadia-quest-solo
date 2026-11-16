@@ -84,7 +84,7 @@ describe('écran de jeu sobre : plateau, barre d’actions, le reste en dialogue
     await user.click(screen.getByRole('button', { name: /Repérer Grom/ }));
     await user.click(screen.getByRole('button', { name: 'Activer sans agir' }));
     await user.click(screen.getByRole('button', { name: 'Fin de tour' }));
-    const dialog = screen.getByRole('dialog', { name: 'Résultat des dés' });
+    const dialog = screen.getByRole('region', { name: 'Résultat des dés' });
     expect(within(dialog).getByRole('group', { name: 'Saisie requise' })).toBeInTheDocument();
   });
 

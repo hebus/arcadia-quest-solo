@@ -173,11 +173,15 @@ describe('scénario de l’univers original', () => {
     await user.click(screen.getByRole('tab', { name: 'Scénarios uniques' }));
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Les Braises/ }));
     const page = screen.getByTestId('briefing-page');
-    // Cartes héros à gauche, plan à droite.
+    // Récit, difficulté et cartes héros à gauche, plan à droite.
     const guildSection = within(page).getByRole('region', { name: /Votre guilde/ });
     const plan = within(page).getByRole('img', { name: 'Aperçu du scénario' });
     expect(guildSection.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(guildSection.nextElementSibling?.contains(plan)).toBe(true); // colonne de droite, voisine des cartes
+    const leftColumn = guildSection.parentElement!;
+    expect(leftColumn.contains(plan)).toBe(false); // le plan est dans l'autre colonne
+    expect(leftColumn.nextElementSibling?.contains(plan)).toBe(true); // colonne de droite
+    expect(leftColumn.contains(within(page).getByRole('region', { name: 'Récit' }))).toBe(true);
+    expect(leftColumn.contains(within(page).getByRole('button', { name: /Commencer l’aventure/ }))).toBe(true);
     for (const name of ['Récit', 'Objectifs', /Votre guilde/]) expect(within(page).getByRole('region', { name })).toBeInTheDocument();
     expect(within(page).getByRole('img', { name: 'Aperçu du scénario' })).toBeInTheDocument();
     expect(within(page).getByRole('button', { name: /Commencer l’aventure/ })).toBeInTheDocument();

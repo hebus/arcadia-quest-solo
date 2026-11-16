@@ -204,11 +204,15 @@ function activateOne(
     monster.position = { ...p.destination };
     if (!p.steps.length) return;
     const path = [from, ...p.steps.map((st) => st.to)];
+    // Une porte ouverte n'est pas une « avance » : on le dit (et on précise s'il avance ensuite).
+    const opensDoor = openedDoorIds.length > 0;
+    const advances = p.steps.some((st) => st.kind !== 'open-door');
+    const stepLabel = opensDoor && label.endsWith('avance') ? `${monsterName} ouvre une porte${advances ? ' et avance' : ''}` : label;
     out.instructions.push({
       id: `${tag}-move`,
       kind: 'move',
       group,
-      label,
+      label: stepLabel,
       text: describePlan(p, `${monsterName} ${chosenId} (depuis (${from.x},${from.y}))`).join('\n'),
       actorId: chosenId,
       path,
@@ -229,7 +233,13 @@ function activateOne(
         id: multi ? `${tag}-attack-${r.targetId}` : `${tag}-attack`,
         kind: 'attack',
         group,
-        label: `${monsterName} attaque`,
+        // Sans blessure, on le dit : sinon l'étape ressemble à un simple « attaque » et on ne comprend pas ce qui s'est passé.
+        label:
+          outcome.wounds > 0
+            ? `${monsterName} attaque : ${outcome.wounds} blessure${outcome.wounds > 1 ? 's' : ''}`
+            : outcome.hits === 0
+              ? `${monsterName} attaque : tous ses coups ratent, aucune blessure`
+              : `${monsterName} attaque : tout est paré, aucune blessure`,
         text:
           `${monsterName} ${chosenId} attaque ${r.targetId} : ${outcome.hits} coup(s), ${outcome.saves} sauvegarde(s) → ` +
           `${outcome.wounds} blessure(s)${extra}.`,

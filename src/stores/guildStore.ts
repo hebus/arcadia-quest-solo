@@ -14,6 +14,7 @@ interface GuildStore {
   load(): Promise<void>;
   setName(index: number, name: string): void;
   setLife(index: number, life: number): void;
+  setStealth(index: number, stealth: boolean): void;
 }
 
 /** La guilde du joueur (3 héros : nom et points de vie), gardée sur l'appareil d'une partie à l'autre. */
@@ -40,6 +41,10 @@ export const useGuildStore = create<GuildStore>()((set, get) => {
     setLife(index, life) {
       const clamped = Math.max(MIN_HERO_LIFE, Math.min(MAX_HERO_LIFE, Math.round(life)));
       set({ heroes: get().heroes.map((h, i) => (i === index ? { ...h, life: clamped } : h)) });
+      persist();
+    },
+    setStealth(index, stealth) {
+      set({ heroes: get().heroes.map((h, i) => (i === index ? { ...h, stealth } : h)) });
       persist();
     },
   };

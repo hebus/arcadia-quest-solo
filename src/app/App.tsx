@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Button, ErrorBanner } from '@/components/ui';
+import { Button, ErrorBanner, Panel } from '@/components/ui';
 import { GuideScreen } from '@/features/campaign/GuideScreen';
 import { HomeScreen } from '@/features/campaign/HomeScreen';
 import { ResultScreen } from '@/features/campaign/ResultScreen';
 import { useGameAudio } from '@/audio/director';
 import { useAttackAnnouncement } from '@/features/game/announce';
-import { Modal } from '@/components/Modal';
 import { ActionPanel, HeroRoster } from '@/features/game/ActionDock';
 import { MenuDialog, type MenuTab } from '@/features/game/MenuDialog';
 import { InputPrompt } from '@/features/monster-turn/MonsterTurnScreen';
@@ -39,13 +38,15 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
       <GameBoard
         header={<StatusBar onMenu={() => setMenu('team')} />}
         roster={<HeroRoster />}
+        monsterInput={
+          agent.request && agent.status === 'awaiting-input' && !announcing && !stepsPending ? (
+            <Panel title={agent.request.kind === 'defense-result' ? 'Jet de défense' : 'Résultat des dés'}>
+              <InputPrompt request={agent.request} />
+            </Panel>
+          ) : undefined
+        }
         footer={<ActionPanel onDecisions={() => setMenu('decisions')} onResult={() => setResult(true)} />}
       />
-      {agent.request && agent.status === 'awaiting-input' && !announcing && !stepsPending && (
-        <Modal title={agent.request.kind === 'defense-result' ? 'Jet de défense' : 'Résultat des dés'} size="sm">
-          <InputPrompt request={agent.request} />
-        </Modal>
-      )}
       {menu && <MenuDialog tab={menu} onTab={setMenu} onClose={() => setMenu(null)} />}
     </div>
   );
@@ -57,13 +58,14 @@ export function App() {
     <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage`}>
       <div className="aq-stage-bg" aria-hidden="true" />
       {/* Le titre est dans le fond d'écran : on le garde pour les lecteurs d'écran et le bouton Accueil flotte en haut à droite. */}
-      <header className="absolute right-3 top-3 z-10 flex items-center gap-2">
+      <header className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
         <h1 className="sr-only">Arcadia Quest Solo Companion</h1>
         {screen !== 'home' && (
           <Button variant="ghost" onClick={() => setScreen('home')}>
             ← Accueil
           </Button>
         )}
+        <div id="aq-header-slot" className="flex flex-col items-end gap-2" />
       </header>
       {/* Sur laptop, le contenu est centré avec des marges ; le plateau de jeu, lui, prend toute la largeur. */}
       <div className="aq-stage-content">

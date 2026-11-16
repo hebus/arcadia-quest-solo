@@ -174,16 +174,56 @@ export function planMonsterAction(
   }
   const chosenId = tied.length > 1 ? opts.choose('Choisir la cible de l\'attaque', tied.map((e) => e.id).sort()) : tied[0]!.id;
   const chosen = evaluations.find((e) => e.id === chosenId)!;
-  const fullSteps = pathTo(chosen.node!);
+  let attackNode = chosen.node!;
+  let onTarget = false;
+  let moreTargets = 0;
+  if (chosen.cost! <= mp && stats.attackType === 'melee') {
+    const targetPos = targets.find((t) => t.id === chosenId)!.position!;
+    // Mêlée : la même Space compte aussi comme « Close ». Un monstre qui le peut se place sur la Space de sa cible pour la
+    // bloquer dans ses déplacements et l'attaquer (il reste de la place : deux figurines au plus par Space).
+    const standable = (n: Node) => n.cost <= mp && (samePos(n.pos, start) || monsterView(state, n.pos, monster.id).canEnd);
+    if (stats.skills?.includes('attack-all-adjacent')) {
+      // Troll : son attaque frappe tous les héros Close. Il choisit la Space qui en touche le plus (parfois celle d'un héros),
+      // puis la moins coûteuse en PM.
+      const closeCount = (n: Node) => {
+        const opened = new Set(n.opened);
+        return targets.filter((t) => isClose(state.board, n.pos, t.position!, opened)).length;
+      };
+      const score = (n: Node) => closeCount(n);
+      let best = attackNode;
+      for (const n of nodes) {
+        if (!standable(n) || !canAttackFrom(state, monster.id, stats.attackType, n.pos, targetPos, new Set(n.opened))) continue;
+        if (score(n) > score(best) || (score(n) === score(best) && n.cost < best.cost)) best = n;
+      }
+      if (score(best) > score(attackNode)) {
+        moreTargets = score(best);
+        attackNode = best;
+      }
+    } else {
+      const onSpace = nodes.filter((n) => samePos(n.pos, targetPos) && !samePos(n.pos, start) && standable(n));
+      const best = onSpace.reduce<Node | null>((acc, n) => (!acc || n.cost < acc.cost ? n : acc), null);
+      if (best && !samePos(attackNode.pos, targetPos)) {
+        attackNode = best;
+        onTarget = true;
+      }
+    }
+  }
+  const fullSteps = pathTo(attackNode);
 
   if (chosen.cost! <= mp) {
-    explanation.push(`Attaque possible en ${chosen.cost} PM sur ${chosenId} (minimum nécessaire).`);
+    explanation.push(
+      moreTargets > 0
+        ? `Attaque possible : le monstre se place pour toucher ${moreTargets} héros avec son attaque (${attackNode.cost} PM).`
+        : onTarget
+          ? `Attaque possible : le monstre se place sur la Space de ${chosenId} (${attackNode.cost} PM) pour la bloquer et l'attaquer.`
+          : `Attaque possible en ${chosen.cost} PM sur ${chosenId} (minimum nécessaire).`,
+    );
     return {
       monsterId,
       targetId: chosenId,
       steps: fullSteps,
-      destination: chosen.node!.pos,
-      mpUsed: chosen.cost!,
+      destination: attackNode.pos,
+      mpUsed: attackNode.cost,
       canAttack: true,
       evaluations: summary,
       explanation,

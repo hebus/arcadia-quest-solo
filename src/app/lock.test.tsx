@@ -106,7 +106,7 @@ describe('quand un monstre attaque, le héros ne peut que se défendre', () => {
     expect(useGameStore.getState().error).toBeNull();
     // Le seul geste possible : continuer vers le jet de défense.
     await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ }));
-    expect(screen.getByRole('dialog', { name: 'Jet de défense' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Jet de défense' })).toBeInTheDocument();
   });
 
   it('garde-fou du store : aucune action de héros ne démarre pendant une saisie en attente', async () => {

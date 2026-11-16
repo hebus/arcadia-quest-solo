@@ -88,7 +88,7 @@ export function resolveHeroMove(
   const hero = s.heroes.find((h) => h.id === heroId);
   if (!hero || hero.dead || !hero.position) throw new Error(`Héros indisponible : ${heroId}`);
   const instructions: PhysicalInstruction[] = [];
-  if (via === 'step') {
+  if (via === 'step' && !hero.stealth) {
     for (const m of closeMonsters(s, hero.position)) {
       if (hero.dead) break;
       monsterAttacksHero(s, content, oracle, m.id, heroId, 'Réaction Guard', instructions);

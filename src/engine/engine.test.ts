@@ -91,7 +91,7 @@ describe('déplacement du monstre', () => {
     };
     const s = demoGame({ board });
     const plan = planMonsterAction(s, testContent, 'g1', 3, { targetKind: 'hero', choose: (_p, o) => o[0]! });
-    expect(plan.mpUsed).toBe(1);
+    expect(plan.mpUsed).toBe(2); // le portail (1 PM), puis la Space du héros visé (1 PM)
     expect(plan.steps[0]!.kind).toBe('portal');
   });
 });

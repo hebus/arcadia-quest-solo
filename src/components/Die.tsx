@@ -1,7 +1,18 @@
 import type { DieFaceDef } from '@/engine/domain/schemas';
 import { FACE_LABEL, describeDie, nextFaceKind, dieFace, type FaceKind } from '@/game-data/dice';
 
-const GLYPH: Record<FaceKind, string> = { sword: '⚔', bow: '🏹', crit: '✸', shield: '🛡', blank: '' };
+export const GLYPH: Record<FaceKind, string> = { sword: '⚔', bow: '🏹', crit: '✸', shield: '🛡', blank: '' };
+
+/** Une face de dé en petit : noire (dé de combat) ou blanche (dé de défense), pour comparer avec les résultats saisis. */
+export function FaceTile({ symbol, color = 'black' }: { symbol: string; color?: 'black' | 'white' }) {
+  const known = symbol in FACE_LABEL;
+  const label = known ? FACE_LABEL[symbol as FaceKind].one : symbol;
+  return (
+    <span role="img" aria-label={label} data-testid="face-tile" data-face={symbol} className={`flex size-9 items-center justify-center rounded-lg border-2 text-lg shadow-inner ${color === 'white' ? 'border-stone-300 bg-stone-50 text-stone-900' : 'border-stone-500 bg-stone-950 text-stone-50'}`}>
+      {known ? GLYPH[symbol as FaceKind] : '?'}
+    </span>
+  );
+}
 
 /**
  * Un dé dessiné : ses six faces, noires (dé de combat) ou blanches (dé de défense). Toucher une face la change en la face

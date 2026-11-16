@@ -1,5 +1,6 @@
 import { TilesButton } from '@/features/scenario/TilesButton';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MiniPawn } from '@/components/MiniPawn';
 import { ObjectiveIcon } from '@/components/ObjectiveIcon';
 import { Button, ErrorBanner, Panel } from '@/components/ui';
@@ -55,11 +56,15 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   const setDefs = useGameStore((s) => s.setMonsterDefinitions);
   const newGame = useGameStore((s) => s.newGame);
   const [def, setDef] = useState<ScenarioDefinition | null>(null);
+  // Emplacement sous le bouton Accueil, dans l'en-tête de l'application (absent hors de l'application : le bouton reste alors en place).
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => setHeaderSlot(document.getElementById('aq-header-slot')), []);
   const [tab, setTab] = useState<PickerTab>('campaigns');
   // La guilde : 3 héros, nom et points de vie, gardés d'une partie à l'autre.
   const guild = useGuildStore((s) => s.heroes);
   const setHeroName = useGuildStore((s) => s.setName);
   const setHeroLife = useGuildStore((s) => s.setLife);
+  const setHeroStealth = useGuildStore((s) => s.setStealth);
   const loadGuild = useGuildStore((s) => s.load);
   const guildLoaded = useGuildStore((s) => s.loaded);
   useEffect(() => {
@@ -196,15 +201,19 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
     }
   };
 
-  // Une seule colonne : récit, objectifs, guilde, difficulté et lancement, puis deux colonnes : cartes héros à gauche, plan à droite. La page défile sous la bannière.
+  const backButton = (
+    <Button variant="ghost" onClick={() => setDef(null)}>
+      ← Autres scénarios
+    </Button>
+  );
+
+  // Deux colonnes : à gauche récit, objectifs, difficulté et lancement ; la guilde ; à droite le plan. La page défile sous la bannière.
   return (
-    <div data-testid="briefing-page" className="flex flex-col gap-2">
+    <div data-testid="briefing-page" className="relative left-1/2 flex w-[96vw] -translate-x-1/2 flex-col gap-2">
       <ErrorBanner message={error} onClose={() => setError(null)} />
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold text-amber-300">{def.title}</h2>
-          <p className="text-sm text-stone-300">{def.tagline}</p>
-        </div>
+      {/* « Autres scénarios » se range sous le bouton Accueil. */}
+      {headerSlot ? createPortal(backButton, headerSlot) : backButton}
+      {(def.tiles || (def.generated && !isCampaignChapter(def.id))) && (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {def.tiles && <TilesButton board={boardOf(def).board} layout={def.tiles} />}
           {def.generated && !isCampaignChapter(def.id) && (
@@ -212,14 +221,16 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
               ↻ Autre tirage
             </Button>
           )}
-          <Button variant="ghost" onClick={() => setDef(null)}>
-            ← Autres scénarios
-          </Button>
         </div>
-      </header>
+      )}
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(18rem,2fr)_3fr]">
+        <div className="flex w-full max-w-xl flex-col gap-3 lg:justify-self-end">
+          <div>
+            <h2 className="text-2xl font-semibold text-amber-300">{def.title}</h2>
+            <p className="text-sm text-stone-300">{def.tagline}</p>
+          </div>
+
           <section aria-label="Récit" className="space-y-2 text-[15px] leading-snug">
             {def.story.intro.map((p, i) => (
               <p key={i} className={i === 0 ? 'italic text-amber-100' : 'text-stone-200'}>
@@ -261,10 +272,9 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
             </Button>
           </footer>
 
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(14rem,1fr)_3fr]">
           <section aria-label="Votre guilde">
             <h3 className="mb-1 text-sm font-semibold text-amber-300">Votre guilde ({GUILD_SIZE} héros)</h3>
-            <ul className="flex flex-col gap-2">
+            <ul className="grid grid-cols-3 gap-2">
               {guild.map((h, i) => (
                 <li key={i} className="space-y-2 rounded-xl border-2 border-stone-700 bg-stone-800 p-2" data-testid={`guild-hero-${i + 1}`}>
                   <label className="flex items-center gap-2">
@@ -279,6 +289,10 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
                   </label>
                   <Stepper label={`Points de vie du héros ${i + 1}`} value={h.life} min={MIN_HERO_LIFE} max={MAX_HERO_LIFE} onChange={(n) => setHeroLife(i, n)} />
                   <p className="text-sm" aria-hidden="true">{'❤'.repeat(Math.max(0, h.life))}</p>
+                  <label className="flex items-center gap-2 text-sm text-stone-200" title="Pouvoir passif : ce héros se déplace sans déclencher les attaques de réaction (Guard) des monstres">
+                    <input type="checkbox" aria-label={`Furtivité du héros ${i + 1}`} checked={!!h.stealth} onChange={(e) => setHeroStealth(i, e.target.checked)} />
+                    🥷 Furtivité
+                  </label>
                 </li>
               ))}
             </ul>
@@ -288,15 +302,14 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
               <p className="mt-1 text-xs text-stone-400">Nom et points de vie seulement : cartes, dés de défense et armes se gèrent en physique avec vos figurines.</p>
             )}
           </section>
-
-          {/* Plan entier visible : le SVG garde son ratio et se réduit pour tenir dans la hauteur disponible sous la bannière. */}
-          <div className="mx-auto w-full [&_svg]:max-h-[calc(100dvh-var(--aq-banner,0px)-2rem)]">
-            <ScenarioPreview def={played} heroes={heroes} />
-          </div>
-          </div>
-
         </div>
 
+        <div className="flex flex-col gap-3">
+          {/* Plan entier visible : le SVG garde son ratio et se réduit pour tenir dans la hauteur disponible sous la bannière. */}
+          <div className="w-full [&_svg]:max-h-[calc(100dvh-var(--aq-banner,0px)-2rem)]">
+            <ScenarioPreview def={played} heroes={heroes} />
+          </div>
+        </div>
       </div>
     </div>
   );
