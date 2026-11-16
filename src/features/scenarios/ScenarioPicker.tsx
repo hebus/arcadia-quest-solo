@@ -1,5 +1,5 @@
 import { TilesButton } from '@/features/scenario/TilesButton';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MiniPawn } from '@/components/MiniPawn';
 import { ObjectiveIcon } from '@/components/ObjectiveIcon';
@@ -57,8 +57,7 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   const newGame = useGameStore((s) => s.newGame);
   const [def, setDef] = useState<ScenarioDefinition | null>(null);
   // Emplacement sous le bouton Accueil, dans l'en-tête de l'application (absent hors de l'application : le bouton reste alors en place).
-  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
-  useLayoutEffect(() => setHeaderSlot(document.getElementById('aq-header-slot')), []);
+  const [headerSlot] = useState<HTMLElement | null>(() => (typeof document === 'undefined' ? null : document.getElementById('aq-header-slot')));
   const [tab, setTab] = useState<PickerTab>('campaigns');
   // La guilde : 3 héros, nom et points de vie, gardés d'une partie à l'autre.
   const guild = useGuildStore((s) => s.heroes);

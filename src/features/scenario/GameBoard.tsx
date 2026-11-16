@@ -358,6 +358,12 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
     return true;
   };
 
+  const resetAim = () => {
+    setTargets([]);
+    setAttackType(null);
+    setAimHint(null);
+  };
+
   /** Le combat remplace les cartes héros, à droite du plateau (plus de boîte de dialogue). */
   const attacking = !!hero && guildTurn && targets.length > 0;
   useEffect(() => {
@@ -367,14 +373,7 @@ export function GameBoard({ header, roster, footer, monsterInput }: { header?: R
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attacking]);
-
-  const resetAim = () => {
-    setTargets([]);
-    setAttackType(null);
-    setAimHint(null);
-  };
 
   /** Choix du type d'attaque (les cartes équipement sont gérées par les joueurs). */
   const chooseType = (t: 'melee' | 'ranged') => {

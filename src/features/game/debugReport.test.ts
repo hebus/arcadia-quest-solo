@@ -40,6 +40,7 @@ describe('journal d’actions et rapport de débogage', () => {
   it('le rapport contient de quoi rejouer : état de départ, journal, état courant, événements, graine et dés', () => {
     const st = useGameStore.getState();
     st.moveHero('h2', { x: 3, y: 4 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const r = JSON.parse(buildDebugReport()) as Record<string, any>;
     expect(r.format).toBe('aq-solo-debug');
     expect(r.startState.heroes).toHaveLength(3);
