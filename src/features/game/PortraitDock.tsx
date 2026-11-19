@@ -72,7 +72,7 @@ function EnemiesPanel() {
   const select = useGameStore((s) => s.select);
   const onBoard = g.monsters.filter((m) => m.status === 'board');
   return (
-    <Panel title={`Monstres (${onBoard.length} en jeu)`}>
+    <Panel bare title={`Monstres (${onBoard.length} en jeu)`}>
       <ul className="space-y-2">
         {onBoard.map((m) => {
           const stats = statsOfMonster(content, g, m);

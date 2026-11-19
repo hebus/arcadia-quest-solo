@@ -24,9 +24,9 @@ export function Button({
   );
 }
 
-export function Panel({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
+export function Panel({ title, children, actions, bare = false }: { title: string; children: ReactNode; actions?: ReactNode; /** Sans cadre, fond ni marge : pour un panneau déjà logé dans un tiroir. */ bare?: boolean }) {
   return (
-    <section className="rounded-xl border border-stone-700 bg-stone-900 p-4" aria-label={title}>
+    <section className={bare ? '' : 'rounded-xl border border-stone-700 bg-stone-900 p-4'} aria-label={title}>
       <header className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-amber-300">{title}</h2>
         {actions}

@@ -67,13 +67,12 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
-  const { compact: portrait, side } = useCompactLayout();
-  const dockOnRight = screen === 'game' && portrait && side === 'right';
+  const { compact: portrait } = useCompactLayout();
   return (
     <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage ${screen === 'game' ? (portrait ? 'aq-stage-game-compact' : 'aq-stage-game') : ''}`}>
       <div className="aq-stage-bg" aria-hidden="true" />
       {/* Le titre est dans le fond d'écran : on le garde pour les lecteurs d'écran et le bouton Accueil flotte en haut à droite. */}
-      <header className={`absolute top-3 z-10 flex flex-col items-end gap-2 ${dockOnRight ? 'right-[calc(6.25rem+env(safe-area-inset-right))] max-w-[calc(100%-7.5rem)]' : 'right-3 max-w-[calc(100%-1.5rem)]'}`}>
+      <header className="absolute right-[max(0.75rem,env(safe-area-inset-right))] top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2">
         <h1 className="sr-only">Arcadia Quest Solo Companion</h1>
         <div id="aq-status-slot" className="flex justify-end" />
         {screen !== 'home' && (

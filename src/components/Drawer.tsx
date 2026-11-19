@@ -21,7 +21,7 @@ export function Drawer({ title, onClose, children, side = 'bottom' }: { title: s
             ✕
           </button>
         </div>
-        <div className="min-w-0 overflow-y-auto overflow-x-hidden p-3">{children}</div>
+        <div className="min-w-0 overflow-y-auto overflow-x-hidden px-4 py-3">{children}</div>
       </div>
     </div>,
     document.body,
