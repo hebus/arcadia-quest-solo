@@ -17,6 +17,7 @@ import { useIsSandbox } from '@/features/game/SandboxPanel';
 import { actorInfo, overlayForAttackAnnouncement, overlayForQueue } from '@/rendering/instructions/overlay';
 import { useGameStore } from '@/stores/gameStore';
 import { useTileStore } from '@/stores/tileStore';
+import { useCompactLayout } from '@/hooks/usePortrait';
 import { TurnBanner, turnSide } from './TurnBanner';
 import { allTiles } from '../setup/builtinTiles';
 
@@ -559,6 +560,19 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
     }
   };
 
+  // Blocs de combat (dés d'une attaque, saisie du résultat d'un monstre) : en surimpression du plateau, ou, sur tablette en paysage, dans la colonne de droite.
+  const { compact, side } = useCompactLayout();
+  const combatOnSide = compact && side === 'right';
+  const combatContent = monsterInput ? (
+    <div data-testid="monster-input">{monsterInput}</div>
+  ) : (
+    hero && (
+      <div data-testid="attack-panel">
+        <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => { const rest = targets.filter((x) => x !== id); if (rest.length === 0) setPicking(false); setTargets(rest); }} onClose={resetAim} onAddTargets={() => setPicking(true)} />
+      </div>
+    )
+  );
+
   return (
     <div
       style={{ '--board-ratio': g.board.width / g.board.height } as React.CSSProperties}
@@ -668,18 +682,10 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
       <TurnBanner side={turnSide(g.phase, agentDone && instructions.some((i) => !i.confirmed))} />
       </div>
       {/* Blocs de combat : en surimpression, centrés sur le plateau mais hors de son conteneur ; les cartes héros restent visibles. */}
-      {(monsterInput || (attacking && hero)) && (
+      {!combatOnSide && (monsterInput || (attacking && hero)) && (
         <div className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-1 sm:p-3 ${attacking && picking ? 'hidden' : ''}`}>
          <div className="pointer-events-auto max-h-full w-full max-w-3xl overflow-y-auto rounded-xl shadow-2xl shadow-black/70">
-          {monsterInput ? (
-            <div data-testid="monster-input">{monsterInput}</div>
-          ) : (
-            hero && (
-              <div data-testid="attack-panel">
-                <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => { const rest = targets.filter((x) => x !== id); if (rest.length === 0) setPicking(false); setTargets(rest); }} onClose={resetAim} onAddTargets={() => setPicking(true)} />
-              </div>
-            )
-          )}
+          {combatContent}
          </div>
         </div>
       )}
@@ -697,6 +703,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
       </div>
 
       <div className="min-w-0 space-y-3 max-lg:order-4">
+      {combatOnSide && (monsterInput || (attacking && hero)) && <div className="overflow-y-auto rounded-xl shadow-2xl shadow-black/70">{combatContent}</div>}
       {correctionMode && <SyncPanel selectedId={selectedId} />}
       {sandbox && !placing && !selectionCard && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
       {sandbox && selectionCard && buildTool && (
