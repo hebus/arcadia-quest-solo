@@ -258,7 +258,8 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
       aria-label={label}
       viewBox={`-10 -10 ${W + 20} ${H + 20}`}
       className="h-auto w-full select-none"
-      style={{ touchAction: canDrag ? 'none' : 'manipulation' }}
+      // Le plateau laisse défiler la page au doigt ; seuls les pions déplaçables captent le geste (touch-action: none sur le pion).
+      style={{ touchAction: 'pan-y pinch-zoom' }}
       onPointerMove={moveDrag}
       onPointerUp={(e) => endDrag(e, false)}
       onPointerCancel={(e) => endDrag(e, true)}
@@ -559,7 +560,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
               if (suppressClick.current) return;
               onToken(t.id);
             }}
-            style={{ cursor: draggable ? 'grab' : onToken ? 'pointer' : 'default' }}
+            style={{ cursor: draggable ? 'grab' : onToken ? 'pointer' : 'default', ...(draggable ? { touchAction: 'none' } : {}) }}
             opacity={t.dimmed ? 0.55 : 1}
           >
             <circle cx={cx} cy={cy} r="15" fill={KIND_COLOR[t.kind]} stroke={t.selected ? '#facc15' : t.guard ? '#f59e0b' : '#fff'} strokeWidth={t.selected ? 4 : t.guard ? 3 : 1.5} />

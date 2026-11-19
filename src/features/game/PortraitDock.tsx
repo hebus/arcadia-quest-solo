@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Drawer } from '@/components/Drawer';
 import { MiniPawn } from '@/components/MiniPawn';
+import { MonsterStatsIcons } from '@/components/MonsterStatsIcons';
 import { Badge, Button, Panel } from '@/components/ui';
 import { HERO_MOVEMENT, mpLeft } from '@/engine/combat/heroMove';
 import { skillLines, statsOfMonster } from '@/engine/monsters';
@@ -44,17 +45,18 @@ export function SelectionCard({ attackBar }: { attackBar?: ReactNode }) {
   const life = hero ? hero.life : stats?.life;
   const wounds = hero ? hero.wounds : monster!.wounds;
   return (
-    <section aria-label="Figurine sélectionnée" data-testid="selection-card" className="flex items-center gap-3 rounded-xl border-2 border-amber-700/70 bg-stone-900/95 p-2">
+    <section aria-label="Figurine sélectionnée" data-testid="selection-card" className="flex h-16 items-center gap-3 rounded-xl border-2 border-amber-700/70 bg-stone-900/95 px-2">
       <MiniPawn kind={info.kind} label={info.label} size={44} dead={hero?.dead} />
       <div className="min-w-0 flex-1 leading-tight">
         <p className="truncate font-semibold">{name}</p>
-        {life !== undefined && (
+        {monster && stats ? (
+          <MonsterStatsIcons stats={stats} wounds={wounds} compact />
+        ) : life !== undefined && (
           <p className="text-sm">
             PV : {Math.max(0, life - wounds)}/{life} <span aria-hidden="true">{wounds >= life ? '🖤' : '❤'}</span>
             {hero && !hero.dead && <span> · {mpLeft(g, hero.id)}/{HERO_MOVEMENT} PM</span>}
           </p>
         )}
-        {stats && <p className="truncate text-xs text-stone-300">{skillLines(stats)[0] ?? `${stats.attackDice} dé${stats.attackDice > 1 ? 's' : ''} · ${stats.attackType === 'melee' ? 'mêlée' : 'distance'} · mvt ${stats.movement}`}</p>}
       </div>
       {attackBar}
       <button type="button" aria-label="Fermer la fiche" onClick={() => select(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-amber-600 text-amber-200">
@@ -98,7 +100,7 @@ function EnemiesPanel() {
 
 type MoreSection = 'decisions' | 'journal' | 'sound';
 
-function MorePanel({ onHome }: { onHome: () => void }) {
+function MorePanel() {
   const [section, setSection] = useState<MoreSection>('decisions');
   const sections: { id: MoreSection; label: string }[] = [{ id: 'decisions', label: 'Décisions' }, { id: 'journal', label: 'Journal' }, { id: 'sound', label: 'Son' }];
   return (
@@ -110,9 +112,6 @@ function MorePanel({ onHome }: { onHome: () => void }) {
           </Button>
         ))}
         <CopyLogs />
-        <Button variant="ghost" onClick={onHome}>
-          ← Accueil
-        </Button>
       </nav>
       {section === 'decisions' && <DecisionsPanel />}
       {section === 'journal' && <HistoryScreen />}
@@ -125,7 +124,7 @@ function MorePanel({ onHome }: { onHome: () => void }) {
  * Mode portrait : la fiche de la figurine touchée et la barre d'onglets restent sous le plateau ;
  * chaque onglet ouvre un tiroir (objectifs, héros, ennemis, le reste) pour ne pas tout comprimer à l'écran.
  */
-export function PortraitDock({ heroes, openTab, onOpenTab, onHome, buildTool, onBuildTool }: { buildTool: BuildTool | null; onBuildTool: (t: BuildTool | null) => void; onHome: () => void; heroes: ReactNode; openTab: DockTab | null; onOpenTab: (t: DockTab | null) => void }) {
+export function PortraitDock({ heroes, openTab, onOpenTab, buildTool, onBuildTool }: { buildTool: BuildTool | null; onBuildTool: (t: BuildTool | null) => void; heroes: ReactNode; openTab: DockTab | null; onOpenTab: (t: DockTab | null) => void }) {
   const sandbox = useIsSandbox();
   const tabs = sandbox ? [...TABS.slice(0, 3), ...SANDBOX_TABS, TABS[3]!] : TABS;
   const tab = tabs.find((t) => t.id === openTab);
@@ -147,7 +146,7 @@ export function PortraitDock({ heroes, openTab, onOpenTab, onHome, buildTool, on
           {tab.id === 'scenario' && <QuestsPanel />}
           {tab.id === 'heroes' && heroes}
           {tab.id === 'enemies' && <EnemiesPanel />}
-          {tab.id === 'more' && <MorePanel onHome={onHome} />}
+          {tab.id === 'more' && <MorePanel />}
           {tab.id === 'build' && <BuildStrip tool={buildTool} onTool={(t) => { onBuildTool(t); if (t) onOpenTab(null); }} />}
           {tab.id === 'sandbox' && (
             <div className="space-y-3">

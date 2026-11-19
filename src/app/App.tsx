@@ -59,7 +59,7 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
         }
         footer={<ActionPanel onDecisions={() => setMenu('decisions')} onResult={() => setResult(true)} />}
       />
-      {portrait && <PortraitDock buildTool={buildTool} onBuildTool={setBuildTool} onHome={leave} heroes={<HeroRoster stacked />} openTab={drawer} onOpenTab={setDrawer} />}
+      {portrait && <PortraitDock buildTool={buildTool} onBuildTool={setBuildTool} heroes={<HeroRoster stacked />} openTab={drawer} onOpenTab={setDrawer} />}
       {menu && <MenuDialog tab={menu} onTab={setMenu} onClose={() => setMenu(null)} />}
     </div>
   );
@@ -75,7 +75,7 @@ export function App() {
       <header className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2">
         <h1 className="sr-only">Arcadia Quest Solo Companion</h1>
         <div id="aq-status-slot" className="flex justify-end" />
-        {screen !== 'home' && !(portrait && screen === 'game') && (
+        {screen !== 'home' && (
           <Button variant="ghost" onClick={() => setScreen('home')}>
             ← Accueil
           </Button>

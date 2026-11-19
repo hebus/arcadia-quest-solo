@@ -594,25 +594,29 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
             )
           )}
           {correctionMode && <SyncHint />}
+          {/* Portrait : la fiche de la figurine touchée prend la place du message, au niveau des boutons d'action. */}
+          {selectionCard && !correctionMode && !announcement && queue.length === 0 && <div className="min-w-0 flex-1 self-center empty:hidden">{selectionCard(attackBarVisible && hero ? attackBar : null)}</div>}
           {guildTurn && !correctionMode && (!selectionCard && menuVisible && hero ? attackBar : (
-            !locked && !correctionMode && !(selectionCard && hero) && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
+            !locked && !correctionMode && !!hero && !selectionCard && <p className="min-w-0 truncate text-sm text-stone-500">{`Touchez ${hero.name} de nouveau pour attaquer.`}</p>
           ))}
-          <div className="ml-auto flex flex-nowrap items-center gap-2 self-start">
+          <div className="ml-auto flex flex-nowrap items-center gap-2 self-center">
             {guildTurn && !locked && !correctionMode && queue.length === 0 && (
               <button
                 type="button"
                 disabled={g.activatedHeroIds.length > 0}
                 onClick={restWithPlacement}
-                className="h-12 whitespace-nowrap rounded-xl border-2 border-stone-600 bg-stone-900 px-4 text-base font-semibold text-stone-100 transition-colors hover:bg-stone-800 disabled:opacity-40 sm:px-6 sm:text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+                aria-label="Repos"
+                title="Repos"
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-stone-600 bg-stone-900 text-2xl text-stone-100 transition-colors hover:bg-stone-800 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
               >
-                Repos
+                <span aria-hidden="true">💤</span>
               </button>
             )}
             {guildTurn && !locked && !correctionMode && (
               <button
                 type="button"
                 onClick={endTurn}
-                className="h-12 whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                className="h-16 whitespace-nowrap rounded-xl border-2 border-amber-400 bg-amber-700 px-4 text-base font-bold text-white sm:px-6 sm:text-lg transition-colors hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
               >
                 Fin de tour
               </button>
@@ -629,7 +633,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
                 select(null);
                 setCorrectionMode(!correctionMode);
               }}
-              className={`h-12 shrink-0 whitespace-nowrap rounded-xl border-2 px-3 text-xl font-semibold sm:px-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
+              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 text-3xl font-semibold leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
             >
               <span aria-hidden="true">⟳</span>
             </button>
@@ -705,7 +709,6 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
           </button>
         </div>
       )}
-      {selectionCard?.(attackBarVisible && hero ? attackBar : null)}
       {aimHint && <p className="text-amber-300" role="status">{aimHint}</p>}
       {footer}
       </div>
