@@ -576,7 +576,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
   return (
     <div
       style={{ '--board-ratio': g.board.width / g.board.height } as React.CSSProperties}
-      className="grid gap-3 lg:grid-cols-[min(max(18rem,calc((100dvh_-_9rem_-_var(--aq-banner,0px))*var(--board-ratio))),72vw)_minmax(0,1fr)] lg:items-stretch"
+      className={`grid gap-3 lg:items-stretch ${combatOnSide ? 'lg:grid-cols-[min(max(18rem,calc((100dvh_-_7.5rem_-_var(--aq-banner,0px))*var(--board-ratio))),72vw)_minmax(0,1fr)]' : 'lg:grid-cols-[min(max(18rem,calc((100dvh_-_9rem_-_var(--aq-banner,0px))*var(--board-ratio))),72vw)_minmax(0,1fr)]'}`}
     >
       {/* En haut, cartes héros sur toute la largeur, puis étapes des monstres + Fin de tour ; en dessous, plateau | commandes. */}
       {!(correctionMode && inspected) && roster && <div className="min-w-0 max-lg:order-1 lg:col-span-2">{roster}</div>}
@@ -658,7 +658,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
 
       {/* Plateau entier visible : il se réduit à la hauteur disponible (sous la bannière) sans jamais déborder. */}
       <div className="relative min-w-0 max-lg:order-3">
-      <div className="relative [&_svg]:mx-auto [&_svg]:block [&_svg]:max-h-[calc(100dvh-9rem-var(--aq-banner,0px))]">
+      <div className={`relative [&_svg]:mx-auto [&_svg]:block ${combatOnSide ? '[&_svg]:max-h-[calc(100dvh-7.5rem-var(--aq-banner,0px))]' : '[&_svg]:max-h-[calc(100dvh-9rem-var(--aq-banner,0px))]'}`}>
       <BoardView
         label="Plateau de jeu"
         board={g.board}
