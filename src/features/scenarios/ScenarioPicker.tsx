@@ -1,6 +1,9 @@
 import { TilesButton } from '@/features/scenario/TilesButton';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Drawer } from '@/components/Drawer';
+import { TabDock } from '@/components/TabDock';
+import { usePortrait } from '@/hooks/usePortrait';
 import { MiniPawn } from '@/components/MiniPawn';
 import { ObjectiveIcon } from '@/components/ObjectiveIcon';
 import { Button, ErrorBanner, Panel } from '@/components/ui';
@@ -21,6 +24,7 @@ import { CHAPTER_IDS, MEDIUM_IDS } from '@/stores/campaignRunStore';
 import { useGameStore } from '@/stores/gameStore';
 import { useGuildStore } from '@/stores/guildStore';
 
+const DIFFICULTY_ICON: Record<Difficulty, string> = { easy: '🌱', medium: '⚔️', hard: '🔥', legendary: '🐉' };
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: 'Facile', medium: 'Moyenne', hard: 'Difficile', legendary: 'Légendaire' };
 
 /** Plateau d'un scénario : depuis ses tuiles ; si l'une n'est pas définie, la description textuelle sert d'aperçu. */
@@ -44,6 +48,14 @@ function ScenarioPreview({ def, heroes }: { def: ScenarioDefinition; heroes: Her
   return <BoardView label="Aperçu du scénario" board={board} spawns={spawnPoints} tokens={tokens} objectives={objectives} tileLabels={tileLabels} showCoords={false} />;
 }
 
+type BriefingTab = 'story' | 'objectives' | 'guild' | 'more';
+const BRIEFING_TABS: { id: BriefingTab; label: string; icon: string; title: string }[] = [
+  { id: 'story', label: 'Récit', icon: '📜', title: 'Récit' },
+  { id: 'objectives', label: 'Objectifs', icon: '⚑', title: 'Objectifs' },
+  { id: 'guild', label: 'Guilde', icon: '🛡', title: 'Votre guilde' },
+  { id: 'more', label: 'Plus', icon: '⋯', title: 'Plus' },
+];
+
 type PickerTab = 'campaigns' | 'single' | 'sandbox';
 const PICKER_TABS: { id: PickerTab; label: string }[] = [
   { id: 'campaigns', label: 'Campagnes' },
@@ -59,6 +71,8 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
   // Emplacement sous le bouton Accueil, dans l'en-tête de l'application (absent hors de l'application : le bouton reste alors en place).
   const [headerSlot] = useState<HTMLElement | null>(() => (typeof document === 'undefined' ? null : document.getElementById('aq-header-slot')));
   const [tab, setTab] = useState<PickerTab>('campaigns');
+  const portrait = usePortrait();
+  const [drawer, setDrawer] = useState<BriefingTab | null>(null);
   // La guilde : 3 héros, nom et points de vie, gardés d'une partie à l'autre.
   const guild = useGuildStore((s) => s.heroes);
   const setHeroName = useGuildStore((s) => s.setName);
@@ -206,13 +220,86 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
     </Button>
   );
 
+  const storySection = (
+    <section aria-label="Récit" className="space-y-2 text-[15px] leading-snug">
+      {def.story.intro.map((p, i) => (
+        <p key={i} className={i === 0 ? 'italic text-amber-100' : 'text-stone-200'}>
+          {p}
+        </p>
+      ))}
+    </section>
+  );
+  const objectivesSection = (
+    <section aria-label="Objectifs">
+      <ul className="flex flex-wrap gap-x-4 gap-y-1">
+        {def.quests.map((q) => (
+          <li key={q.id} className="flex items-center gap-1.5 text-sm">
+            <ObjectiveIcon icon={q.icon} size={20} />
+            <span>{q.title}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+  const guildSection = (
+    <section aria-label="Votre guilde">
+      <h3 className="mb-1 text-sm font-semibold text-amber-300">Votre guilde ({GUILD_SIZE} héros)</h3>
+      <ul className={portrait ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-3 gap-2'}>
+        {guild.map((h, i) => (
+          <li key={i} className="space-y-2 rounded-xl border-2 border-stone-700 bg-stone-800 p-2" data-testid={`guild-hero-${i + 1}`}>
+            <label className="flex items-center gap-2">
+              <MiniPawn kind="hero" label={(h.name.trim() || '?').slice(0, 2).toUpperCase()} size={34} />
+              <input
+                aria-label={`Nom du héros ${i + 1}`}
+                value={h.name}
+                maxLength={24}
+                onChange={(e) => setHeroName(i, e.target.value)}
+                className="min-h-11 w-full min-w-0 rounded-lg border border-stone-600 bg-stone-900 px-2 text-base font-semibold"
+              />
+            </label>
+            <Stepper label={`Points de vie du héros ${i + 1}`} value={h.life} min={MIN_HERO_LIFE} max={MAX_HERO_LIFE} onChange={(n) => setHeroLife(i, n)} />
+            <p className="text-sm" aria-hidden="true">{'❤'.repeat(Math.max(0, h.life))}</p>
+            <label className="flex items-center gap-2 text-sm text-stone-200" title="Pouvoir passif : ce héros se déplace sans déclencher les attaques de réaction (Guard) des monstres">
+              <input type="checkbox" aria-label={`Furtivité du héros ${i + 1}`} checked={!!h.stealth} onChange={(e) => setHeroStealth(i, e.target.checked)} />
+              🥷 Furtivité
+            </label>
+          </li>
+        ))}
+      </ul>
+      {guildIssues.length > 0 ? (
+        <p role="alert" className="mt-1 text-sm text-red-300">{guildIssues[0]}</p>
+      ) : (
+        <p className="mt-1 text-xs text-stone-400">Nom et points de vie seulement : cartes, dés de défense et armes se gèrent en physique avec vos figurines.</p>
+      )}
+    </section>
+  );
+  const titleBlock = (
+    <div>
+      <h2 className="text-2xl font-semibold text-amber-300">{def.title}</h2>
+      <p className="text-sm text-stone-300">{def.tagline}</p>
+    </div>
+  );
+  const moreSection = (
+    <div className="flex flex-wrap items-center gap-2">
+      {def.tiles && <TilesButton board={boardOf(def).board} layout={def.tiles} />}
+      {def.generated && !isCampaignChapter(def.id) && (
+        <Button variant="secondary" onClick={() => { setDrawer(null); generate(def.tiles?.placements.length ?? tileCount, (GENERATED_LEVELS.find((l) => l === def.monsterCardSet) ?? '1')); }}>
+          ↻ Autre tirage
+        </Button>
+      )}
+      <Button variant="ghost" onClick={() => setDef(null)}>
+        ← Autres scénarios
+      </Button>
+    </div>
+  );
+
   // Deux colonnes : à gauche récit, objectifs, difficulté et lancement ; la guilde ; à droite le plan. La page défile sous la bannière.
   return (
-    <div data-testid="briefing-page" className="relative left-1/2 flex w-[96vw] -translate-x-1/2 flex-col gap-2">
+    <div data-testid="briefing-page" className={portrait ? 'flex w-full flex-col gap-2 pb-20' : 'relative left-1/2 flex w-[96vw] -translate-x-1/2 flex-col gap-2'}>
       <ErrorBanner message={error} onClose={() => setError(null)} />
       {/* « Autres scénarios » se range sous le bouton Accueil. */}
-      {headerSlot ? createPortal(backButton, headerSlot) : backButton}
-      {(def.tiles || (def.generated && !isCampaignChapter(def.id))) && (
+      {!portrait && (headerSlot ? createPortal(backButton, headerSlot) : backButton)}
+      {!portrait && (def.tiles || (def.generated && !isCampaignChapter(def.id))) && (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {def.tiles && <TilesButton board={boardOf(def).board} layout={def.tiles} />}
           {def.generated && !isCampaignChapter(def.id) && (
@@ -223,31 +310,13 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
         </div>
       )}
 
+      {portrait && titleBlock}
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(18rem,2fr)_3fr]">
-        <div className="flex w-full max-w-xl flex-col gap-3 lg:justify-self-end">
-          <div>
-            <h2 className="text-2xl font-semibold text-amber-300">{def.title}</h2>
-            <p className="text-sm text-stone-300">{def.tagline}</p>
-          </div>
+        <div className={`flex w-full max-w-xl flex-col gap-3 lg:justify-self-end ${portrait ? 'order-2' : ''}`}>
+          {!portrait && titleBlock}
 
-          <section aria-label="Récit" className="space-y-2 text-[15px] leading-snug">
-            {def.story.intro.map((p, i) => (
-              <p key={i} className={i === 0 ? 'italic text-amber-100' : 'text-stone-200'}>
-                {p}
-              </p>
-            ))}
-          </section>
-
-          <section aria-label="Objectifs">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1">
-              {def.quests.map((q) => (
-                <li key={q.id} className="flex items-center gap-1.5 text-sm">
-                  <ObjectiveIcon icon={q.icon} size={20} />
-                  <span>{q.title}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {!portrait && storySection}
+          {!portrait && objectivesSection}
 
           {def.difficulties && (
             <p data-testid="difficulty-summary" className="text-sm text-amber-200">
@@ -256,60 +325,50 @@ export function ScenarioPicker({ onStart }: { onStart: () => void }) {
           )}
 
           <footer className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              Difficulté
-              <select className="min-h-11 rounded-lg border border-stone-600 bg-stone-800 px-3" value={difficulty ?? def.recommended} onChange={(e) => setDifficulty(e.target.value as Difficulty)}>
-                {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
-                  <option key={d} value={d}>
-                    {DIFFICULTY_LABEL[d]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div role="radiogroup" aria-label="Difficulté" className="flex items-center gap-1.5">
+              {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  role="radio"
+                  aria-checked={chosen === d}
+                  aria-label={DIFFICULTY_LABEL[d]}
+                  title={DIFFICULTY_LABEL[d]}
+                  onClick={() => setDifficulty(d)}
+                  className={`flex min-h-11 min-w-11 flex-col items-center justify-center rounded-lg border-2 px-1 text-xl leading-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${chosen === d ? 'border-amber-400 bg-amber-900/60' : 'border-stone-600 bg-stone-800 opacity-70'}`}
+                >
+                  <span aria-hidden="true">{DIFFICULTY_ICON[d]}</span>
+                </button>
+              ))}
+            </div>
             <Button variant="primary" className="flex-1" disabled={guildIssues.length > 0} onClick={start}>
               Commencer l’aventure
             </Button>
           </footer>
 
-          <section aria-label="Votre guilde">
-            <h3 className="mb-1 text-sm font-semibold text-amber-300">Votre guilde ({GUILD_SIZE} héros)</h3>
-            <ul className="grid grid-cols-3 gap-2">
-              {guild.map((h, i) => (
-                <li key={i} className="space-y-2 rounded-xl border-2 border-stone-700 bg-stone-800 p-2" data-testid={`guild-hero-${i + 1}`}>
-                  <label className="flex items-center gap-2">
-                    <MiniPawn kind="hero" label={(h.name.trim() || '?').slice(0, 2).toUpperCase()} size={34} />
-                    <input
-                      aria-label={`Nom du héros ${i + 1}`}
-                      value={h.name}
-                      maxLength={24}
-                      onChange={(e) => setHeroName(i, e.target.value)}
-                      className="min-h-11 w-full min-w-0 rounded-lg border border-stone-600 bg-stone-900 px-2 text-base font-semibold"
-                    />
-                  </label>
-                  <Stepper label={`Points de vie du héros ${i + 1}`} value={h.life} min={MIN_HERO_LIFE} max={MAX_HERO_LIFE} onChange={(n) => setHeroLife(i, n)} />
-                  <p className="text-sm" aria-hidden="true">{'❤'.repeat(Math.max(0, h.life))}</p>
-                  <label className="flex items-center gap-2 text-sm text-stone-200" title="Pouvoir passif : ce héros se déplace sans déclencher les attaques de réaction (Guard) des monstres">
-                    <input type="checkbox" aria-label={`Furtivité du héros ${i + 1}`} checked={!!h.stealth} onChange={(e) => setHeroStealth(i, e.target.checked)} />
-                    🥷 Furtivité
-                  </label>
-                </li>
-              ))}
-            </ul>
-            {guildIssues.length > 0 ? (
-              <p role="alert" className="mt-1 text-sm text-red-300">{guildIssues[0]}</p>
-            ) : (
-              <p className="mt-1 text-xs text-stone-400">Nom et points de vie seulement : cartes, dés de défense et armes se gèrent en physique avec vos figurines.</p>
-            )}
-          </section>
+          {!portrait && guildSection}
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className={`flex flex-col gap-3 ${portrait ? 'order-1' : ''}`}>
           {/* Plan entier visible : le SVG garde son ratio et se réduit pour tenir dans la hauteur disponible sous la bannière. */}
           <div className="w-full [&_svg]:max-h-[calc(100dvh-var(--aq-banner,0px)-2rem)]">
             <ScenarioPreview def={played} heroes={heroes} />
           </div>
         </div>
       </div>
+      {portrait && (
+        <>
+          <TabDock label="Navigation du briefing" tabs={BRIEFING_TABS} open={drawer} onOpen={setDrawer} />
+          {drawer && (
+            <Drawer title={BRIEFING_TABS.find((t) => t.id === drawer)!.title} onClose={() => setDrawer(null)}>
+              {drawer === 'story' && storySection}
+              {drawer === 'objectives' && objectivesSection}
+              {drawer === 'guild' && guildSection}
+              {drawer === 'more' && moreSection}
+            </Drawer>
+          )}
+        </>
+      )}
     </div>
   );
 }

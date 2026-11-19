@@ -8,7 +8,7 @@ import { SandboxStrip, useIsSandbox } from './SandboxPanel';
 import { useGameStore } from '@/stores/gameStore';
 
 /** Les héros à côté du plateau : une carte par héros (pion, cœurs). Toucher une carte sélectionne le héros. */
-export function HeroRoster() {
+export function HeroRoster({ stacked = false }: { stacked?: boolean }) {
   const g = useGameStore((s) => s.game)!;
   const selectedId = useGameStore((s) => s.selectedId);
   const select = useGameStore((s) => s.select);
@@ -22,12 +22,12 @@ export function HeroRoster() {
   };
   const btn = 'flex min-h-9 min-w-9 items-center justify-center rounded-lg border-2 border-stone-600 bg-stone-900 px-1.5 text-base font-bold transition-colors hover:bg-stone-800 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400';
   return (
-    <ul className="flex flex-nowrap gap-1 landscape:flex-wrap landscape:gap-2" aria-label="Héros" data-testid="hero-roster">
+    <ul className={stacked ? 'flex flex-col gap-3' : 'flex flex-nowrap gap-1 landscape:flex-wrap landscape:gap-2'} aria-label="Héros" data-testid="hero-roster">
       {g.heroes.map((h) => {
         const on = selectedId === h.id;
         const blocked = guild && blockedByOtherHero(g, h.id);
         return (
-          <li key={h.id} className="flex min-w-0 max-w-[21rem] flex-1 flex-col gap-1 landscape:w-[21rem] landscape:flex-none">
+          <li key={h.id} className={stacked ? 'flex min-w-0 flex-col gap-1' : 'flex min-w-0 max-w-[21rem] flex-1 flex-col gap-1 landscape:w-[21rem] landscape:flex-none'}>
             <div className="flex justify-end gap-1">
             <div className="flex shrink-0 gap-1" role="group" aria-label={`Santé de ${h.name}`}>
               {h.dead ? (

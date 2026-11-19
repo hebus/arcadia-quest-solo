@@ -185,7 +185,7 @@ describe('scénario de l’univers original', () => {
     for (const name of ['Récit', 'Objectifs', /Votre guilde/]) expect(within(page).getByRole('region', { name })).toBeInTheDocument();
     expect(within(page).getByRole('img', { name: 'Aperçu du scénario' })).toBeInTheDocument();
     expect(within(page).getByRole('button', { name: /Commencer l’aventure/ })).toBeInTheDocument();
-    expect(within(page).getByRole('combobox')).toBeInTheDocument(); // difficulté
+    expect(within(page).getByRole('radiogroup', { name: 'Difficulté' })).toBeInTheDocument(); // difficulté
     // Plus de panneaux empilés (l'ancienne mise en page en avait deux).
     expect(page.querySelectorAll('section[aria-label^="Votre guilde"]')).toHaveLength(1);
   });

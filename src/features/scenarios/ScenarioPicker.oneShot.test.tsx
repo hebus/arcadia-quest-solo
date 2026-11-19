@@ -23,9 +23,9 @@ describe('scénarios one shot : choix de la difficulté au briefing', () => {
     await user.click(screen.getByRole('button', { name: /Voir le briefing : Le Quartier des Voleurs/ }));
     const summary = () => screen.getByTestId('difficulty-summary').textContent ?? '';
     expect(summary()).toContain('Niveau des monstres : 1'); // conseillée : facile
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Difficulté' }), 'legendary');
+    await user.click(screen.getByRole('radio', { name: 'Légendaire' }));
     expect(summary()).toContain('Niveau des monstres : 6');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Difficulté' }), 'hard');
+    await user.click(screen.getByRole('radio', { name: 'Difficile' }));
     expect(summary()).toContain('Niveau des monstres : 4-5');
     await user.click(screen.getByRole('button', { name: /Commencer l’aventure/ }));
     const g = useGameStore.getState().game!;

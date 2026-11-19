@@ -19,7 +19,7 @@ export const PHASE_LABEL: Record<GameState['phase'], string> = {
 };
 
 /** État de la partie en une ligne, sans cadre : icône + valeur, rangée dans l'en-tête près du bouton Accueil. */
-export function StatusBar({ onMenu }: { onMenu: () => void }) {
+export function StatusBar({ onMenu, compact = false }: { onMenu: () => void; compact?: boolean }) {
   const g = useGameStore((s) => s.game);
   const group = useGameStore((s) => s.instructions.find((i) => !i.confirmed)?.group);
   if (!g) return null;
@@ -35,12 +35,12 @@ export function StatusBar({ onMenu }: { onMenu: () => void }) {
         ⚑ {questsDone(g)}/{g.questsRequired}
       </span>
       <span title="Pièces">🪙 {g.coins}</span>
-      <span className="flex items-center gap-1">
+      {!compact && <span className="flex items-center gap-1">
         <SoundToggle />
         <Button variant="ghost" aria-label="Menu" onClick={onMenu}>
           ☰ Menu
         </Button>
-      </span>
+      </span>}
     </div>
   );
 }

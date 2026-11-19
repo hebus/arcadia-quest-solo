@@ -8,6 +8,8 @@ import { useGameAudio } from '@/audio/director';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { ActionPanel, HeroRoster } from '@/features/game/ActionDock';
 import { MenuDialog, type MenuTab } from '@/features/game/MenuDialog';
+import { PortraitDock, type DockTab } from '@/features/game/PortraitDock';
+import { usePortrait } from '@/hooks/usePortrait';
 import { InputPrompt } from '@/features/monster-turn/MonsterTurnScreen';
 import { StatusBar } from '@/features/scenario/Dashboard';
 import { GameBoard } from '@/features/scenario/GameBoard';
@@ -29,19 +31,21 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
   const agent = useGameStore((s) => s.agent);
   const [menu, setMenu] = useState<MenuTab | null>(null);
   const [result, setResult] = useState(false);
+  const portrait = usePortrait();
+  const [drawer, setDrawer] = useState<DockTab | null>(null);
   // L'état de la partie se range dans l'en-tête, près du bouton Accueil (sans l'en-tête, il reste en place).
   const [headerSlot] = useState<HTMLElement | null>(() => (typeof document === 'undefined' ? null : document.getElementById('aq-status-slot')));
   if (!g) return <p>Aucune partie en cours.</p>;
   const ended = g.phase === 'SCENARIO_WON' || g.phase === 'SCENARIO_LOST';
   if (ended && result) return <ResultScreen onLeave={leave} onCampaign={toCampaign} />;
-  const status = <StatusBar onMenu={() => setMenu('team')} />;
+  const status = <StatusBar onMenu={() => setMenu('team')} compact={portrait} />;
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${portrait ? 'pb-20' : ''}`}>
       <ErrorBanner message={error} onClose={clear} />
       <StoryDialog />
       {headerSlot ? createPortal(status, headerSlot) : status}
       <GameBoard
-        roster={<HeroRoster />}
+        roster={portrait ? undefined : <HeroRoster />}
         monsterInput={
           agent.request && agent.status === 'awaiting-input' && !announcing && !stepsPending ? (
             <Panel title={agent.request.kind === 'defense-result' ? 'Jet de défense' : 'Résultat des dés'}>
@@ -51,6 +55,7 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
         }
         footer={<ActionPanel onDecisions={() => setMenu('decisions')} onResult={() => setResult(true)} />}
       />
+      {portrait && <PortraitDock onHome={leave} heroes={<HeroRoster stacked />} openTab={drawer} onOpenTab={setDrawer} />}
       {menu && <MenuDialog tab={menu} onTab={setMenu} onClose={() => setMenu(null)} />}
     </div>
   );
@@ -58,6 +63,7 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
+  const portrait = usePortrait();
   return (
     <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage ${screen === 'game' ? 'aq-stage-game' : ''}`}>
       <div className="aq-stage-bg" aria-hidden="true" />
@@ -65,7 +71,7 @@ export function App() {
       <header className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2">
         <h1 className="sr-only">Arcadia Quest Solo Companion</h1>
         <div id="aq-status-slot" className="flex justify-end" />
-        {screen !== 'home' && (
+        {screen !== 'home' && !(portrait && screen === 'game') && (
           <Button variant="ghost" onClick={() => setScreen('home')}>
             ← Accueil
           </Button>
