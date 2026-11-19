@@ -4,6 +4,7 @@ import { HERO_MOVEMENT, mpLeft } from '@/engine/combat/heroMove';
 import { blockedByOtherHero, isTerminal } from '@/engine/state';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { actorInfo } from '@/rendering/instructions/overlay';
+import { usePortrait } from '@/hooks/usePortrait';
 import { SandboxStrip, useIsSandbox } from './SandboxPanel';
 import { useGameStore } from '@/stores/gameStore';
 
@@ -27,7 +28,7 @@ export function HeroRoster({ stacked = false }: { stacked?: boolean }) {
         const on = selectedId === h.id;
         const blocked = guild && blockedByOtherHero(g, h.id);
         return (
-          <li key={h.id} className={stacked ? 'flex min-w-0 flex-col gap-1' : 'flex min-w-0 max-w-[21rem] flex-1 flex-col gap-1 landscape:w-[21rem] landscape:flex-none'}>
+          <li key={h.id} className={stacked ? 'flex min-w-0 flex-row-reverse items-center justify-between gap-2' : 'flex min-w-0 max-w-[21rem] flex-1 flex-col gap-1 landscape:w-[21rem] landscape:flex-none'}>
             <div className="flex justify-end gap-1">
             <div className="flex shrink-0 gap-1" role="group" aria-label={`Santé de ${h.name}`}>
               {h.dead ? (
@@ -64,7 +65,7 @@ export function HeroRoster({ stacked = false }: { stacked?: boolean }) {
               aria-pressed={on}
               disabled={h.dead || blocked}
               onClick={() => select(on ? null : h.id)}
-              className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl border-2 px-2 py-1 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:opacity-50 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900'}`}
+              className={`flex min-w-0 flex-1 items-center gap-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:opacity-50 ${stacked ? `py-1 ${on ? 'text-amber-300' : ''}` : `rounded-xl border-2 px-2 py-1 ${on ? 'border-amber-400 bg-stone-800' : 'border-stone-700 bg-stone-900'}`}`}
             >
               <span className="portrait:hidden"><MiniPawn kind="hero" label={actorInfo(g, h.id).label} size={32} dead={h.dead} /></span>
               <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 leading-tight">
@@ -112,12 +113,13 @@ export function AttackAnnouncement({ announcement }: { announcement: NonNullable
           ⚔ ➜
         </span>
         <MiniPawn kind={target.kind} label={target.label} size={32} />
-        <p className="truncate text-base">
+        {/* Les pions et les icônes suffisent à l'écran ; le texte reste pour les lecteurs d'écran. */}
+        <p className="sr-only">
           <strong>{nameOf(announcement.attackerId)}</strong> attaque <strong>{nameOf(announcement.targetId)}</strong>
         </p>
       </div>
-      <Button variant="primary" className="min-h-9! py-1! shrink-0" onClick={announcement.acknowledge}>
-        Continuer : lancer mes dés
+      <Button variant="primary" className="min-h-9! py-1! shrink-0 text-2xl! leading-none" aria-label="Continuer : lancer mes dés" title="Continuer : lancer mes dés" onClick={announcement.acknowledge}>
+        <span aria-hidden="true">🎲</span>
       </Button>
     </section>
   );
@@ -136,6 +138,8 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
   const ended = isTerminal(g.phase);
   const announcement = useAttackAnnouncement();
   const sandbox = useIsSandbox();
+  // En portrait, la fiche du héros porte déjà ses PM : ni ligne de PM ni « Activer sans agir ».
+  const portrait = usePortrait();
 
   // Un monstre attaque : l'annonce est affichée au-dessus du plateau (voir GameBoard), le dock attend.
   if (announcement) return null;
@@ -157,12 +161,12 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
 
           {guild && (
             <>
-              {selected && (
+              {selected && !portrait && (
                 <span className="rounded-lg bg-stone-800 px-3 py-2 text-sm">
                   {selected.name} : {mpLeft(g, selected.id)}/{HERO_MOVEMENT} PM
                 </span>
               )}
-              {selected && !g.activatedHeroIds.includes(selected.id) && !blockedByOtherHero(g, selected.id) && (
+              {selected && !portrait && !g.activatedHeroIds.includes(selected.id) && !blockedByOtherHero(g, selected.id) && (
                 <Button variant="ghost" onClick={() => st.activateHero(selected.id)}>
                   Activer sans agir
                 </Button>

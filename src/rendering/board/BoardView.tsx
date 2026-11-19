@@ -72,6 +72,8 @@ interface Props {
   /** Arêtes à signaler en pointillés gris (ex. porte retirée, qu'on peut rétablir). */
   inactiveEdges?: [Position, Position][];
   showCoords?: boolean;
+  /** Numéros de tuiles par-dessus murs, portes et pions, bien lisibles (aide à la construction du plateau). */
+  labelsOnTop?: boolean;
   label?: string;
 }
 
@@ -143,7 +145,7 @@ interface DragState {
 }
 
 /** Plateau en SVG : art de tuiles généré, murs, portes, pions déplaçables et instructions visuelles. */
-export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlights = [], paths = [], ghosts = [], objectives = [], lines = [], tileLabels = [], overlay, onCell, onToken, canDrag, onTokenMove, onDoor, doorIds, doorHints = [], onEdge, outerEdges = false, inactiveEdges = [], showCoords = true, label = 'Plateau' }: Props) {
+export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlights = [], paths = [], ghosts = [], objectives = [], lines = [], tileLabels = [], overlay, onCell, onToken, canDrag, onTokenMove, onDoor, doorIds, doorHints = [], onEdge, outerEdges = false, inactiveEdges = [], showCoords = true, labelsOnTop = false, label = 'Plateau' }: Props) {
   const uid = useId().replace(/:/g, '');
   const svgRef = useRef<SVGSVGElement>(null);
   const suppressClick = useRef(false);
@@ -220,6 +222,27 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
   for (const t of shown) inCell.set(`${t.at.x},${t.at.y}`, (inCell.get(`${t.at.x},${t.at.y}`) ?? 0) + 1);
   const doorGlow = new Set([...(overlay?.doorIds ?? []), ...doorHints]);
 
+  // Numéro de la tuile au centre de la tuile : sous les pions par défaut ; au-dessus de tout (`labelsOnTop`) pour poser les tuiles sur la table.
+  const labelNodes = tileLabels.map((t) => {
+    // Centre de la case du milieu de la tuile (la 2e des 3 cases, soit 1,5 case depuis le coin de la tuile).
+    const cx = (t.tx * TILE + (t.dx ?? 0) + TILE / 2) * C;
+    const cy = (t.ty * TILE + (t.dy ?? 0) + TILE / 2) * C;
+    const FS = 46;
+    const style = { fill: '#fff', fillOpacity: labelsOnTop ? 0.92 : 0.3, stroke: '#000', strokeOpacity: labelsOnTop ? 0.9 : 0.35, strokeWidth: 2, paintOrder: 'stroke', fontWeight: 'bold' } as const;
+    return (
+      <g key={`tl${t.tx},${t.ty}`} data-testid={`tile-label-${t.tx}-${t.ty}`} pointerEvents="none">
+        {/* Le chiffre est centré exactement sur la case du milieu : la ligne de base est abaissée de la demi-hauteur des chiffres (≈ 0,36 em), sans dépendre du rendu de dominant-baseline. */}
+        <text data-testid={`tile-number-${t.tx}-${t.ty}`} x={cx} y={cy + FS * 0.36} textAnchor="middle" fontSize={FS} {...style}>
+          {t.label.slice(0, -1)}
+        </text>
+        {/* La face (A ou B) se pose à côté, sans décaler le chiffre. */}
+        <text data-testid={`tile-face-${t.tx}-${t.ty}`} x={cx + FS * 0.42} y={cy + FS * 0.36} textAnchor="start" fontSize={FS * 0.5} {...style}>
+          {t.label.slice(-1)}
+        </text>
+      </g>
+    );
+  });
+
   return (
     <svg
       ref={svgRef}
@@ -272,26 +295,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
         );
       })}
 
-      {/* Numéro de la tuile au centre de la tuile : sous les pions, il n'indique pas l'orientation (le dessin suffit pour poser la tuile). */}
-      {tileLabels.map((t) => {
-        // Centre de la case du milieu de la tuile (la 2e des 3 cases, soit 1,5 case depuis le coin de la tuile).
-        const cx = (t.tx * TILE + (t.dx ?? 0) + TILE / 2) * C;
-        const cy = (t.ty * TILE + (t.dy ?? 0) + TILE / 2) * C;
-        const FS = 46;
-        const style = { fill: '#fff', fillOpacity: 0.3, stroke: '#000', strokeOpacity: 0.35, strokeWidth: 2, paintOrder: 'stroke', fontWeight: 'bold' } as const;
-        return (
-          <g key={`tl${t.tx},${t.ty}`} data-testid={`tile-label-${t.tx}-${t.ty}`} pointerEvents="none">
-            {/* Le chiffre est centré exactement sur la case du milieu : la ligne de base est abaissée de la demi-hauteur des chiffres (≈ 0,36 em), sans dépendre du rendu de dominant-baseline. */}
-            <text data-testid={`tile-number-${t.tx}-${t.ty}`} x={cx} y={cy + FS * 0.36} textAnchor="middle" fontSize={FS} {...style}>
-              {t.label.slice(0, -1)}
-            </text>
-            {/* La face (A ou B) se pose à côté, sans décaler le chiffre. */}
-            <text data-testid={`tile-face-${t.tx}-${t.ty}`} x={cx + FS * 0.42} y={cy + FS * 0.36} textAnchor="start" fontSize={FS * 0.5} {...style}>
-              {t.label.slice(-1)}
-            </text>
-          </g>
-        );
-      })}
+      {!labelsOnTop && labelNodes}
 
       {(board.interior ?? []).map((c) => (
         <rect key={`in${c.x},${c.y}`} data-testid={`interior-${c.x}-${c.y}`} x={c.x * C} y={c.y * C} width={C} height={C} fill="none" pointerEvents="none" />
@@ -607,6 +611,7 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
           style={{ cursor: 'pointer' }}
         />
       ))}
+      {labelsOnTop && labelNodes}
     </svg>
   );
 }

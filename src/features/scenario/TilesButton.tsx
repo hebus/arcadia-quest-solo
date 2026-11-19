@@ -13,7 +13,7 @@ function TilesPreview({ board, layout }: { board: Board; layout: TileLayout }) {
   const placed = layout.placements.flatMap((pl) => (byId[pl.tileId] ? [{ def: byId[pl.tileId]!, placement: pl }] : []));
   return (
     <div className="space-y-2">
-      <BoardView label="Tuiles du plateau (réduit)" board={board} tiles={placed} tileLabels={layout.placements.map((pl) => ({ tx: pl.tx, ty: pl.ty, dx: pl.dx, dy: pl.dy, label: pl.tileId }))} showCoords={false} />
+      <BoardView label="Tuiles du plateau (réduit)" board={board} tiles={placed} tileLabels={layout.placements.map((pl) => ({ tx: pl.tx, ty: pl.ty, dx: pl.dx, dy: pl.dy, label: pl.tileId }))} showCoords={false} labelsOnTop />
       <p className="text-sm text-stone-400">Chaque tuile est double face : dans ce scénario, une seule de ses deux faces est utilisée.</p>
     </div>
   );

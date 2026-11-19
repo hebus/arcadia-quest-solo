@@ -26,13 +26,14 @@ const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
  * Dialogue d'attaque. L'application ne calcule que la portée (type de l'arme) : le joueur lance les dés physiques de la
  * carte arme et indique les blessures subies par chaque monstre ciblé (parades du monstre comprises).
  */
-function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroId: string; targets: string[]; fixedType: 'melee' | 'ranged' | null; onToggle: (id: string) => void; onClose: () => void }) {
+function AttackDialog({ heroId, targets, fixedType, onToggle, onClose, onAddTargets }: { heroId: string; targets: string[]; fixedType: 'melee' | 'ranged' | null; onToggle: (id: string) => void; onClose: () => void; onAddTargets?: () => void }) {
   const g = useGameStore((s) => s.game)!;
   const content = useGameStore((s) => s.content);
   const attackHero = useGameStore((s) => s.attackHero);
   const hero = g.heroes.find((h) => h.id === heroId)!;
   const [choice, setChoice] = useState<'melee' | 'ranged'>('melee');
-  const [wounds, setWounds] = useState<Record<string, number>>({});
+  // Un seul compteur : en général, toutes les cibles subissent les mêmes blessures que la cible d'origine.
+  const [dealt, setDealt] = useState(0);
   const attacked = g.heroTurn[heroId]?.attacked ?? false;
   // Arme choisie avant la cible : le type est imposé. Sinon il se déduit, et on ne demande que s'il est ambigu.
   const validMelee = targets.length > 0 && targets.every((t) => canHeroTarget(g, heroId, t, 'melee'));
@@ -41,7 +42,7 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
   const type: 'melee' | 'ranged' = fixedType ?? (ambiguous ? choice : validMelee ? 'melee' : validRanged ? 'ranged' : choice);
   const invalid = targets.filter((t) => !canHeroTarget(g, heroId, t, type));
   return (
-    <Panel title={`${hero.name} attaque`} actions={<Button variant="ghost" onClick={onClose}>Annuler</Button>}>
+    <Panel title="Combat" actions={<Button variant="ghost" onClick={onClose}>Annuler</Button>}>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         {ambiguous ? (
           <fieldset className="flex gap-3">
@@ -53,20 +54,31 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
           <Badge tone={invalid.length === 0 ? 'good' : 'bad'}>{invalid.length > 0 ? 'Hors de portée' : type === 'melee' ? '⚔ Corps à corps' : '🏹 Distance'}</Badge>
         )}
       </div>
-      <p className="mb-2 text-sm text-stone-400">Touchez d&apos;autres monstres sur le plateau pour les ajouter aux cibles. Après votre lancer, indiquez les blessures subies par chaque monstre.</p>
       <ul className="mb-3 space-y-2">
-        {targets.map((t) => {
+        {targets.map((t, idx) => {
           const m = g.monsters.find((x) => x.id === t);
           const stats = m ? statsOfMonster(content, g, m) : undefined;
-          const dealt = wounds[t] ?? 0;
           const total = (m?.wounds ?? 0) + dealt;
           const outright = !!stats && dealt >= stats.overkill;
           const dies = !!stats && (outright || total >= stats.life);
           return (
-            <li key={t} className="flex flex-wrap items-center gap-3 rounded-lg bg-stone-800 p-2">
+            <li key={t} className="relative flex flex-wrap items-center gap-3 rounded-lg bg-stone-800 p-2">
               <MiniPawn kind="monster" label={actorInfo(g, t).label} size={36} />
               <strong>{t}</strong>
               {stats && <span className="text-sm text-stone-300" title="Points de vie">{'❤'.repeat(Math.max(0, stats.life - total))}{'🖤'.repeat(Math.min(stats.life, total))}</span>}
+              {idx === 0 && onAddTargets && (
+            <button
+              type="button"
+              data-testid="add-targets"
+              aria-label="Ajouter des cibles"
+              title="Ajouter des cibles : le combat se masque, touchez d’autres monstres sur le plateau. Après votre lancer, indiquez les blessures subies par chaque monstre."
+              onClick={onAddTargets}
+              className="flex h-9 items-center gap-0.5 rounded-lg border-2 border-stone-600 bg-stone-900 px-2 text-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
+              <span aria-hidden="true">🎯</span>
+              <span aria-hidden="true" className="text-base font-bold text-amber-300">＋</span>
+            </button>
+              )}
               {invalid.includes(t) && <Badge tone="bad">hors de portée</Badge>}
               {dealt > 0 && (outright ? <Badge tone="good">tué sur le coup : pas de riposte</Badge> : dies ? (monsterCanPayback(g, content, t, heroId) ? <Badge tone="good">tué (il peut riposter)</Badge> : <Badge tone="good">tué : il ne peut pas riposter, retiré directement</Badge>) : <Badge tone="warn">survit : il riposte</Badge>)}
               {m && stats && (
@@ -87,25 +99,29 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose }: { heroI
                   ))}
                 </div>
               )}
-              <span>
-                <Stepper label={`Blessures de ${t}`} value={dealt} onChange={(n) => setWounds({ ...wounds, [t]: n })} />
-              </span>
-              <Button variant="ghost" onClick={() => onToggle(t)} aria-label={`Retirer ${t}`}>✕</Button>
+              <button type="button" onClick={() => onToggle(t)} aria-label={`Retirer ${t}`} title="Retirer de la liste de combat" className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-full text-lg text-stone-300 hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400">
+                ✕
+              </button>
             </li>
           );
         })}
       </ul>
       {attacked && <p className="mb-2 text-amber-300">{hero.name} a déjà attaqué pendant cette activation.</p>}
-      <Button
-        variant="primary"
-        disabled={targets.length === 0 || invalid.length > 0 || attacked}
-        onClick={() => {
-          attackHero(heroId, targets.map((t) => ({ monsterId: t, wounds: wounds[t] ?? 0 })), type);
-          onClose();
-        }}
-      >
-        Résoudre l&apos;attaque (riposte et Guard calculées)
-      </Button>
+      <div className="mb-3 flex items-end gap-3">
+        {targets.length > 0 && <Stepper label={targets.length === 1 ? `Blessures de ${targets[0]}` : 'Blessures de toutes les cibles'} value={dealt} onChange={setDealt} />}
+        <Button
+          variant="primary"
+          className="flex-1"
+          title="Riposte et Guard calculées"
+          disabled={targets.length === 0 || invalid.length > 0 || attacked}
+          onClick={() => {
+            attackHero(heroId, targets.map((t) => ({ monsterId: t, wounds: dealt })), type);
+            onClose();
+          }}
+        >
+          Résoudre l&apos;attaque
+        </Button>
+      </div>
     </Panel>
   );
 }
@@ -219,7 +235,7 @@ function SyncPanel({ selectedId }: { selectedId: string | null }) {
 }
 
 /** Plateau de jeu : sélection d'un héros, cases atteignables, déplacement au clic, attaque en touchant un monstre. */
-export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dés d'une attaque de monstre : remplace les cartes héros. */ monsterInput?: ReactNode;/** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
+export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /** Fiche de la figurine touchée (portrait) : reçoit les boutons de type d'attaque, à loger dans la carte. */ selectionCard?: (attackBar: ReactNode) => ReactNode; /** Saisie des dés d'une attaque de monstre : remplace les cartes héros. */ monsterInput?: ReactNode;/** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
   const g = useGameStore((s) => s.game)!;
   const selectedId = useGameStore((s) => s.selectedId);
   const select = useGameStore((s) => s.select);
@@ -235,6 +251,8 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
   const setCorrectionMode = useGameStore((s) => s.setCorrectionMode);
   const { tiles, loaded, load } = useTileStore();
   const [targets, setTargets] = useState<string[]>([]);
+  /** Choix de cibles supplémentaires : la boîte de combat se masque pour laisser le plateau libre. */
+  const [picking, setPicking] = useState(false);
   /** Arme choisie avant de viser : seules les cibles valides pour ce type sont désignables. */
   const [attackType, setAttackType] = useState<'melee' | 'ranged' | null>(null);
   /** Terrain d'essai : outil de construction actif (mur, porte, bâtiment, case bloquée), appliqué en touchant le plateau. */
@@ -361,6 +379,7 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
 
   const resetAim = () => {
     setTargets([]);
+    setPicking(false);
     setAttackType(null);
     setAimHint(null);
   };
@@ -384,7 +403,40 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
 
   // Le menu est lié au héros : en changer ou le désélectionner le referme.
   const menuVisible = !!hero?.position && menuFor === hero.id && guildTurn && !locked && !correctionMode && !placing && !turn?.attacked && targets.length === 0;
+  // En portrait, les boutons d'attaque sont dans la fiche du héros et visibles dès qu'il est sélectionné.
+  const attackBarVisible = selectionCard ? !!hero?.position && guildTurn && !locked && !correctionMode && !placing && !turn?.attacked && targets.length === 0 : menuVisible;
   const attackChoices = (['melee', 'ranged'] as const).map((t) => ({ id: t, label: t === 'melee' ? 'Mêlée' : 'Distance', icon: t === 'melee' ? '⚔' : '🏹' }));
+  const attackBar = (
+    <div role="group" aria-label="Type d'attaque" data-testid="board-menu" className="flex flex-nowrap items-center gap-2">
+      {attackChoices.map((c) =>
+        selectionCard ? (
+          <button
+            key={c.id}
+            type="button"
+            data-testid={`menu-${c.id}`}
+            aria-label={c.label}
+            title={c.label}
+            aria-pressed={activeType === c.id}
+            onClick={() => chooseType(c.id)}
+            className={`flex h-11 w-11 items-center justify-center rounded-xl border-2 text-2xl transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${activeType === c.id ? 'border-amber-400 bg-amber-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
+          >
+            <span aria-hidden="true">{c.icon}</span>
+          </button>
+        ) : (
+          <button
+            key={c.id}
+            type="button"
+            data-testid={`menu-${c.id}`}
+            aria-pressed={activeType === c.id}
+            onClick={() => chooseType(c.id)}
+            className={`min-h-12 whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold transition-colors sm:px-5 sm:text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${activeType === c.id ? 'border-amber-400 bg-amber-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
+          >
+            {c.icon} {c.label}
+          </button>
+        ),
+      )}
+    </div>
+  );
 
   const onToken = (id: string) => {
     const tokenAt = tokens.find((t) => t.id === id)?.at;
@@ -523,45 +575,15 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
             <AttackAnnouncement announcement={announcement} />
           ) : (
             queue.length > 0 && (
-              <div className="w-full self-center">
+              <div className="min-w-0 flex-1 self-center">
                 <InstructionPlayer />
               </div>
             )
           )}
-          {guildTurn && (menuVisible && hero ? (
-            <div role="group" aria-label="Type d'attaque" data-testid="board-menu" className="flex flex-nowrap items-center gap-2">
-              {attackChoices.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  data-testid={`menu-${c.id}`}
-                  aria-pressed={activeType === c.id}
-                  onClick={() => chooseType(c.id)}
-                  className={`min-h-12 whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold transition-colors sm:px-5 sm:text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${activeType === c.id ? 'border-amber-400 bg-amber-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
-                >
-                  {c.icon} {c.label}
-                </button>
-              ))}
-            </div>
-          ) : (
-            !locked && !correctionMode && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
+          {guildTurn && (!selectionCard && menuVisible && hero ? attackBar : (
+            !locked && !correctionMode && !(selectionCard && hero) && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
           ))}
           <div className="ml-auto flex flex-nowrap items-center gap-2 self-start">
-            <button
-              type="button"
-              data-testid="sync-toggle"
-              aria-pressed={correctionMode}
-              title="Recaler le plateau sur la table : glisser les pions, ouvrir ou fermer les portes, régler les blessures des monstres"
-              onClick={() => {
-                resetAim();
-                setMenuFor(null);
-                select(null);
-                setCorrectionMode(!correctionMode);
-              }}
-              className={`h-12 whitespace-nowrap rounded-xl border-2 px-4 text-base font-semibold sm:px-6 sm:text-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
-            >
-              ⟳ Sync
-            </button>
             {guildTurn && !locked && !correctionMode && queue.length === 0 && (
               <button
                 type="button"
@@ -581,6 +603,22 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
                 Fin de tour
               </button>
             )}
+            <button
+              type="button"
+              data-testid="sync-toggle"
+              aria-label="Sync"
+              aria-pressed={correctionMode}
+              title="Recaler le plateau sur la table : glisser les pions, ouvrir ou fermer les portes, régler les blessures des monstres"
+              onClick={() => {
+                resetAim();
+                setMenuFor(null);
+                select(null);
+                setCorrectionMode(!correctionMode);
+              }}
+              className={`h-12 shrink-0 whitespace-nowrap rounded-xl border-2 px-3 text-xl font-semibold sm:px-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 ${correctionMode ? 'border-sky-400 bg-sky-700 text-white' : 'border-stone-600 bg-stone-900 text-stone-100'}`}
+            >
+              <span aria-hidden="true">⟳</span>
+            </button>
           </div>
         </div>
       )}
@@ -613,18 +651,29 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
       </div>
       {/* Blocs de combat : en surimpression, centrés sur le plateau mais hors de son conteneur ; les cartes héros restent visibles. */}
       {(monsterInput || (attacking && hero)) && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-1 sm:p-3">
+        <div className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-1 sm:p-3 ${attacking && picking ? 'hidden' : ''}`}>
          <div className="pointer-events-auto max-h-full w-full max-w-3xl overflow-y-auto rounded-xl shadow-2xl shadow-black/70">
           {monsterInput ? (
             <div data-testid="monster-input">{monsterInput}</div>
           ) : (
             hero && (
-              <section aria-label="Combat" data-testid="attack-panel">
-                <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => setTargets(targets.filter((x) => x !== id))} onClose={resetAim} />
-              </section>
+              <div data-testid="attack-panel">
+                <AttackDialog heroId={hero.id} targets={targets} fixedType={activeType} onToggle={(id) => { const rest = targets.filter((x) => x !== id); if (rest.length === 0) setPicking(false); setTargets(rest); }} onClose={resetAim} onAddTargets={() => setPicking(true)} />
+              </div>
             )
           )}
          </div>
+        </div>
+      )}
+      {attacking && picking && (
+        <div role="status" data-testid="picking-bar" className="pointer-events-none absolute inset-x-0 bottom-2 z-20 flex justify-center">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-xl border-2 border-amber-400 bg-stone-900/95 px-3 py-1 shadow-xl shadow-black/70">
+            <span className="text-2xl" aria-hidden="true">🎯</span>
+            <span className="text-lg font-bold" title="Cibles choisies">{targets.length}</span>
+            <button type="button" data-testid="picking-done" aria-label="Terminer le choix des cibles" title="Terminer" onClick={() => setPicking(false)} className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-800 text-2xl text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
+              ✓
+            </button>
+          </div>
         </div>
       )}
       </div>
@@ -632,6 +681,7 @@ export function GameBoard({ roster, footer, monsterInput }: { /** Saisie des dé
       <div className="min-w-0 space-y-3 max-lg:order-4">
       {correctionMode && <SyncPanel selectedId={selectedId} />}
       {sandbox && !placing && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
+      {selectionCard?.(attackBarVisible && hero ? attackBar : null)}
       {aimHint && <p className="text-amber-300" role="status">{aimHint}</p>}
       {footer}
       </div>

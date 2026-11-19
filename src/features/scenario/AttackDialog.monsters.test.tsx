@@ -30,7 +30,7 @@ async function openAttackOn(user: ReturnType<typeof userEvent.setup>, id: string
   fireEvent.click(screen.getByTestId('token-h2'));
   fireEvent.click(screen.getByTestId('menu-melee'));
   fireEvent.click(screen.getByTestId(`token-${monsterId}`));
-  const dialog = await screen.findByRole('region', { name: /attaque/ });
+  const dialog = await screen.findByRole('region', { name: 'Combat' });
   return { dialog, card: within(dialog).getByTestId(`monster-card-${monsterId}`), monsterId };
 }
 

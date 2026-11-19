@@ -160,7 +160,7 @@ describe('synchronisation visuelle plateau / table', () => {
     fireEvent.pointerMove(svg);
     expect(screen.getByTestId('drag-line')).toHaveAttribute('data-hostile', 'true');
     fireEvent.pointerUp(svg);
-    expect(await screen.findByText('Zazu attaque')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Combat' })).toBeInTheDocument();
     expect(useGameStore.getState().selectedId).toBe('h3');
     // Adjacent avec ligne de vue : mêlée et distance sont possibles, le choix est proposé.
     expect(screen.getByRole('radio', { name: /Corps à corps/ })).toBeInTheDocument();
@@ -174,9 +174,9 @@ describe('synchronisation visuelle plateau / table', () => {
     fireEvent.click(screen.getByTestId('token-h3'));
     fireEvent.click(screen.getByTestId('menu-ranged'));
     fireEvent.click(screen.getByTestId('token-goblin1'));
-    expect(await screen.findByText('Zazu attaque')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Combat' })).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    const dialog = screen.getByRole('region', { name: 'Zazu attaque' });
+    const dialog = screen.getByRole('region', { name: 'Combat' });
     expect(within(dialog).getByText(/Distance|Hors de portée/)).toBeInTheDocument();
   });
 
@@ -201,10 +201,10 @@ describe('synchronisation visuelle plateau / table', () => {
     // Viser la cible cachée derrière un personnage : refusé avec une explication, pas de dialogue.
     fireEvent.click(screen.getByTestId(`token-${a!.id}`));
     expect(screen.getByText(/Pas de ligne de vue/)).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Zazu attaque' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Combat' })).not.toBeInTheDocument();
     // Le monstre qui coupe le trait, lui, est visible : le viser ouvre l'attaque, type imposé, sans choix à faire.
     fireEvent.click(screen.getByTestId(`token-${b!.id}`));
-    expect(await screen.findByRole('region', { name: 'Zazu attaque' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Combat' })).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     // Au corps à corps, ce même monstre (à 2 cases) n'est pas atteignable.
     await user.click(screen.getByRole('button', { name: 'Annuler' }));

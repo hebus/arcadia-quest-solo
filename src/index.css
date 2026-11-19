@@ -42,6 +42,8 @@
 }
 /* Écran de jeu : le contenu remonte dans la marge du bandeau, pour y loger les boutons des héros au-dessus des cartes. */
 .aq-stage-game { padding-top: calc(var(--aq-banner) - 1.75rem); }
+/* Portrait : plus de boutons de héros au-dessus des cartes, la rangée d'actions descend sous la bannière. */
+.aq-stage-game-compact { padding-top: calc(var(--aq-banner) + 0.5rem); }
 .aq-stage-content {
   position: relative;
   z-index: 1;

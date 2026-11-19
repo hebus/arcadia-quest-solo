@@ -135,7 +135,7 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('token-h3'));
     fireEvent.click(screen.getByTestId('menu-ranged'));
     fireEvent.click(screen.getByTestId('token-goblin1'));
-    expect(screen.getByText('Zazu attaque')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Combat' })).toBeInTheDocument();
     // Le joueur a lancé ses dés : il indique les blessures subies par le gobelin (4 = tué sur le coup, sans riposte).
     for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: 'Blessures de goblin1 : plus' }));
     expect(screen.getByLabelText('Blessures de goblin1 : valeur')).toHaveTextContent('4');

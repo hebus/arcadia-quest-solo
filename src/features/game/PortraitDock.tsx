@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Drawer } from '@/components/Drawer';
 import { MiniPawn } from '@/components/MiniPawn';
 import { Badge, Button, Panel } from '@/components/ui';
+import { HERO_MOVEMENT, mpLeft } from '@/engine/combat/heroMove';
 import { skillLines, statsOfMonster } from '@/engine/monsters';
 import { HistoryScreen } from '@/features/history/HistoryScreen';
 import { DecisionsPanel } from '@/features/monster-turn/MonsterTurnScreen';
@@ -21,8 +22,8 @@ const TABS: { id: DockTab; label: string; icon: string; title: string }[] = [
   { id: 'more', label: 'Plus', icon: '⋯', title: 'Plus' },
 ];
 
-/** Carte de la figurine touchée sur le plateau : nom, vie, capacités ; « Voir détails » ouvre le tiroir qui la concerne. */
-function SelectionCard({ onDetails }: { onDetails: (t: DockTab) => void }) {
+/** Carte de la figurine touchée sur le plateau : nom, vie, capacités et, pour un héros, ses boutons d'attaque (icônes seules). */
+export function SelectionCard({ attackBar }: { attackBar?: ReactNode }) {
   const g = useGameStore((s) => s.game)!;
   const content = useGameStore((s) => s.content);
   const selectedId = useGameStore((s) => s.selectedId);
@@ -43,13 +44,12 @@ function SelectionCard({ onDetails }: { onDetails: (t: DockTab) => void }) {
         {life !== undefined && (
           <p className="text-sm">
             PV : {Math.max(0, life - wounds)}/{life} <span aria-hidden="true">{wounds >= life ? '🖤' : '❤'}</span>
+            {hero && !hero.dead && <span> · {mpLeft(g, hero.id)}/{HERO_MOVEMENT} PM</span>}
           </p>
         )}
         {stats && <p className="truncate text-xs text-stone-300">{skillLines(stats)[0] ?? `${stats.attackDice} dé${stats.attackDice > 1 ? 's' : ''} · ${stats.attackType === 'melee' ? 'mêlée' : 'distance'} · mvt ${stats.movement}`}</p>}
       </div>
-      <Button variant="primary" className="shrink-0 px-3! text-sm!" onClick={() => onDetails(hero ? 'heroes' : 'enemies')}>
-        Voir détails ›
-      </Button>
+      {attackBar}
       <button type="button" aria-label="Fermer la fiche" onClick={() => select(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-amber-600 text-amber-200">
         ✕
       </button>
@@ -124,7 +124,6 @@ export function PortraitDock({ heroes, openTab, onOpenTab, onHome }: { onHome: (
   const tab = TABS.find((t) => t.id === openTab);
   return (
     <>
-      <SelectionCard onDetails={onOpenTab} />
       <nav aria-label="Navigation du plateau" data-testid="portrait-dock" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 gap-1 border-t-2 border-amber-700/70 bg-stone-950/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         {TABS.map((t) => (
           <button key={t.id} type="button" aria-pressed={openTab === t.id} onClick={() => onOpenTab(openTab === t.id ? null : t.id)} className={`flex min-h-14 flex-col items-center justify-center rounded-lg border-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${openTab === t.id ? 'border-amber-400 bg-amber-900/60 text-amber-200' : 'border-transparent text-stone-200'}`}>

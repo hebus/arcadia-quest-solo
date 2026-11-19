@@ -47,7 +47,7 @@ export function InputPrompt({ request }: { request: InputRequest }) {
       {request.kind === 'defense-result' && (
         <div className="space-y-3">
           <p className="text-lg">
-            Le monstre touche <strong>{request.targetName}</strong> {request.hits} fois. Lancez {request.defenseDice > 0 ? `vos ${request.defenseDice} dé${request.defenseDice > 1 ? 's' : ''} de défense blanc${request.defenseDice > 1 ? 's' : ''}` : 'vos dés de défense blancs'} : chaque bouclier ou critique obtenu annule une touche.
+            Le monstre touche <strong>{request.targetName}</strong> {request.hits} fois.
           </p>
           {!!request.extraWounds && (
             <p className="rounded-lg bg-red-950 p-2 text-red-200" data-testid="extra-wounds">

@@ -110,10 +110,10 @@ describe('scénario de l’univers original', () => {
     fireEvent.click(screen.getByTestId('token-h1'));
     fireEvent.click(screen.getByTestId('menu-melee'));
     fireEvent.click(screen.getByTestId('token-OM1'));
-    expect(await screen.findByText('Mira attaque')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Combat' })).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument(); // le type est celui du bouton choisi
     // L'application ne demande ni coups ni parades, seulement les blessures du monstre.
-    const dialog = screen.getByRole('region', { name: 'Mira attaque' });
+    const dialog = screen.getByRole('region', { name: 'Combat' });
     expect(within(dialog).queryByText(/Parades/)).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Blessures de OM1 : plus' }));
     await user.click(within(dialog).getByRole('button', { name: 'Blessures de OM1 : plus' }));
@@ -160,7 +160,7 @@ describe('scénario de l’univers original', () => {
     fireEvent.click(screen.getByTestId('token-h1'));
     fireEvent.click(screen.getByTestId('menu-ranged'));
     fireEvent.click(screen.getByTestId('token-OM2'));
-    const far = await screen.findByRole('region', { name: 'Mira attaque' });
+    const far = await screen.findByRole('region', { name: 'Combat' });
     await user.click(within(far).getByRole('button', { name: 'Blessures de OM2 : plus' }));
     await user.click(within(far).getByRole('button', { name: 'Blessures de OM2 : plus' }));
     expect(far).toHaveTextContent('tué : il ne peut pas riposter, retiré directement');

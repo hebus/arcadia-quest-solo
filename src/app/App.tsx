@@ -8,7 +8,7 @@ import { useGameAudio } from '@/audio/director';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { ActionPanel, HeroRoster } from '@/features/game/ActionDock';
 import { MenuDialog, type MenuTab } from '@/features/game/MenuDialog';
-import { PortraitDock, type DockTab } from '@/features/game/PortraitDock';
+import { PortraitDock, SelectionCard, type DockTab } from '@/features/game/PortraitDock';
 import { usePortrait } from '@/hooks/usePortrait';
 import { InputPrompt } from '@/features/monster-turn/MonsterTurnScreen';
 import { StatusBar } from '@/features/scenario/Dashboard';
@@ -45,6 +45,7 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
       <StoryDialog />
       {headerSlot ? createPortal(status, headerSlot) : status}
       <GameBoard
+        selectionCard={portrait ? (bar) => <SelectionCard attackBar={bar} /> : undefined}
         roster={portrait ? undefined : <HeroRoster />}
         monsterInput={
           agent.request && agent.status === 'awaiting-input' && !announcing && !stepsPending ? (
@@ -65,7 +66,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const portrait = usePortrait();
   return (
-    <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage ${screen === 'game' ? 'aq-stage-game' : ''}`}>
+    <main className={`relative bg-stone-950 p-4 text-stone-100 md:p-6 aq-stage ${screen === 'game' ? (portrait ? 'aq-stage-game-compact' : 'aq-stage-game') : ''}`}>
       <div className="aq-stage-bg" aria-hidden="true" />
       {/* Le titre est dans le fond d'écran : on le garde pour les lecteurs d'écran et le bouton Accueil flotte en haut à droite. */}
       <header className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2">

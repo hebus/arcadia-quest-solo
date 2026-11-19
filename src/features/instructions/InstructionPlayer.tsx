@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui';
 import { MiniPawn } from '@/components/MiniPawn';
 import type { VisualAction } from '@/engine/visual';
 import { actorInfo } from '@/rendering/instructions/overlay';
@@ -15,6 +14,8 @@ const VERB: Record<VisualAction['type'], string> = {
   'spawn-point': 'Jeton Spawn',
 };
 
+const ICON_BTN = 'flex h-9 min-w-9 items-center justify-center rounded-lg border-2 border-emerald-500 px-2 text-lg font-bold text-emerald-300 hover:bg-emerald-900/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400';
+
 function StepVisual({ step }: { step: TrackedInstruction }) {
   const g = useGameStore((s) => s.game)!;
   const v = step.visual;
@@ -23,23 +24,24 @@ function StepVisual({ step }: { step: TrackedInstruction }) {
   const actor = actorId ? actorInfo(g, actorId) : undefined;
   const target = v.type === 'attack' ? actorInfo(g, v.targetId) : undefined;
   return (
-    <div className="flex min-w-0 items-center gap-2" data-testid="instruction-step">
-      <span className="text-2xl text-amber-400" aria-hidden="true">
+    <div className="flex min-w-0 items-center gap-2" data-testid="instruction-step" title={step.label ?? VERB[v.type]}>
+      <span className="shrink-0 text-2xl text-amber-400" aria-hidden="true">
         {ICON[v.type]}
       </span>
       {actor && <MiniPawn kind={actor.kind} label={actor.label} size={32} />}
       {target && (
         <>
-          <span className="text-xl text-red-400" aria-hidden="true">
+          <span className="shrink-0 text-xl text-red-400" aria-hidden="true">
             ➜
           </span>
           <MiniPawn kind={target.kind} label={target.label} size={32} />
-          <span className="text-xl" aria-label={`${v.type === 'attack' ? v.wounds : 0} blessure(s)`}>
+          <span className="shrink-0 whitespace-nowrap text-sm leading-none" aria-label={`${v.type === 'attack' ? v.wounds : 0} blessure(s)`}>
             {v.type === 'attack' && v.wounds > 0 ? '🩸'.repeat(Math.min(v.wounds, 6)) : '🛡'}
           </span>
         </>
       )}
-      <span className="truncate text-base font-medium">{step.label ?? VERB[v.type]}</span>
+      {/* Sur un écran étroit, les icônes et les pions suffisent : le libellé reste en infobulle et pour les lecteurs d'écran. */}
+      <span className="sr-only truncate text-base font-medium sm:not-sr-only">{step.label ?? VERB[v.type]}</span>
     </div>
   );
 }
@@ -83,13 +85,16 @@ export function InstructionPlayer() {
       <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
         <StepVisual step={current} />
         <span className="flex shrink-0 items-center gap-2">
-          <Button variant="ghost" onClick={() => confirm(current.id)}>
-            Fait
-          </Button>
+          <button type="button" aria-label="Fait" title="Fait" onClick={() => confirm(current.id)} className={ICON_BTN}>
+            <span aria-hidden="true">✓</span>
+          </button>
           {left.length > 1 && (
-            <Button variant="ghost" onClick={confirmAll}>
-              Tout confirmer
-            </Button>
+            <button type="button" aria-label="Tout confirmer" title="Tout confirmer" onClick={confirmAll} className={ICON_BTN}>
+              <svg width="28" height="20" viewBox="0 0 28 20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2 6 h10 M2 11 h10 M2 16 h10" />
+                <path d="M16 11 L20 15 L27 5" />
+              </svg>
+            </button>
           )}
         </span>
       </div>

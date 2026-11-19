@@ -166,7 +166,7 @@ describe('jet de défense : le joueur indique ses boucliers', () => {
     fireEvent.click(screen.getByTestId('cell-0-7'));
     await user.click(screen.getByRole('button', { name: /Continuer : lancer mes dés/ }));
     const dialog = screen.getByRole('region', { name: 'Jet de défense' });
-    expect(dialog).toHaveTextContent('Lancez vos 1 dé de défense');
+    expect(dialog).toHaveTextContent('Le monstre touche');
     const shields = within(dialog).getAllByRole('button', { name: /Boucliers, dé \d/ });
     expect(shields).toHaveLength(2); // une case par touche, pas par dé lancé
     await user.click(within(dialog).getByRole('button', { name: 'Boucliers, dé 2' }));

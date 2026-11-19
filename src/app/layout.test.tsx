@@ -68,7 +68,7 @@ describe('écran de jeu sobre : plateau, barre d’actions, le reste en dialogue
     fireEvent.click(screen.getByTestId('menu-ranged'));
     fireEvent.click(screen.getByTestId('token-goblin1'));
     const panel = await screen.findByTestId('attack-panel');
-    expect(within(panel).getByRole('region', { name: 'Zazu attaque' })).toBeInTheDocument();
+    expect(within(panel).getByRole('region', { name: 'Combat' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByTestId('hero-roster')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
