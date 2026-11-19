@@ -100,9 +100,18 @@ const edgeLine = (a: Position, b: Position) =>
 /** Demi-épaisseur d'un mur : son extrémité arrondie dépasse d'autant de l'angle de l'arête. */
 const WALL_HALF = 4.5;
 /** Segment d'une porte : l'arête raccourcie de chaque côté de l'extrémité arrondie des murs voisins, pour s'insérer exactement entre eux. */
-const doorLine = (a: Position, b: Position) => {
+const doorLine = (a: Position, b: Position, inset = WALL_HALF) => {
   const l = edgeLine(a, b);
-  return l.x1 === l.x2 ? { ...l, y1: l.y1 + WALL_HALF, y2: l.y2 - WALL_HALF } : { ...l, x1: l.x1 + WALL_HALF, x2: l.x2 - WALL_HALF };
+  return l.x1 === l.x2 ? { ...l, y1: l.y1 + inset, y2: l.y2 - inset } : { ...l, x1: l.x1 + inset, x2: l.x2 - inset };
+};
+/** Épaisseur du cadre d'une porte, centré sur l'arête : le vantail coloré y est entouré d'une bordure sombre sur ses quatre côtés. */
+const DOOR_THICKNESS = 10;
+const DOOR_BORDER = 2;
+const doorFrame = (a: Position, b: Position) => {
+  const l = doorLine(a, b);
+  return l.x1 === l.x2
+    ? { x: l.x1 - DOOR_THICKNESS / 2, y: l.y1, width: DOOR_THICKNESS, height: l.y2 - l.y1 }
+    : { x: l.x1, y: l.y1 - DOOR_THICKNESS / 2, width: l.x2 - l.x1, height: DOOR_THICKNESS };
 };
 
 /** Sommets d'une étoile à 5 branches (pointe en haut). */
@@ -363,9 +372,9 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
       {board.doors.map((d) => (
         <g key={d.id}>
           {doorGlow.has(d.id) && <line {...edgeLine(d.a, d.b)} stroke="#facc15" strokeWidth="14" strokeLinecap="round" className="aq-pulse" pointerEvents="none" />}
-          {/* Extrémités plates, même épaisseur que les murs, et longueur réduite de leurs extrémités arrondies : la porte s'insère exactement entre ses deux murs. */}
-          <line {...doorLine(d.a, d.b)} stroke="#1c1006" strokeWidth="9" strokeLinecap="butt" strokeDasharray={d.open ? '5 6' : undefined} />
-          <line data-testid={`door-${d.id}`} data-special={d.special ? 'true' : undefined} {...doorLine(d.a, d.b)} stroke={d.special ? '#a855f7' : d.open ? '#22c55e' : '#b45309'} strokeWidth="5" strokeLinecap="butt" strokeDasharray={d.open ? '5 6' : undefined} pointerEvents="none" />
+          {/* Cadre sombre centré sur l'arête, longueur réduite des extrémités arrondies des murs : la porte s'insère exactement entre ses deux murs, avec une bordure sur chaque côté. */}
+          <rect {...doorFrame(d.a, d.b)} rx="1.5" fill="#1c1006" pointerEvents="none" />
+          <line data-testid={`door-${d.id}`} data-special={d.special ? 'true' : undefined} {...doorLine(d.a, d.b, WALL_HALF + DOOR_BORDER)} stroke={d.special ? '#a855f7' : d.open ? '#22c55e' : '#b45309'} strokeWidth={DOOR_THICKNESS - 2 * DOOR_BORDER} strokeLinecap="butt" strokeDasharray={d.open ? '4 4' : undefined} pointerEvents="none" />
           {onDoor && (!doorIds || doorIds.includes(d.id)) && <line data-testid={`door-hit-${d.id}`} {...edgeLine(d.a, d.b)} stroke="transparent" strokeWidth="22" strokeLinecap="round" style={{ cursor: 'pointer' }} onClick={() => onDoor(d.id)} />}
         </g>
       ))}
