@@ -124,16 +124,16 @@ function MorePanel() {
  * Mode portrait : la fiche de la figurine touchée et la barre d'onglets restent sous le plateau ;
  * chaque onglet ouvre un tiroir (objectifs, héros, ennemis, le reste) pour ne pas tout comprimer à l'écran.
  */
-export function PortraitDock({ heroes, openTab, onOpenTab, buildTool, onBuildTool }: { buildTool: BuildTool | null; onBuildTool: (t: BuildTool | null) => void; heroes: ReactNode; openTab: DockTab | null; onOpenTab: (t: DockTab | null) => void }) {
+export function PortraitDock({ heroes, openTab, onOpenTab, buildTool, onBuildTool, side = 'bottom' }: { side?: 'bottom' | 'right'; buildTool: BuildTool | null; onBuildTool: (t: BuildTool | null) => void; heroes: ReactNode; openTab: DockTab | null; onOpenTab: (t: DockTab | null) => void }) {
   const sandbox = useIsSandbox();
   const tabs = sandbox ? [...TABS.slice(0, 3), ...SANDBOX_TABS, TABS[3]!] : TABS;
   const tab = tabs.find((t) => t.id === openTab);
   return (
     <>
       {createPortal(
-      <nav aria-label="Navigation du plateau" data-testid="portrait-dock" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} className="fixed bottom-0 left-0 right-0 w-full z-50 grid gap-1 border-t-2 border-amber-700/70 bg-stone-950/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
+      <nav aria-label="Navigation du plateau" data-testid="portrait-dock" style={side === 'right' ? undefined : { gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} className={side === 'right' ? 'fixed inset-y-0 right-0 z-50 flex w-[calc(5.5rem+env(safe-area-inset-right))] pointer-events-none flex-col justify-center gap-2 py-2 pl-2 pr-[calc(0.5rem+env(safe-area-inset-right))]' : 'fixed bottom-0 left-0 right-0 w-full z-50 grid gap-1 border-t-2 border-amber-700/70 bg-stone-950/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1'}>
         {tabs.map((t) => (
-          <button key={t.id} type="button" aria-pressed={openTab === t.id} onClick={() => onOpenTab(openTab === t.id ? null : t.id)} className={`flex min-h-14 flex-col items-center justify-center rounded-lg border-2 ${tabs.length > 4 ? 'text-xs' : 'text-sm'} font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${openTab === t.id ? 'border-amber-400 bg-amber-900/60 text-amber-200' : 'border-transparent text-stone-200'}`}>
+          <button key={t.id} type="button" aria-pressed={openTab === t.id} onClick={() => onOpenTab(openTab === t.id ? null : t.id)} className={`flex min-h-14 flex-col items-center justify-center rounded-lg border-2 ${tabs.length > 4 ? 'text-xs' : 'text-sm'} font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${side === 'right' ? 'pointer-events-auto shadow-lg shadow-black/60 ' : ''}${openTab === t.id ? 'border-amber-400 bg-amber-900/90 text-amber-200' : side === 'right' ? 'border-stone-600 bg-stone-900/95 text-stone-200' : 'border-transparent text-stone-200'}`}>
             <span className="text-xl leading-none" aria-hidden="true">{t.icon}</span>
             {t.label}
           </button>
@@ -142,7 +142,7 @@ export function PortraitDock({ heroes, openTab, onOpenTab, buildTool, onBuildToo
       document.body,
       )}
       {tab && (
-        <Drawer title={tab.title} onClose={() => onOpenTab(null)}>
+        <Drawer title={tab.title} side={side} onClose={() => onOpenTab(null)}>
           {tab.id === 'scenario' && <QuestsPanel />}
           {tab.id === 'heroes' && heroes}
           {tab.id === 'enemies' && <EnemiesPanel />}

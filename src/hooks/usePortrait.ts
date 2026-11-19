@@ -17,3 +17,23 @@ export function usePortrait(): boolean {
   }, []);
   return on;
 }
+
+const COMPACT_LANDSCAPE = '(orientation: landscape) and (pointer: coarse) and (max-width: 1400px)';
+
+/**
+ * Interface compacte (fiche dans la rangée du plateau, tiroirs) : en portrait étroit, barre d'onglets en bas ;
+ * sur tablette tactile en paysage, barre d'onglets sur le bord droit. Souris et grands écrans gardent la vue complète.
+ */
+export function useCompactLayout(): { compact: boolean; side: 'bottom' | 'right' } {
+  const portrait = usePortrait();
+  const [landscape, setLandscape] = useState(() => (typeof window === 'undefined' || !window.matchMedia ? false : window.matchMedia(COMPACT_LANDSCAPE).matches));
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const m = window.matchMedia(COMPACT_LANDSCAPE);
+    const update = () => setLandscape(m.matches);
+    update();
+    m.addEventListener('change', update);
+    return () => m.removeEventListener('change', update);
+  }, []);
+  return { compact: portrait || landscape, side: portrait ? 'bottom' : 'right' };
+}

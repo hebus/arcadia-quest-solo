@@ -4,7 +4,7 @@ import { HERO_MOVEMENT, mpLeft } from '@/engine/combat/heroMove';
 import { blockedByOtherHero, isTerminal } from '@/engine/state';
 import { useAttackAnnouncement } from '@/features/game/announce';
 import { actorInfo } from '@/rendering/instructions/overlay';
-import { usePortrait } from '@/hooks/usePortrait';
+import { useCompactLayout } from '@/hooks/usePortrait';
 import { SandboxStrip, useIsSandbox } from './SandboxPanel';
 import { useGameStore } from '@/stores/gameStore';
 
@@ -139,7 +139,7 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
   const announcement = useAttackAnnouncement();
   const sandbox = useIsSandbox();
   // En portrait, la fiche du héros porte déjà ses PM : ni ligne de PM ni « Activer sans agir ».
-  const portrait = usePortrait();
+  const { compact: portrait } = useCompactLayout();
 
   // Un monstre attaque : l'annonce est affichée au-dessus du plateau (voir GameBoard), le dock attend.
   if (announcement) return null;
