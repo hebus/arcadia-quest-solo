@@ -10,7 +10,7 @@ import { cloneState, log } from '../state';
 import { spawnInstructions, type PhysicalInstruction } from '../activation/monsterTurn';
 import { resolveSpawnTile } from '../spawn/spawn';
 import { pruneEliminatedTypes } from '../activation/deck';
-import { canHeroTarget, ensureActivated } from './heroMove';
+import { ensureActivated, invalidTargets } from './heroMove';
 
 export interface ActionResult {
   state: GameState;
@@ -139,10 +139,9 @@ export function resolveHeroAttack(
   const turn = s.heroTurn[heroId]!;
   if (turn.attacked) throw new Error(`${hero.name} a déjà attaqué pendant cette activation`);
   if (attackType) {
-    for (const t of targets) {
-      if (!canHeroTarget(s, heroId, t.monsterId, attackType)) {
-        throw new Error(`${t.monsterId} n'est pas une cible valide en ${attackType === 'melee' ? 'mêlée (il doit être Close)' : 'distance (ligne de vue requise)'}`);
-      }
+    const [bad] = invalidTargets(s, heroId, targets.map((t) => t.monsterId), attackType);
+    if (bad) {
+      throw new Error(`${bad} n'est pas une cible valide en ${attackType === 'melee' ? 'mêlée (il doit être Close)' : 'distance (ligne de vue requise)'} ni adjacent à la première cible`);
     }
   }
   // Le mouvement a déjà commencé (pas, porte…) : l'attaque le scinde, il ne peut plus reprendre ensuite.

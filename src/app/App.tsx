@@ -12,7 +12,7 @@ import { PortraitDock, SelectionCard, type DockTab } from '@/features/game/Portr
 import { usePortrait } from '@/hooks/usePortrait';
 import { InputPrompt } from '@/features/monster-turn/MonsterTurnScreen';
 import { StatusBar } from '@/features/scenario/Dashboard';
-import { GameBoard } from '@/features/scenario/GameBoard';
+import { GameBoard, type BuildTool } from '@/features/scenario/GameBoard';
 import { SettingsScreen } from '@/features/settings/SettingsScreen';
 import { ScenarioPicker } from '@/features/scenarios/ScenarioPicker';
 import { StoryDialog } from '@/features/scenarios/StoryDialog';
@@ -33,6 +33,7 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
   const [result, setResult] = useState(false);
   const portrait = usePortrait();
   const [drawer, setDrawer] = useState<DockTab | null>(null);
+  const [buildTool, setBuildTool] = useState<BuildTool | null>(null);
   // L'état de la partie se range dans l'en-tête, près du bouton Accueil (sans l'en-tête, il reste en place).
   const [headerSlot] = useState<HTMLElement | null>(() => (typeof document === 'undefined' ? null : document.getElementById('aq-status-slot')));
   if (!g) return <p>Aucune partie en cours.</p>;
@@ -45,6 +46,8 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
       <StoryDialog />
       {headerSlot ? createPortal(status, headerSlot) : status}
       <GameBoard
+        buildTool={portrait ? buildTool : undefined}
+        {...(portrait ? { onBuildTool: setBuildTool } : {})}
         selectionCard={portrait ? (bar) => <SelectionCard attackBar={bar} /> : undefined}
         roster={portrait ? undefined : <HeroRoster />}
         monsterInput={
@@ -56,7 +59,7 @@ function GameView({ leave, toCampaign }: { leave: () => void; toCampaign: () => 
         }
         footer={<ActionPanel onDecisions={() => setMenu('decisions')} onResult={() => setResult(true)} />}
       />
-      {portrait && <PortraitDock onHome={leave} heroes={<HeroRoster stacked />} openTab={drawer} onOpenTab={setDrawer} />}
+      {portrait && <PortraitDock buildTool={buildTool} onBuildTool={setBuildTool} onHome={leave} heroes={<HeroRoster stacked />} openTab={drawer} onOpenTab={setDrawer} />}
       {menu && <MenuDialog tab={menu} onTab={setMenu} onClose={() => setMenu(null)} />}
     </div>
   );

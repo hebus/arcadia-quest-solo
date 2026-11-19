@@ -59,10 +59,15 @@ describe('construction du plateau (terrain d’essai)', () => {
     expect(back.board.holes).not.toContainEqual({ x: 4, y: 3 });
   });
 
-  it('une salle change le sol d’une case sans poser de mur', () => {
-    const g = applyCorrection(g0(), { kind: 'board-room', at: { x: 1, y: 1 } });
+  it('une salle fonctionne comme un bâtiment : le sol change et le contour est muré, puis tout se retire', () => {
+    let g = applyCorrection(g0(), { kind: 'board-room', at: { x: 1, y: 1 } });
     expect(g.board.rooms).toEqual([{ x: 1, y: 1 }]);
+    expect(g.board.walls).toHaveLength(4);
+    g = applyCorrection(g, { kind: 'board-room', at: { x: 2, y: 1 } });
+    expect(g.board.walls).toHaveLength(6);
+    g = applyCorrection(g, { kind: 'board-room', at: { x: 2, y: 1 } });
+    g = applyCorrection(g, { kind: 'board-room', at: { x: 1, y: 1 } });
+    expect(g.board.rooms).toEqual([]);
     expect(g.board.walls).toHaveLength(0);
-    expect(applyCorrection(g, { kind: 'board-room', at: { x: 1, y: 1 } }).board.rooms).toEqual([]);
   });
 });

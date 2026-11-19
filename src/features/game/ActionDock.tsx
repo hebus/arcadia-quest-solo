@@ -146,7 +146,7 @@ export function ActionPanel({ onDecisions, onResult }: { onDecisions: () => void
 
   return (
     <div className="space-y-2" data-testid="action-dock">
-      {sandbox && <SandboxStrip />}
+      {sandbox && !portrait && <SandboxStrip />}
 
       {!pendingSteps && (
         <div className="flex flex-col items-stretch gap-2">

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, Panel } from '@/components/ui';
 import { Stepper } from '@/components/Tally';
 import { monsterCanPayback } from '@/engine/combat/heroActions';
-import { adjacentDoors, canHeroTarget, mpLeft, reachableCells } from '@/engine/combat/heroMove';
+import { adjacentDoors, canHeroTarget, invalidTargets, mpLeft, reachableCells, splashTargets } from '@/engine/combat/heroMove';
 import { CELL_CAPACITY, isClose } from '@/engine/movement/board';
 import type { Position } from '@/engine/domain/schemas';
 import { BoardView, type BoardToken, type Highlight, type PlacedTile } from '@/rendering/board/BoardView';
@@ -36,11 +36,11 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose, onAddTarg
   const [dealt, setDealt] = useState(0);
   const attacked = g.heroTurn[heroId]?.attacked ?? false;
   // Arme choisie avant la cible : le type est imposé. Sinon il se déduit, et on ne demande que s'il est ambigu.
-  const validMelee = targets.length > 0 && targets.every((t) => canHeroTarget(g, heroId, t, 'melee'));
-  const validRanged = targets.length > 0 && targets.every((t) => canHeroTarget(g, heroId, t, 'ranged'));
+  const validMelee = targets.length > 0 && invalidTargets(g, heroId, targets, 'melee').length === 0;
+  const validRanged = targets.length > 0 && invalidTargets(g, heroId, targets, 'ranged').length === 0;
   const ambiguous = !fixedType && validMelee && validRanged;
   const type: 'melee' | 'ranged' = fixedType ?? (ambiguous ? choice : validMelee ? 'melee' : validRanged ? 'ranged' : choice);
-  const invalid = targets.filter((t) => !canHeroTarget(g, heroId, t, type));
+  const invalid = invalidTargets(g, heroId, targets, type);
   return (
     <Panel title="Combat" actions={<Button variant="ghost" onClick={onClose}>Annuler</Button>}>
       <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -126,17 +126,17 @@ function AttackDialog({ heroId, targets, fixedType, onToggle, onClose, onAddTarg
   );
 }
 
-type BuildTool = 'wall' | 'door' | 'interior' | 'room' | 'blocked';
+export type BuildTool = 'wall' | 'door' | 'interior' | 'room' | 'blocked';
 const BUILD_TOOLS: { id: BuildTool; label: string; hint: string }[] = [
   { id: 'wall', label: '🧱 Mur', hint: 'Touchez une arête entre deux cases : un mur est posé, ou retiré.' },
   { id: 'door', label: '🚪 Porte', hint: 'Touchez une arête : porte fermée, puis ouverte, puis retirée.' },
   { id: 'interior', label: '🏠 Bâtiment', hint: 'Touchez une case : elle devient un intérieur (ou non) ; les murs du contour suivent.' },
-  { id: 'room', label: '🟫 Salle', hint: 'Touchez une case : son sol change (salle), sans murs. Utile avec les murs et les portes pour dessiner une pièce.' },
+  { id: 'room', label: '🟫 Salle', hint: 'Touchez une case : son sol change (salle) et son contour est muré, comme un bâtiment. Retouchez-la pour la retirer.' },
   { id: 'blocked', label: '⛔ Case bloquée', hint: 'Touchez une case : elle devient impassable (ou libre).' },
 ];
 
 /** Terrain d'essai : construire le plateau comme dans l'éditeur de tuiles, pour tester toutes sortes de conditions. */
-function BuildStrip({ tool, onTool }: { tool: BuildTool | null; onTool: (t: BuildTool | null) => void }) {
+export function BuildStrip({ tool, onTool }: { tool: BuildTool | null; onTool: (t: BuildTool | null) => void }) {
   const current = BUILD_TOOLS.find((t) => t.id === tool);
   return (
     <section aria-label="Construire" data-testid="build-strip" className="space-y-2 rounded-xl border border-dashed border-sky-500 bg-stone-900/90 p-2">
@@ -235,7 +235,7 @@ function SyncPanel({ selectedId }: { selectedId: string | null }) {
 }
 
 /** Plateau de jeu : sélection d'un héros, cases atteignables, déplacement au clic, attaque en touchant un monstre. */
-export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /** Fiche de la figurine touchée (portrait) : reçoit les boutons de type d'attaque, à loger dans la carte. */ selectionCard?: (attackBar: ReactNode) => ReactNode; /** Saisie des dés d'une attaque de monstre : remplace les cartes héros. */ monsterInput?: ReactNode;/** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
+export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTool: controlledTool, onBuildTool }: { /** Outil de construction piloté de l'extérieur (portrait : choisi dans un tiroir). */ buildTool?: BuildTool | null; onBuildTool?: (t: BuildTool | null) => void; /** Fiche de la figurine touchée (portrait) : reçoit les boutons de type d'attaque, à loger dans la carte. */ selectionCard?: (attackBar: ReactNode) => ReactNode; /** Saisie des dés d'une attaque de monstre : remplace les cartes héros. */ monsterInput?: ReactNode;/** Cartes héros : remplacées par les réglages du pion touché en mode sync. */ roster?: ReactNode; footer?: ReactNode }) {
   const g = useGameStore((s) => s.game)!;
   const selectedId = useGameStore((s) => s.selectedId);
   const select = useGameStore((s) => s.select);
@@ -256,7 +256,9 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /**
   /** Arme choisie avant de viser : seules les cibles valides pour ce type sont désignables. */
   const [attackType, setAttackType] = useState<'melee' | 'ranged' | null>(null);
   /** Terrain d'essai : outil de construction actif (mur, porte, bâtiment, case bloquée), appliqué en touchant le plateau. */
-  const [buildTool, setBuildTool] = useState<BuildTool | null>(null);
+  const [localTool, setLocalTool] = useState<BuildTool | null>(null);
+  const buildTool = controlledTool !== undefined ? controlledTool : localTool;
+  const setBuildTool = onBuildTool ?? setLocalTool;
   const sandbox = useIsSandbox();
   /** Boutons Mêlée / Distance affichés près du héros sélectionné (2e touche sur le héros). */
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -298,6 +300,8 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /**
         : [],
     [g, hero, activeType],
   );
+  /** Monstres ajoutables à l'attaque en cours : adjacents à la première cible, sans ligne de vue. */
+  const extraTargets = useMemo<string[]>(() => (targets[0] ? splashTargets(g, targets[0]) : []), [g, targets]);
   const aimFailure = activeType === 'melee' ? 'Hors de portée : le corps à corps ne touche que les cases voisines, sans mur ni porte fermée entre vous.' : 'Pas de ligne de vue : un mur, une porte fermée ou un personnage coupe le trait entre les centres des cases.';
 
   // Portes que le héros sélectionné peut retourner, ouvertes ou fermées (1 PM chacune) : halo et zone touchable, seulement celles-là.
@@ -320,7 +324,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /**
     ...(activeType === 'melee' && hero?.position
       ? allCells.filter((p) => !same(p, hero.position!) && isClose(g.board, hero.position!, p)).map((pos): Highlight => ({ pos, kind: 'close' }))
       : []),
-    ...(activeType ? validTargets.flatMap((id) => { const m = g.monsters.find((x) => x.id === id); return m?.position ? [{ pos: m.position, kind: 'target' as const }] : []; }) : []),
+    ...(activeType ? [...validTargets, ...extraTargets.filter((id) => !validTargets.includes(id))].flatMap((id) => { const m = g.monsters.find((x) => x.id === id); return m?.position ? [{ pos: m.position, kind: 'target' as const }] : []; }) : []),
     ...(wrongDrop ? [{ pos: wrongDrop, kind: 'target' as const }] : []),
     ...(placing ? allCells.filter((p) => !occupied(p)).map((pos): Highlight => ({ pos, kind: 'close' })) : []),
   ];
@@ -361,7 +365,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /**
   }
   const tokens: BoardToken[] = [
     ...g.heroes.filter((h) => !h.dead && h.position).map((h) => ({ id: h.id, kind: 'hero' as const, label: h.name.slice(0, 2).toUpperCase(), at: h.position!, wounded: h.wounds > 0, selected: h.id === selectedId, dimmed: (guildTurn && blockedByOtherHero(g, h.id)) || guildTurn && g.activatedHeroIds.includes(h.id) && (g.heroTurn[h.id]?.mpLeft ?? 3) === 0 && (g.heroTurn[h.id]?.attacked ?? false) })),
-    ...g.monsters.filter((m) => m.status === 'board' && m.position).map((m) => ({ id: m.id, kind: 'monster' as const, label: m.definitionId.slice(0, 2).toUpperCase(), at: movedTo[m.id] ?? m.position!, guard: m.isGuard, attack: monsterAttack(m), wounded: m.wounds > 0, selected: m.id === selectedId || targets.includes(m.id), dimmed: !!activeType && !!hero && !validTargets.includes(m.id) })),
+    ...g.monsters.filter((m) => m.status === 'board' && m.position).map((m) => ({ id: m.id, kind: 'monster' as const, label: m.definitionId.slice(0, 2).toUpperCase(), at: movedTo[m.id] ?? m.position!, guard: m.isGuard, attack: monsterAttack(m), wounded: m.wounds > 0, selected: m.id === selectedId || targets.includes(m.id), dimmed: !!activeType && !!hero && !validTargets.includes(m.id) && !extraTargets.includes(m.id) })),
   ];
 
   /** Toucher la case de l'étape en cours (arrivée, pose, retrait, cible) la valide, comme le bouton « Fait ». */
@@ -461,10 +465,10 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /**
         setAimHint('Touchez le héros, puis choisissez Mêlée ou Distance avant de viser un monstre.');
         return;
       }
-      if (!validTargets.includes(id)) {
+      if (!targets.includes(id) && !validTargets.includes(id) && !extraTargets.includes(id)) {
         const at = tokens.find((t) => t.id === id)?.at;
         if (at) flashWrong(at);
-        setAimHint(aimFailure);
+        setAimHint(targets.length > 0 ? 'Seuls les monstres adjacents à la première cible peuvent être ajoutés, sans tenir compte de la ligne de vue.' : aimFailure);
         return;
       }
       setAimHint(null);
@@ -680,7 +684,17 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard }: { /**
 
       <div className="min-w-0 space-y-3 max-lg:order-4">
       {correctionMode && <SyncPanel selectedId={selectedId} />}
-      {sandbox && !placing && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
+      {sandbox && !placing && !selectionCard && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
+      {sandbox && selectionCard && buildTool && (
+        <div role="status" data-testid="build-pill" className="flex items-center justify-between gap-2 rounded-xl border-2 border-sky-500 bg-stone-900/95 px-3 py-1 text-sm text-sky-100">
+          <span>
+            🏗 {BUILD_TOOLS.find((t) => t.id === buildTool)?.label} : {BUILD_TOOLS.find((t) => t.id === buildTool)?.hint}
+          </span>
+          <button type="button" aria-label="Ranger l’outil" title="Ranger l’outil" onClick={() => setBuildTool(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-sky-400 text-lg">
+            ✕
+          </button>
+        </div>
+      )}
       {selectionCard?.(attackBarVisible && hero ? attackBar : null)}
       {aimHint && <p className="text-amber-300" role="status">{aimHint}</p>}
       {footer}

@@ -130,6 +130,30 @@ export function canHeroTarget(s: GameState, heroId: string, monsterId: string, t
   return hasLineOfSight(s, h.position, m.position, (p) => sightBlockedAt(s, heroId, p, heroView(s, p, heroId).blocked));
 }
 
+/**
+ * Cibles invalides d'une attaque. La première cible doit être valide (Close en mêlée, ligne de vue à distance) ;
+ * une cible supplémentaire est valide si elle l'est aussi, ou si elle est adjacente (Close) à la première : dans ce cas la ligne de vue n'est pas prise en compte.
+ */
+export function invalidTargets(s: GameState, heroId: string, targetIds: readonly string[], type: 'melee' | 'ranged'): string[] {
+  const [primaryId, ...extraIds] = targetIds;
+  if (!primaryId) return [];
+  const primary = s.monsters.find((x) => x.id === primaryId);
+  const bad = canHeroTarget(s, heroId, primaryId, type) ? [] : [primaryId];
+  for (const id of extraIds) {
+    const m = s.monsters.find((x) => x.id === id);
+    const adjacent = !!(m?.position && m.status === 'board' && primary?.position && isClose(s.board, primary.position, m.position));
+    if (!adjacent && !canHeroTarget(s, heroId, id, type)) bad.push(id);
+  }
+  return bad;
+}
+
+/** Monstres que l'on peut ajouter à une attaque dont la première cible est `primaryId` : ceux qui lui sont adjacents (Close). */
+export function splashTargets(s: GameState, primaryId: string): string[] {
+  const primary = s.monsters.find((x) => x.id === primaryId);
+  if (!primary?.position) return [];
+  return s.monsters.filter((m) => m.id !== primaryId && m.status === 'board' && m.position && isClose(s.board, primary.position!, m.position)).map((m) => m.id);
+}
+
 /** Marque l'activation d'un héros au premier geste (déplacement ou attaque). */
 export function ensureActivated(s: GameState, heroId: string): void {
   const h = s.heroes.find((x) => x.id === heroId);

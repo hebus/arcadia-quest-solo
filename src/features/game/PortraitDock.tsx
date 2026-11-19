@@ -10,16 +10,22 @@ import { QuestsPanel } from '@/features/scenario/Dashboard';
 import { actorInfo } from '@/rendering/instructions/overlay';
 import { useGameStore } from '@/stores/gameStore';
 import { CopyLogs } from './CopyLogs';
-import { SandboxPanel, useIsSandbox } from './SandboxPanel';
+import { BuildStrip, type BuildTool } from '@/features/scenario/GameBoard';
+import { SandboxPanel, SandboxStrip, useIsSandbox } from './SandboxPanel';
 import { SoundPanel } from './SoundControls';
 
-export type DockTab = 'scenario' | 'heroes' | 'enemies' | 'more';
+export type DockTab = 'scenario' | 'heroes' | 'enemies' | 'more' | 'build' | 'sandbox';
 
 const TABS: { id: DockTab; label: string; icon: string; title: string }[] = [
   { id: 'scenario', label: 'Scénario', icon: '📜', title: 'Scénario et objectifs' },
   { id: 'heroes', label: 'Héros', icon: '🛡', title: 'Héros' },
   { id: 'enemies', label: 'Ennemis', icon: '💀', title: 'Ennemis' },
   { id: 'more', label: 'Plus', icon: '⋯', title: 'Plus' },
+];
+/** Terrain d'essai : deux onglets de plus, pour construire le plateau et piloter l'essai. */
+const SANDBOX_TABS: typeof TABS = [
+  { id: 'build', label: 'Construire', icon: '🏗', title: 'Construire' },
+  { id: 'sandbox', label: 'Essai', icon: '🧪', title: 'Terrain d’essai' },
 ];
 
 /** Carte de la figurine touchée sur le plateau : nom, vie, capacités et, pour un héros, ses boutons d'attaque (icônes seules). */
@@ -89,12 +95,11 @@ function EnemiesPanel() {
   );
 }
 
-type MoreSection = 'decisions' | 'journal' | 'sound' | 'sandbox';
+type MoreSection = 'decisions' | 'journal' | 'sound';
 
-function MorePanel({ onClose, onHome }: { onClose: () => void; onHome: () => void }) {
-  const sandbox = useIsSandbox();
-  const [section, setSection] = useState<MoreSection>(sandbox ? 'sandbox' : 'decisions');
-  const sections: { id: MoreSection; label: string }[] = [...(sandbox ? [{ id: 'sandbox' as const, label: '🧪 Essai' }] : []), { id: 'decisions', label: 'Décisions' }, { id: 'journal', label: 'Journal' }, { id: 'sound', label: 'Son' }];
+function MorePanel({ onHome }: { onHome: () => void }) {
+  const [section, setSection] = useState<MoreSection>('decisions');
+  const sections: { id: MoreSection; label: string }[] = [{ id: 'decisions', label: 'Décisions' }, { id: 'journal', label: 'Journal' }, { id: 'sound', label: 'Son' }];
   return (
     <>
       <nav aria-label="Sections de Plus" className="mb-3 flex flex-wrap gap-2">
@@ -111,7 +116,6 @@ function MorePanel({ onClose, onHome }: { onClose: () => void; onHome: () => voi
       {section === 'decisions' && <DecisionsPanel />}
       {section === 'journal' && <HistoryScreen />}
       {section === 'sound' && <SoundPanel />}
-      {section === 'sandbox' && sandbox && <SandboxPanel onPlace={onClose} />}
     </>
   );
 }
@@ -120,13 +124,15 @@ function MorePanel({ onClose, onHome }: { onClose: () => void; onHome: () => voi
  * Mode portrait : la fiche de la figurine touchée et la barre d'onglets restent sous le plateau ;
  * chaque onglet ouvre un tiroir (objectifs, héros, ennemis, le reste) pour ne pas tout comprimer à l'écran.
  */
-export function PortraitDock({ heroes, openTab, onOpenTab, onHome }: { onHome: () => void; heroes: ReactNode; openTab: DockTab | null; onOpenTab: (t: DockTab | null) => void }) {
-  const tab = TABS.find((t) => t.id === openTab);
+export function PortraitDock({ heroes, openTab, onOpenTab, onHome, buildTool, onBuildTool }: { buildTool: BuildTool | null; onBuildTool: (t: BuildTool | null) => void; onHome: () => void; heroes: ReactNode; openTab: DockTab | null; onOpenTab: (t: DockTab | null) => void }) {
+  const sandbox = useIsSandbox();
+  const tabs = sandbox ? [...TABS.slice(0, 3), ...SANDBOX_TABS, TABS[3]!] : TABS;
+  const tab = tabs.find((t) => t.id === openTab);
   return (
     <>
-      <nav aria-label="Navigation du plateau" data-testid="portrait-dock" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 gap-1 border-t-2 border-amber-700/70 bg-stone-950/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
-        {TABS.map((t) => (
-          <button key={t.id} type="button" aria-pressed={openTab === t.id} onClick={() => onOpenTab(openTab === t.id ? null : t.id)} className={`flex min-h-14 flex-col items-center justify-center rounded-lg border-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${openTab === t.id ? 'border-amber-400 bg-amber-900/60 text-amber-200' : 'border-transparent text-stone-200'}`}>
+      <nav aria-label="Navigation du plateau" data-testid="portrait-dock" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} className="fixed inset-x-0 bottom-0 z-50 grid gap-1 border-t-2 border-amber-700/70 bg-stone-950/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
+        {tabs.map((t) => (
+          <button key={t.id} type="button" aria-pressed={openTab === t.id} onClick={() => onOpenTab(openTab === t.id ? null : t.id)} className={`flex min-h-14 flex-col items-center justify-center rounded-lg border-2 ${tabs.length > 4 ? 'text-xs' : 'text-sm'} font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 ${openTab === t.id ? 'border-amber-400 bg-amber-900/60 text-amber-200' : 'border-transparent text-stone-200'}`}>
             <span className="text-xl leading-none" aria-hidden="true">{t.icon}</span>
             {t.label}
           </button>
@@ -137,7 +143,14 @@ export function PortraitDock({ heroes, openTab, onOpenTab, onHome }: { onHome: (
           {tab.id === 'scenario' && <QuestsPanel />}
           {tab.id === 'heroes' && heroes}
           {tab.id === 'enemies' && <EnemiesPanel />}
-          {tab.id === 'more' && <MorePanel onClose={() => onOpenTab(null)} onHome={onHome} />}
+          {tab.id === 'more' && <MorePanel onHome={onHome} />}
+          {tab.id === 'build' && <BuildStrip tool={buildTool} onTool={(t) => { onBuildTool(t); if (t) onOpenTab(null); }} />}
+          {tab.id === 'sandbox' && (
+            <div className="space-y-3">
+              <SandboxStrip />
+              <SandboxPanel onPlace={() => onOpenTab(null)} />
+            </div>
+          )}
         </Drawer>
       )}
     </>

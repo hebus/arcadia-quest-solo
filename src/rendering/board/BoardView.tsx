@@ -97,6 +97,14 @@ const edgeLine = (a: Position, b: Position) =>
     ? { x1: Math.max(a.x, b.x) * C, y1: a.y * C, x2: Math.max(a.x, b.x) * C, y2: (a.y + 1) * C }
     : { x1: a.x * C, y1: Math.max(a.y, b.y) * C, x2: (a.x + 1) * C, y2: Math.max(a.y, b.y) * C };
 
+/** Demi-épaisseur d'un mur : son extrémité arrondie dépasse d'autant de l'angle de l'arête. */
+const WALL_HALF = 4.5;
+/** Segment d'une porte : l'arête raccourcie de chaque côté de l'extrémité arrondie des murs voisins, pour s'insérer exactement entre eux. */
+const doorLine = (a: Position, b: Position) => {
+  const l = edgeLine(a, b);
+  return l.x1 === l.x2 ? { ...l, y1: l.y1 + WALL_HALF, y2: l.y2 - WALL_HALF } : { ...l, x1: l.x1 + WALL_HALF, x2: l.x2 - WALL_HALF };
+};
+
 /** Sommets d'une étoile à 5 branches (pointe en haut). */
 const starPoints = (cx: number, cy: number, outer: number, inner: number): string =>
   Array.from({ length: 10 }, (_, i) => {
@@ -341,17 +349,22 @@ export function BoardView({ board, tiles = [], spawns = [], tokens = [], highlig
       {inactiveEdges.map(([a, b], i) => (
         <line key={`ia${i}`} {...edgeLine(a, b)} stroke="#a8a29e" strokeWidth="4" strokeDasharray="3 5" pointerEvents="none" />
       ))}
-      {board.walls.map(([a, b], i) => (
-        <g key={`w${i}`} pointerEvents="none">
-          <line {...edgeLine(a, b)} stroke="#0c0a09" strokeWidth="9" strokeLinecap="round" />
-          <line {...edgeLine(a, b)} stroke="#a8a29e" strokeWidth="4" strokeLinecap="round" />
-        </g>
-      ))}
+      {/* Murs en deux passes : tous les contours sombres d'abord, puis tous les traits clairs. Chaque jonction reste ainsi continue
+          (un contour dessiné après le trait clair d'un voisin le coupait). */}
+      <g pointerEvents="none" data-testid="walls">
+        {board.walls.map(([a, b], i) => (
+          <line key={`wo${i}`} {...edgeLine(a, b)} stroke="#0c0a09" strokeWidth="9" strokeLinecap="round" />
+        ))}
+        {board.walls.map(([a, b], i) => (
+          <line key={`wi${i}`} {...edgeLine(a, b)} stroke="#a8a29e" strokeWidth="4" strokeLinecap="round" />
+        ))}
+      </g>
       {board.doors.map((d) => (
         <g key={d.id}>
           {doorGlow.has(d.id) && <line {...edgeLine(d.a, d.b)} stroke="#facc15" strokeWidth="14" strokeLinecap="round" className="aq-pulse" pointerEvents="none" />}
-          <line {...edgeLine(d.a, d.b)} stroke="#1c1006" strokeWidth="10" strokeLinecap="round" strokeDasharray={d.open ? '5 6' : undefined} />
-          <line data-testid={`door-${d.id}`} data-special={d.special ? 'true' : undefined} {...edgeLine(d.a, d.b)} stroke={d.special ? '#a855f7' : d.open ? '#22c55e' : '#b45309'} strokeWidth="6" strokeLinecap="round" strokeDasharray={d.open ? '5 6' : undefined} pointerEvents="none" />
+          {/* Extrémités plates, même épaisseur que les murs, et longueur réduite de leurs extrémités arrondies : la porte s'insère exactement entre ses deux murs. */}
+          <line {...doorLine(d.a, d.b)} stroke="#1c1006" strokeWidth="9" strokeLinecap="butt" strokeDasharray={d.open ? '5 6' : undefined} />
+          <line data-testid={`door-${d.id}`} data-special={d.special ? 'true' : undefined} {...doorLine(d.a, d.b)} stroke={d.special ? '#a855f7' : d.open ? '#22c55e' : '#b45309'} strokeWidth="5" strokeLinecap="butt" strokeDasharray={d.open ? '5 6' : undefined} pointerEvents="none" />
           {onDoor && (!doorIds || doorIds.includes(d.id)) && <line data-testid={`door-hit-${d.id}`} {...edgeLine(d.a, d.b)} stroke="transparent" strokeWidth="22" strokeLinecap="round" style={{ cursor: 'pointer' }} onClick={() => onDoor(d.id)} />}
         </g>
       ))}

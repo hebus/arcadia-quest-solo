@@ -1,7 +1,7 @@
 import { parse } from '@/engine/domain/validate';
 import { describe, expect, it } from 'vitest';
 import { resolveHeroAttack } from './combat/heroActions';
-import { canHeroTarget, moveHeroTo, reachableCells } from './combat/heroMove';
+import { canHeroTarget, invalidTargets, moveHeroTo, reachableCells, splashTargets } from './combat/heroMove';
 import type { InputAnswer } from './oracle';
 import { TILE, TileDefSchema, boardFromLayout, rotateEdge, rotateLocal, toggleEdge } from './tiles';
 import { startScenario } from './turn/machine';
@@ -96,6 +96,18 @@ describe('attaque d un héros', () => {
     g.monsters.find((m) => m.id === 'g1')!.position = { x: 2, y: 3 };
     expect(canHeroTarget(g, 'h3', 'g1', 'melee')).toBe(true);
     expect(() => resolveHeroAttack(g, testContent, 'h3', [{ monsterId: 'o1', wounds: 1 }], [], { attackType: 'melee' })).toThrow(/cible valide/);
+  });
+
+  it('cible supplémentaire : tout monstre adjacent à la première cible, sans ligne de vue', () => {
+    const g = game();
+    // g1 en vue de h3 ; o1 collé à g1 ; puis o1 loin de g1.
+    g.monsters.find((m) => m.id === 'g1')!.position = { x: 3, y: 3 };
+    g.monsters.find((m) => m.id === 'o1')!.position = { x: 3, y: 4 };
+    expect(splashTargets(g, 'g1')).toContain('o1');
+    expect(invalidTargets(g, 'h3', ['g1', 'o1'], 'ranged')).toEqual([]);
+    // Loin de g1, o1 n'est plus adjacent : il n'est pas proposé comme cible supplémentaire.
+    g.monsters.find((m) => m.id === 'o1')!.position = { x: 6, y: 6 };
+    expect(splashTargets(g, 'g1')).not.toContain('o1');
   });
 
   it('une seule attaque par activation ; pas de mouvement repris après déplacement puis attaque', () => {

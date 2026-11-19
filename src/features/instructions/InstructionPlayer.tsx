@@ -25,9 +25,12 @@ function StepVisual({ step }: { step: TrackedInstruction }) {
   const target = v.type === 'attack' ? actorInfo(g, v.targetId) : undefined;
   return (
     <div className="flex min-w-0 items-center gap-2" data-testid="instruction-step" title={step.label ?? VERB[v.type]}>
-      <span className="shrink-0 text-2xl text-amber-400" aria-hidden="true">
-        {ICON[v.type]}
-      </span>
+      {/* L'activation n'a pas d'icône : le pion du monstre et son halo sur le plateau suffisent. */}
+      {v.type !== 'activate' && (
+        <span className="shrink-0 text-2xl text-amber-400" aria-hidden="true">
+          {ICON[v.type]}
+        </span>
+      )}
       {actor && <MiniPawn kind={actor.kind} label={actor.label} size={32} />}
       {target && (
         <>

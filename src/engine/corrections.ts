@@ -38,6 +38,30 @@ const samePos = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
  * Correction manuelle de l'état (plan §4.3 G). Toujours historisée : l'historique n'est jamais effacé.
  * L'état corrigé doit rester valide, sinon la correction est refusée.
  */
+/**
+ * Bâtiment (`interior`) ou salle (`rooms`) : la case bascule dans la zone, et le contour suit : un mur sépare une case de la zone
+ * d'une case qui n'en fait pas partie (sauf là où une porte a été posée).
+ */
+function toggleRegion(s: GameState, at: Position, key: 'interior' | 'rooms'): void {
+  const inside = (p: Position) => p.x >= 0 && p.y >= 0 && p.x < s.board.width && p.y < s.board.height;
+  if (!inside(at)) throw new Error('Case hors du plateau');
+  const zone = s.board[key] ?? [];
+  const was = zone.some((p) => samePos(p, at));
+  const next = was ? zone.filter((p) => !samePos(p, at)) : [...zone, at];
+  s.board[key] = next;
+  for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) {
+    const nb = { x: at.x + d.x, y: at.y + d.y };
+    if (!inside(nb)) continue;
+    const id = edgeId(at, nb);
+    if (s.board.doors.some((x) => edgeId(x.a, x.b) === id)) continue;
+    const nbIn = next.some((p) => samePos(p, nb));
+    const meIn = !was;
+    const wall = s.board.walls.some(([p, q]) => edgeId(p, q) === id);
+    if (meIn !== nbIn && !wall) s.board.walls.push([at, nb]);
+    if (meIn === nbIn && wall) s.board.walls = s.board.walls.filter(([p, q]) => edgeId(p, q) !== id);
+  }
+}
+
 export function applyCorrection(state: GameState, c: Correction, reason = 'correction manuelle'): GameState {
   const s = cloneState(state);
   const hero = (id: string) => {
@@ -141,32 +165,12 @@ export function applyCorrection(state: GameState, c: Correction, reason = 'corre
       else s.board.doors = s.board.doors.filter((d) => d !== cur);
       break;
     }
-    case 'board-interior': {
-      const inside = (p: Position) => p.x >= 0 && p.y >= 0 && p.x < s.board.width && p.y < s.board.height;
-      if (!inside(c.at)) throw new Error('Case hors du plateau');
-      const interior = s.board.interior ?? [];
-      const was = interior.some((p) => samePos(p, c.at));
-      s.board.interior = was ? interior.filter((p) => !samePos(p, c.at)) : [...interior, c.at];
-      // Contour : un mur sépare un intérieur de ce qui ne l'est pas (sauf là où une porte a été posée).
-      for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) {
-        const nb = { x: c.at.x + d.x, y: c.at.y + d.y };
-        if (!inside(nb)) continue;
-        const id = edgeId(c.at, nb);
-        if (s.board.doors.some((x) => edgeId(x.a, x.b) === id)) continue;
-        const nbIn = s.board.interior.some((p) => samePos(p, nb));
-        const meIn = !was;
-        const wall = s.board.walls.some(([p, q]) => edgeId(p, q) === id);
-        if (meIn !== nbIn && !wall) s.board.walls.push([c.at, nb]);
-        if (meIn === nbIn && wall) s.board.walls = s.board.walls.filter(([p, q]) => edgeId(p, q) !== id);
-      }
+    case 'board-interior':
+      toggleRegion(s, c.at, 'interior');
       break;
-    }
-    case 'board-room': {
-      if (c.at.x < 0 || c.at.y < 0 || c.at.x >= s.board.width || c.at.y >= s.board.height) throw new Error('Case hors du plateau');
-      const rooms = s.board.rooms ?? [];
-      s.board.rooms = rooms.some((p) => samePos(p, c.at)) ? rooms.filter((p) => !samePos(p, c.at)) : [...rooms, c.at];
+    case 'board-room':
+      toggleRegion(s, c.at, 'rooms');
       break;
-    }
     case 'board-blocked': {
       const inside = c.at.x >= 0 && c.at.y >= 0 && c.at.x < s.board.width && c.at.y < s.board.height;
       if (!inside) throw new Error('Case hors du plateau');
