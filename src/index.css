@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+/* Page calée sur la fenêtre : aucun débordement horizontal ne doit faire dézoomer Safari iOS. */
+html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+/* Couleur de base sur le body : les portails (tiroirs, barre, dialogues) sont hors de <main> et n'en héritent pas. */
+body { color: #f5f5f4; background-color: #0c0a09; }
+
 /* Animations du plateau : instructions visuelles (fantômes, flèches, portes). */
 @keyframes aq-pulse {
   0%, 100% { opacity: 0.45; transform: scale(1); }
