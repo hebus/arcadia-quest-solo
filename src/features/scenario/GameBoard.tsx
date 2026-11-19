@@ -153,6 +153,17 @@ export function BuildStrip({ tool, onTool }: { tool: BuildTool | null; onTool: (
   );
 }
 
+/** Mode sync : message d'aide, au niveau du bouton Sync dans la rangée d'actions. */
+function SyncHint() {
+  return (
+    <section aria-label="Mode sync" data-testid="sync-panel" className="min-w-0 flex-1 self-center rounded-xl border-2 border-sky-500 bg-stone-900/90 px-2 py-1">
+      <p className="text-sm leading-tight text-sky-200">
+        ⟳ Sync : glissez les héros et les monstres vers leur vraie case, touchez une porte pour l’ouvrir ou la fermer, touchez un pion pour régler son état.
+      </p>
+    </section>
+  );
+}
+
 /**
  * Mode sync (placement libre) : recale l'écran sur la table. Les pions se glissent et les portes se touchent sur le plateau ;
  * ce panneau, à la place des cartes héros, montre ce qui peut être modifié sur le pion touché.
@@ -166,11 +177,9 @@ function SyncPanel({ selectedId }: { selectedId: string | null }) {
   const h = selectedId ? g.heroes.find((x) => x.id === selectedId && !x.dead) : undefined;
   const stats = m ? statsOfMonster(content, g, m) : undefined;
   const close = <Button variant="ghost" onClick={() => select(null)}>Fermer</Button>;
+  if (!m && !h) return null;
   return (
-    <section aria-label="Mode sync" data-testid="sync-panel" className="space-y-2 rounded-xl border-2 border-sky-500 bg-stone-900/90 p-2">
-      <p className="text-sm text-sky-200">
-        ⟳ Sync : glissez les héros et les monstres vers leur vraie case, touchez une porte pour l’ouvrir ou la fermer, touchez un pion pour régler son état.
-      </p>
+    <section aria-label="Réglage du pion" className="space-y-2 rounded-xl border-2 border-sky-500 bg-stone-900/90 p-2">
       {m && (
         <div className="space-y-2 rounded-lg bg-stone-800 p-2" data-testid="sync-monster">
           <div className="flex items-center gap-3">
@@ -584,7 +593,8 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
               </div>
             )
           )}
-          {guildTurn && (!selectionCard && menuVisible && hero ? attackBar : (
+          {correctionMode && <SyncHint />}
+          {guildTurn && !correctionMode && (!selectionCard && menuVisible && hero ? attackBar : (
             !locked && !correctionMode && !(selectionCard && hero) && <p className="min-w-0 truncate text-sm text-stone-500">{hero ? `Touchez ${hero.name} de nouveau pour attaquer.` : 'Touchez un héros pour voir où il peut aller.'}</p>
           ))}
           <div className="ml-auto flex flex-nowrap items-center gap-2 self-start">
