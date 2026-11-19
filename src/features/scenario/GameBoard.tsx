@@ -684,7 +684,7 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
       {/* Blocs de combat : en surimpression, centrés sur le plateau mais hors de son conteneur ; les cartes héros restent visibles. */}
       {!combatOnSide && (monsterInput || (attacking && hero)) && (
         <div className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-1 sm:p-3 ${attacking && picking ? 'hidden' : ''}`}>
-         <div className="pointer-events-auto max-h-full w-full max-w-3xl overflow-y-auto rounded-xl shadow-2xl shadow-black/70">
+         <div className="pointer-events-auto max-h-full min-h-[14rem] w-full min-w-[min(100%,22rem)] max-w-3xl overflow-y-auto rounded-xl bg-stone-900 shadow-2xl shadow-black/70">
           {combatContent}
          </div>
         </div>
@@ -703,7 +703,12 @@ export function GameBoard({ roster, footer, monsterInput, selectionCard, buildTo
       </div>
 
       <div className="min-w-0 space-y-3 max-lg:order-4">
-      {combatOnSide && (monsterInput || (attacking && hero)) && <div className="overflow-y-auto rounded-xl shadow-2xl shadow-black/70">{combatContent}</div>}
+      {/* Paysage : la boîte garde une taille minimale ; si la colonne de droite est trop étroite, elle déborde vers la gauche, sur le plateau. */}
+      {combatOnSide && (monsterInput || (attacking && hero)) && (
+        <div className="relative z-30 h-0">
+          <div className="absolute right-0 top-0 max-h-[calc(100dvh-var(--aq-banner,0px)-4rem)] min-h-[16rem] w-[max(100%,24rem)] max-w-[calc(100vw-8rem)] overflow-y-auto rounded-xl bg-stone-900 shadow-2xl shadow-black/70">{combatContent}</div>
+        </div>
+      )}
       {correctionMode && <SyncPanel selectedId={selectedId} />}
       {sandbox && !placing && !selectionCard && <BuildStrip tool={buildTool} onTool={setBuildTool} />}
       {sandbox && selectionCard && buildTool && (
